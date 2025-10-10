@@ -10,51 +10,124 @@
     <main class="page">
       <header class="hero">
         <h1>IA Soccer</h1>
-        <p class="tagline">Simulador manager canallesco de fútbol en Node.js</p>
+        <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
       </header>
 
-      <section class="card">
-        <h2>¿Qué es esto?</h2>
-        <p>
-          IA Soccer es un experimento técnico creado como punto de partida para
-          un simulador de manager futbolero con mucho descaro. Todo el motor está
-          implementado en <strong>JavaScript/TypeScript</strong> y se ejecuta desde
-          la línea de comandos.
-        </p>
-        <p>
-          Si has llegado hasta aquí desde un despliegue web, tranquilo: no estás
-          perdido. Simplemente este proyecto no tiene una interfaz gráfica
-          todavía, pero dejamos a mano la documentación para que puedas probarlo
-          en tu máquina.
-        </p>
+      <section class="card game-card">
+        <div class="club-panel">
+          <div class="club-header">
+            <h2>Tu chiringuito futbolero</h2>
+            <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+          </div>
+          <dl class="club-stats" id="club-stats">
+            <div>
+              <dt>Club</dt>
+              <dd id="club-name"></dd>
+            </div>
+            <div>
+              <dt>Presupuesto</dt>
+              <dd id="club-budget"></dd>
+            </div>
+            <div>
+              <dt>Reputación</dt>
+              <dd id="club-reputation"></dd>
+            </div>
+            <div>
+              <dt>Moral media</dt>
+              <dd id="club-morale"></dd>
+            </div>
+          </dl>
+        </div>
+
+        <form class="game-form" id="game-form">
+          <h2>Planifica la jornada</h2>
+          <label class="field">
+            <span class="field-label">Canallada previa</span>
+            <select id="decision-select" name="decision">
+              <option value="">Mantenerse pulcro (sin travesuras)</option>
+            </select>
+          </label>
+
+          <div class="field-grid">
+            <label class="field">
+              <span class="field-label">Táctica</span>
+              <select id="tactic-select" name="tactic">
+                <option value="balanced">Equilibrada</option>
+                <option value="attacking">Ofensiva</option>
+                <option value="defensive">Defensiva</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">¿Jugamos en casa?</span>
+              <input type="checkbox" id="home-checkbox" name="home" />
+            </label>
+            <label class="field">
+              <span class="field-label">Fuerza rival</span>
+              <input
+                type="range"
+                id="opponent-strength"
+                name="opponentStrength"
+                min="40"
+                max="95"
+                step="1"
+              />
+              <output id="opponent-output" for="opponent-strength"></output>
+            </label>
+          </div>
+
+          <button type="submit" class="play-button">Jugar jornada</button>
+        </form>
       </section>
 
-      <section class="card">
-        <h2>Cómo probarlo localmente</h2>
-        <ol>
-          <li>Clona el repositorio o descarga el código.</li>
-          <li>Instala dependencias (si las hubiera) y ejecuta el CLI con:</li>
-        </ol>
-        <pre><code>npm install
-npm run demo</code></pre>
-        <p>
-          El comando abrirá una aventura canallesca en tu terminal, donde podrás
-          fichar sinvergüenzas, negociar cláusulas y jugar partidos cargados de
-          picante futbolero.
-        </p>
-      </section>
+      <section class="card report-card" id="report-card" hidden>
+        <h2>Crónica de la jornada</h2>
+        <div class="report-top">
+          <div>
+            <h3>Marcador</h3>
+            <p id="scoreline" class="scoreline"></p>
+            <p id="finances-delta" class="finances"></p>
+          </div>
+          <div class="decision-report" id="decision-report" hidden>
+            <h3>Decisión canalla</h3>
+            <p id="decision-narrative"></p>
+            <ul id="decision-stats"></ul>
+          </div>
+        </div>
 
-      <section class="card">
-        <h2>Recursos</h2>
-        <ul>
-          <li><a href="README.md">Documentación completa (README)</a></li>
-          <li><a href="https://github.com/" target="_blank" rel="noreferrer">Repositorio original</a></li>
-        </ul>
+        <div class="report-body">
+          <div>
+            <h3>Narrativa</h3>
+            <ol id="narrative-list"></ol>
+          </div>
+          <div>
+            <h3>Eventos destacados</h3>
+            <ul id="events-list"></ul>
+          </div>
+        </div>
+
+        <div class="club-update">
+          <h3>Estado del club tras la jornada</h3>
+          <dl class="club-stats">
+            <div>
+              <dt>Presupuesto</dt>
+              <dd id="post-budget"></dd>
+            </div>
+            <div>
+              <dt>Reputación</dt>
+              <dd id="post-reputation"></dd>
+            </div>
+            <div>
+              <dt>Moral media</dt>
+              <dd id="post-morale"></dd>
+            </div>
+          </dl>
+        </div>
       </section>
 
       <footer class="footer">
         <p>Hecho con pasión canalla por la comunidad IA ⚽</p>
       </footer>
     </main>
+    <script type="module" src="game.js"></script>
   </body>
 </html>
