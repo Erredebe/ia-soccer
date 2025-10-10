@@ -7,12 +7,17 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
 const srcDir = path.join(rootDir, 'src');
+const siteDir = path.join(rootDir, 'site');
 const readmePath = path.join(rootDir, 'readme.md');
 
 rmSync(publicDir, { recursive: true, force: true });
 mkdirSync(publicDir, { recursive: true });
 
 cpSync(srcDir, path.join(publicDir, 'src'), { recursive: true });
+
+if (existsSync(siteDir)) {
+  cpSync(siteDir, publicDir, { recursive: true });
+}
 
 const packageJson = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
 const publicPackageJson = {
