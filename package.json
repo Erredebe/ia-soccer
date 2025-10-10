@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node src/cli/index.js",
     "demo": "node src/cli/index.js",
-    "start": "node src/cli/index.js",
+    "start": "node --inspect=0.0.0.0:9229 src/cli/index.js",
+    "build": "node scripts/build.mjs",
     "test": "node --test tests"
   },
   "keywords": [
