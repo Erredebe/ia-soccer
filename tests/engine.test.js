@@ -42,3 +42,16 @@ test('simulateMatch aplica el impulso de decisiones canallas exitosas', () => {
   assert.ok(result.narrative.join(' ').includes('Marcador final'));
   assert.ok(result.events.some((event) => event.type === 'gol'), 'debe haber al menos un gol propio');
 });
+
+test('simulateMatch respeta un once titular definido', () => {
+  const club = createExampleClub();
+  const config = createDefaultMatchConfig();
+  config.startingLineup = club.squad.slice(0, 11).map((player) => player.id);
+  config.substitutes = club.squad.slice(11, 16).map((player) => player.id);
+  const rng = createDeterministicRng([0.12, 0.45, 0.78, 0.33, 0.91]);
+
+  const result = simulateMatch(club, config, { rng });
+  assert.equal(result.contributions.length, 11 + config.substitutes.length);
+  const contributionIds = result.contributions.map((c) => c.playerId);
+  assert.ok(config.startingLineup.every((id) => contributionIds.includes(id)));
+});

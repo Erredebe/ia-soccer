@@ -13,7 +13,7 @@
         <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
       </header>
 
-      <section class="card game-card">
+      <section class="card game-card" id="planning-card">
         <div class="club-panel">
           <div class="club-header">
             <h2>Tu chiringuito futbolero</h2>
@@ -58,6 +58,17 @@
               </select>
             </label>
             <label class="field">
+              <span class="field-label">Alineación</span>
+              <select id="formation-select" name="formation">
+                <option value="4-4-2">4-4-2 Clásica</option>
+                <option value="4-3-3">4-3-3 Picante</option>
+                <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
+                <option value="3-5-2">3-5-2 Superpoblado</option>
+                <option value="5-3-2">5-3-2 Autobús Canalla</option>
+                <option value="4-1-4-1">4-1-4-1 Presión Alta</option>
+              </select>
+            </label>
+            <label class="field">
               <span class="field-label">¿Jugamos en casa?</span>
               <input type="checkbox" id="home-checkbox" name="home" />
             </label>
@@ -73,6 +84,19 @@
               />
               <output id="opponent-output" for="opponent-strength"></output>
             </label>
+          </div>
+
+          <div class="lineup-panel">
+            <div class="lineup-panel__header">
+              <h3>Define tu convocatoria</h3>
+              <p>Escoge 11 titulares y hasta 5 suplentes para la batalla semanal.</p>
+            </div>
+            <div class="lineup-panel__summary">
+              <span id="lineup-count" class="lineup-summary"></span>
+              <span id="subs-count" class="lineup-summary"></span>
+            </div>
+            <p id="lineup-error" class="form-error" hidden></p>
+            <div id="squad-selector" class="squad-selector"></div>
           </div>
 
           <button type="submit" class="play-button">Jugar jornada</button>
@@ -122,6 +146,8 @@
             </div>
           </dl>
         </div>
+
+        <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
       </section>
 
       <footer class="footer">

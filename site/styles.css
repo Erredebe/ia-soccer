@@ -133,6 +133,16 @@ body {
   gap: 1.5rem;
 }
 
+.form-error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -168,6 +178,83 @@ body {
   gap: 1.25rem;
 }
 
+.lineup-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: rgba(226, 232, 240, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.lineup-panel__header h3 {
+  margin: 0 0 0.25rem;
+}
+
+.lineup-panel__header p {
+  margin: 0;
+  color: #475569;
+}
+
+.lineup-panel__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.lineup-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.lineup-summary.warning {
+  background: rgba(248, 113, 113, 0.18);
+  color: #b91c1c;
+}
+
+.squad-selector {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.squad-row {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(200px, 1fr) minmax(140px, 180px);
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.2);
+}
+
+.squad-row strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.squad-row span {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.squad-role {
+  appearance: none;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.95rem;
+  background: rgba(248, 250, 252, 0.95);
+  color: inherit;
+}
+
 .play-button {
   align-self: flex-start;
   appearance: none;
@@ -186,6 +273,26 @@ body {
 .play-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 16px 40px rgba(37, 99, 235, 0.38);
+}
+
+.plan-button {
+  margin-top: 1.5rem;
+  align-self: flex-start;
+  appearance: none;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 999px;
+  padding: 0.65rem 1.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.plan-button:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
 }
 
 .report-top {
@@ -292,6 +399,57 @@ body {
     background: rgba(15, 23, 42, 0.9);
     border-color: rgba(148, 163, 184, 0.45);
     color: #e2e8f0;
+  }
+
+  .lineup-panel {
+    background: rgba(30, 41, 59, 0.65);
+    border-color: rgba(148, 163, 184, 0.35);
+  }
+
+  .lineup-panel__header p {
+    color: #94a3b8;
+  }
+
+  .lineup-summary {
+    background: rgba(37, 99, 235, 0.22);
+    color: #93c5fd;
+  }
+
+  .lineup-summary.warning {
+    background: rgba(248, 113, 113, 0.32);
+    color: #fecaca;
+  }
+
+  .squad-row {
+    background: rgba(15, 23, 42, 0.9);
+    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.15);
+  }
+
+  .squad-row span {
+    color: #cbd5f5;
+  }
+
+  .squad-role {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(148, 163, 184, 0.45);
+    color: #e2e8f0;
+  }
+
+  .form-error {
+    background: rgba(248, 113, 113, 0.2);
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #fecaca;
+  }
+
+  .plan-button {
+    border-color: rgba(96, 165, 250, 0.45);
+    background: rgba(59, 130, 246, 0.2);
+    color: #bfdbfe;
+  }
+
+  .plan-button:hover {
+    background: rgba(59, 130, 246, 0.32);
+    border-color: rgba(148, 197, 255, 0.6);
   }
 
   .reset-button {

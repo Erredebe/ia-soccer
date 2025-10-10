@@ -63,6 +63,9 @@
  * @property {boolean} home
  * @property {number} opponentStrength
  * @property {"defensive" | "balanced" | "attacking" | string} tactic
+ * @property {string} formation
+ * @property {PlayerId[]} startingLineup
+ * @property {PlayerId[]} substitutes
  */
 
 /**

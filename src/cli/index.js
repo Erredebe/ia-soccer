@@ -8,7 +8,12 @@ import { createInterface } from 'readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
 import { playMatchDay } from '../core/engine.js';
-import { createDefaultMatchConfig, createExampleClub, listCanallaDecisions } from '../core/data.js';
+import {
+  createDefaultMatchConfig,
+  createDefaultLineup,
+  createExampleClub,
+  listCanallaDecisions,
+} from '../core/data.js';
 import { resolveCanallaDecision } from '../core/reputation.js';
 
 /**
@@ -63,6 +68,9 @@ async function runDemo() {
   }
 
   const matchConfig = createDefaultMatchConfig();
+  const defaultLineup = createDefaultLineup(club);
+  matchConfig.startingLineup = defaultLineup.starters;
+  matchConfig.substitutes = defaultLineup.substitutes;
   const report = playMatchDay(club, matchConfig, { decision, decisionOutcome });
 
   console.log('\n>>> Crónica del partido <<<');

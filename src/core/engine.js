@@ -12,6 +12,7 @@
 /** @typedef {import('../types.js').PlayerContribution} PlayerContribution */
 /** @typedef {import('../types.js').CanallaDecision} CanallaDecision */
 /** @typedef {import('../types.js').DecisionOutcome} DecisionOutcome */
+/** @typedef {import('../types.js').Player} Player */
 
 /**
  * @typedef {Object} MatchSimulationOptions
@@ -23,18 +24,34 @@
 const MINUTE_SEGMENTS = [5, 12, 20, 28, 35, 42, 50, 58, 65, 72, 80, 88];
 
 /**
- * @param {ClubState} club
- * @param {keyof ClubState['squad'][number]['attributes']} key
+ * @template T extends number
+ * @param {T} value
+ * @param {T} min
+ * @param {T} max
  */
-function averageAttribute(club, key) {
-  const total = club.squad.reduce((sum, player) => sum + player.attributes[key], 0);
-  return total / club.squad.length;
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
-/** @param {ClubState} club */
-function averageMorale(club) {
-  const total = club.squad.reduce((sum, player) => sum + player.morale, 0);
-  return total / club.squad.length;
+/**
+ * @param {Player[]} players
+ * @param {keyof Player['attributes']} key
+ */
+function averageAttribute(players, key) {
+  if (players.length === 0) {
+    return 0;
+  }
+  const total = players.reduce((sum, player) => sum + player.attributes[key], 0);
+  return total / players.length;
+}
+
+/** @param {Player[]} players */
+function averageMorale(players) {
+  if (players.length === 0) {
+    return 0;
+  }
+  const total = players.reduce((sum, player) => sum + player.morale, 0);
+  return total / players.length;
 }
 
 /** @param {MatchConfig['tactic']} tactic */
@@ -52,19 +69,45 @@ function tacticModifier(tactic) {
 }
 
 /**
- * @param {ClubState} club
+ * @param {string} formation
+ */
+function formationProfile(formation) {
+  switch (formation) {
+    case '4-3-3':
+      return { attack: 1.06, defense: 0.96, creativity: 1.1 };
+    case '3-5-2':
+      return { attack: 1.03, defense: 0.98, creativity: 1.05 };
+    case '5-3-2':
+      return { attack: 0.96, defense: 1.08, creativity: 0.95 };
+    case '4-2-3-1':
+      return { attack: 1.02, defense: 1.0, creativity: 1.08 };
+    case '4-1-4-1':
+      return { attack: 0.99, defense: 1.04, creativity: 1.02 };
+    case '4-4-2':
+    default:
+      return { attack: 1.0, defense: 1.02, creativity: 1.0 };
+  }
+}
+
+/**
+ * @param {Player[]} players
  * @param {MatchConfig} config
  * @param {number} [moraleBoost]
  */
-function calculateClubStrength(club, config, moraleBoost = 0) {
-  const attack = (averageAttribute(club, 'passing') + averageAttribute(club, 'shooting')) / 2;
-  const defense = (averageAttribute(club, 'defending') + averageAttribute(club, 'stamina')) / 2;
-  const leadership = averageAttribute(club, 'leadership');
-  const morale = averageMorale(club) + moraleBoost;
+function calculateClubStrength(players, config, moraleBoost = 0) {
+  const shape = formationProfile(config.formation ?? '4-4-2');
+  const attackBase = (averageAttribute(players, 'passing') + averageAttribute(players, 'shooting')) / 2;
+  const defenseBase = (averageAttribute(players, 'defending') + averageAttribute(players, 'stamina')) / 2;
+  const leadership = averageAttribute(players, 'leadership');
+  const creativity = averageAttribute(players, 'dribbling') * 0.05 * shape.creativity;
+  const morale = averageMorale(players) + moraleBoost;
   const homeBoost = config.home ? 5 : 0;
   const tacticBonus = tacticModifier(config.tactic) * 10;
 
-  return attack * 0.4 + defense * 0.3 + leadership * 0.1 + morale * 0.1 + homeBoost + tacticBonus;
+  const attack = attackBase * shape.attack;
+  const defense = defenseBase * shape.defense;
+
+  return attack * 0.4 + defense * 0.3 + leadership * 0.1 + morale * 0.1 + homeBoost + tacticBonus + creativity;
 }
 
 /**
@@ -97,6 +140,26 @@ function pickManOfTheMatch(contributions, rng) {
 /**
  * @param {ClubState} club
  * @param {MatchConfig} config
+ */
+function getMatchSquads(club, config) {
+  const map = new Map(club.squad.map((player) => [player.id, player]));
+  const starters = (config.startingLineup ?? [])
+    .map((id) => map.get(id))
+    .filter((player) => Boolean(player));
+  const starterIds = new Set(starters.map((player) => player.id));
+  const substitutes = (config.substitutes ?? [])
+    .map((id) => map.get(id))
+    .filter((player) => player && !starterIds.has(player.id));
+
+  return {
+    starters,
+    substitutes,
+  };
+}
+
+/**
+ * @param {ClubState} club
+ * @param {MatchConfig} config
  * @param {MatchSimulationOptions} [options]
  * @returns {MatchResult}
  */
@@ -105,7 +168,9 @@ export function simulateMatch(club, config, options = {}) {
   const moraleBoost = options.decisionOutcome?.success ? options.decisionOutcome.moraleChange : 0;
   const intimidation = options.decisionOutcome?.success ? options.decisionOutcome.reputationChange * 0.2 : 0;
 
-  const clubStrength = calculateClubStrength(club, config, moraleBoost);
+  const { starters, substitutes } = getMatchSquads(club, config);
+  const lineup = starters.length > 0 ? starters : club.squad;
+  const clubStrength = calculateClubStrength(lineup, config, moraleBoost);
   const opponentStrength = config.opponentStrength + intimidation;
   const strengthDiff = clubStrength - opponentStrength;
 
@@ -114,10 +179,17 @@ export function simulateMatch(club, config, options = {}) {
   /** @type {MatchEvent[]} */
   const events = [];
   /** @type {PlayerContribution[]} */
-  const contributions = club.squad.map((player) => ({
+  const contributions = lineup.map((player) => ({
     playerId: player.id,
     rating: 5 + rng() * 4,
   }));
+
+  const benchContributions = (starters.length > 0 ? substitutes : []).map((player) => ({
+    playerId: player.id,
+    rating: 5,
+  }));
+
+  contributions.push(...benchContributions);
 
   for (const minute of MINUTE_SEGMENTS) {
     const segmentModifier = strengthDiff / 150;
@@ -126,8 +198,8 @@ export function simulateMatch(club, config, options = {}) {
       const isGoalFor = rng() < 0.5 + strengthDiff / 200;
       if (isGoalFor) {
         goalsFor += 1;
-        const scorer = club.squad[Math.floor(rng() * club.squad.length)];
-        const assistant = club.squad[Math.floor(rng() * club.squad.length)];
+        const scorer = lineup[Math.floor(rng() * lineup.length)];
+        const assistant = lineup[Math.floor(rng() * lineup.length)];
         events.push({
           minute,
           type: 'gol',
@@ -206,14 +278,31 @@ export function playMatchDay(club, config, options = {}) {
   const reputationUpdate = options.decisionOutcome?.reputationChange ?? 0;
   const moraleUpdate = options.decisionOutcome?.moraleChange ?? 0;
 
+  const starterIds = new Set(config.startingLineup ?? []);
+  const subIds = new Set(config.substitutes ?? []);
+  const startersCount = starterIds.size || club.squad.length;
+  const subsCount = subIds.size || club.squad.length;
+  const starterMorale = moraleUpdate / Math.max(1, startersCount);
+  const benchMorale = moraleUpdate / Math.max(1, subsCount * 2);
+  const restMorale = moraleUpdate / Math.max(1, club.squad.length * 3);
+  const fatigueBonus = options.decisionOutcome?.moraleChange ?? 0;
+
   const updatedClub = {
     ...club,
     budget: club.budget + financesDelta,
     reputation: Math.max(-100, Math.min(100, club.reputation + reputationUpdate)),
     squad: club.squad.map((player) => ({
       ...player,
-      morale: Math.max(-100, Math.min(100, player.morale + moraleUpdate / club.squad.length)),
-      fitness: Math.max(0, player.fitness - 5 + (options.decisionOutcome?.moraleChange ?? 0) * 0.5),
+      morale: clamp(
+        player.morale + (starterIds.has(player.id) ? starterMorale : subIds.has(player.id) ? benchMorale : restMorale),
+        -100,
+        100
+      ),
+      fitness: clamp(
+        player.fitness - (starterIds.has(player.id) ? 8 : subIds.has(player.id) ? 4 : 1) + fatigueBonus * 0.3,
+        0,
+        100
+      ),
     })),
   };
 
