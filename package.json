@@ -1,14 +1,13 @@
 {
   "name": "ia-soccer",
-  "version": "1.0.0",
-  "description": "Simulador manager canallesco de fútbol en TypeScript",
+  "version": "1.1.0",
+  "description": "Simulador manager canallesco de fútbol en JavaScript sin dependencias externas",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/cli/index.js",
-    "demo": "tsx src/cli/index.ts",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "dev": "node src/cli/index.js",
+    "demo": "node src/cli/index.js",
+    "start": "node src/cli/index.js",
+    "test": "node --test tests"
   },
   "keywords": [
     "futbol",
@@ -17,11 +16,5 @@
     "canallesco"
   ],
   "author": "IA Assistant",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.11.20",
-    "tsx": "^4.7.2",
-    "typescript": "^5.4.5",
-    "vitest": "^1.5.3"
-  }
+  "license": "MIT"
 }
