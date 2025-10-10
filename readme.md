@@ -150,6 +150,36 @@ La prensa y textos deben tener ese tono pícaro: frases cortas, ironía, referen
 - Incluye 2-3 tests unitarios y scripts para ejecutar los tests.
 - Asegúrate de que `tsc` compile sin errores y que `npm test` pase.
 
+## Implementación en este repositorio
+
+El repositorio actual ya incluye una implementación de referencia generada siguiendo el prompt anterior. La estructura principal es:
+
+- `src/types.ts`: modelos TypeScript para jugadores, clubes, partidos y decisiones canallas.
+- `src/core/engine.ts`: motor de simulación de partidos y reporte de jornada.
+- `src/core/reputation.ts`: resolución de decisiones canallas y sus consecuencias.
+- `src/core/economy.ts`: utilidades económicas básicas (gastos semanales, traspasos).
+- `src/core/data.ts`: datos de ejemplo para ejecutar una demo inmediata.
+- `src/cli/index.ts`: CLI canallesca que permite resolver una decisión y simular un partido.
+- `tests/*.test.ts`: pruebas unitarias con Vitest para el motor y las decisiones.
+
+### Scripts disponibles
+
+```bash
+npm install          # Instala dependencias
+npm run build        # Compila a JavaScript ESM en dist/
+npm run demo         # Ejecuta la demo interactiva con tsx
+npm test             # Ejecuta las pruebas unitarias con Vitest
+```
+
+### Ejemplo rápido de uso
+
+```bash
+npm install
+npm run demo
+```
+
+El CLI te preguntará por una decisión canalla, resolverá sus consecuencias y luego narrará la jornada con tono pícaro.
+
 ## Siguientes pasos y mejoras sugeridas
 
 - Añadir UI web ligera con React/Remix/Svelte para mostrar jornadas y narrativa.
