@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { createExampleClub } from '../src/core/data.js';
+import { resolveCanallaDecision } from '../src/core/reputation.js';
+
+const alwaysSuccess = () => 0.01;
+const alwaysFail = () => 0.99;
+
+test('resolveCanallaDecision mejora la moral y reputación cuando sale bien', () => {
+  const club = createExampleClub();
+  const { outcome, updatedClub } = resolveCanallaDecision(
+    club,
+    { type: 'filtrarRumor', intensity: 'media' },
+    alwaysSuccess
+  );
+
+  assert.equal(outcome.success, true);
+  assert.ok(outcome.reputationChange > 0);
+  assert.ok(updatedClub.reputation > club.reputation);
+});
+
+test('resolveCanallaDecision castiga duramente cuando se descubre la jugada', () => {
+  const club = createExampleClub();
+  const { outcome, updatedClub } = resolveCanallaDecision(
+    club,
+    { type: 'sobornoArbitro', intensity: 'alta' },
+    alwaysFail
+  );
+
+  assert.equal(outcome.success, false);
+  assert.ok(outcome.reputationChange < 0);
+  assert.equal(typeof outcome.sanctions, 'string');
+  assert.ok(updatedClub.budget < club.budget);
+});

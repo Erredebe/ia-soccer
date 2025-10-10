@@ -193,3 +193,15 @@ Este archivo debe servir como especificación para que otra IA o desarrollador g
 ---
 
 Archivo generado automáticamente como prompt técnico por petición del usuario.
+
+## Guía rápida de ejecución sin dependencias externas
+
+El proyecto actual incluye una implementación autocontenida en JavaScript (ESM) que puede ejecutarse sin instalar paquetes desde Internet. Con Node.js 20 o superior basta con usar los scripts de `package.json`:
+
+```bash
+npm install   # opcional, no descarga paquetes
+npm run dev   # lanza el CLI en modo interactivo
+npm test      # ejecuta la batería de pruebas con node:test
+```
+
+Esto garantiza que tanto en modo desarrollador como en experiencia de usuario final la demo funcione incluso en entornos sin acceso a registros npm.

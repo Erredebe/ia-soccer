@@ -1,6 +1,18 @@
-import { CanallaDecision, ClubState, MatchConfig, Player } from "../types.js";
+/**
+ * Datos de ejemplo y utilidades para poblar el simulador.
+ * @module core/data
+ */
 
-function createPlayer(partial: Partial<Player> & Pick<Player, "id" | "name" | "position">): Player {
+/** @typedef {import('../types.js').Player} Player */
+/** @typedef {import('../types.js').ClubState} ClubState */
+/** @typedef {import('../types.js').MatchConfig} MatchConfig */
+/** @typedef {import('../types.js').CanallaDecision} CanallaDecision */
+
+/**
+ * @param {Partial<Player> & Pick<Player, 'id' | 'name' | 'position'>} partial
+ * @returns {Player}
+ */
+function createPlayer(partial) {
   return {
     id: partial.id,
     name: partial.name,
@@ -27,12 +39,14 @@ function createPlayer(partial: Partial<Player> & Pick<Player, "id" | "name" | "p
   };
 }
 
-export function createExampleClub(): ClubState {
-  const squad: Player[] = [
+/** @returns {ClubState} */
+export function createExampleClub() {
+  /** @type {Player[]} */
+  const squad = [
     createPlayer({
-      id: "portero-legendario",
+      id: 'portero-legendario',
       name: "Paco 'El Gato' Calderón",
-      position: "GK",
+      position: 'GK',
       attributes: {
         pace: 50,
         stamina: 70,
@@ -46,9 +60,9 @@ export function createExampleClub(): ClubState {
       morale: 25,
     }),
     createPlayer({
-      id: "lateral-callejero",
-      name: "Romario del Bulevar",
-      position: "DEF",
+      id: 'lateral-callejero',
+      name: 'Romario del Bulevar',
+      position: 'DEF',
       attributes: {
         pace: 78,
         stamina: 80,
@@ -62,9 +76,9 @@ export function createExampleClub(): ClubState {
       morale: 15,
     }),
     createPlayer({
-      id: "cerebro-tabernas",
-      name: "Isco de Lavapiés",
-      position: "MID",
+      id: 'cerebro-tabernas',
+      name: 'Isco de Lavapiés',
+      position: 'MID',
       attributes: {
         pace: 68,
         stamina: 72,
@@ -78,9 +92,9 @@ export function createExampleClub(): ClubState {
       morale: 18,
     }),
     createPlayer({
-      id: "killer-picaro",
-      name: "Chino Benítez",
-      position: "FWD",
+      id: 'killer-picaro',
+      name: 'Chino Benítez',
+      position: 'FWD',
       attributes: {
         pace: 84,
         stamina: 75,
@@ -94,9 +108,9 @@ export function createExampleClub(): ClubState {
       morale: 22,
     }),
     createPlayer({
-      id: "canterano-osado",
-      name: "Perla del Bar Manolo",
-      position: "MID",
+      id: 'canterano-osado',
+      name: 'Perla del Bar Manolo',
+      position: 'MID',
       attributes: {
         pace: 72,
         stamina: 74,
@@ -112,7 +126,7 @@ export function createExampleClub(): ClubState {
   ];
 
   return {
-    name: "Atlético Bar Callejero",
+    name: 'Atlético Bar Callejero',
     budget: 1200000,
     stadiumCapacity: 23000,
     reputation: 5,
@@ -126,19 +140,21 @@ export function createExampleClub(): ClubState {
   };
 }
 
-export function createDefaultMatchConfig(): MatchConfig {
+/** @returns {MatchConfig} */
+export function createDefaultMatchConfig() {
   return {
     home: true,
     opponentStrength: 68,
-    tactic: "balanced",
+    tactic: 'balanced',
   };
 }
 
-export function listCanallaDecisions(): CanallaDecision[] {
+/** @returns {CanallaDecision[]} */
+export function listCanallaDecisions() {
   return [
-    { type: "sobornoArbitro", intensity: "alta" },
-    { type: "filtrarRumor", intensity: "media" },
-    { type: "fiestaIlegal", intensity: "media" },
-    { type: "presionarFederacion", intensity: "baja" },
+    { type: 'sobornoArbitro', intensity: 'alta' },
+    { type: 'filtrarRumor', intensity: 'media' },
+    { type: 'fiestaIlegal', intensity: 'media' },
+    { type: 'presionarFederacion', intensity: 'baja' },
   ];
 }
