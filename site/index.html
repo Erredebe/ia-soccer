@@ -13,198 +13,226 @@
         <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
       </header>
 
-      <section class="card game-card" id="planning-card">
-        <div class="planning-grid">
-          <div class="planning-side">
-            <div class="club-panel card-panel">
-              <div class="club-header">
-                <h2>Tu chiringuito futbolero</h2>
-                <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+      <section class="card club-card" id="club-card">
+        <header class="club-card__header">
+          <div>
+            <h2>Tu chiringuito futbolero</h2>
+            <p class="club-card__tagline">Gestiona el vestuario y decide el rumbo de cada jornada.</p>
+          </div>
+          <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+        </header>
+        <dl class="club-stats" id="club-stats">
+          <div>
+            <dt>Club</dt>
+            <dd id="club-name"></dd>
+          </div>
+          <div>
+            <dt>Presupuesto</dt>
+            <dd id="club-budget"></dd>
+          </div>
+          <div>
+            <dt>Reputación</dt>
+            <dd id="club-reputation"></dd>
+          </div>
+          <div>
+            <dt>Moral media</dt>
+            <dd id="club-morale"></dd>
+          </div>
+        </dl>
+        <div class="club-actions">
+          <button type="button" class="club-action club-action--primary" data-modal-target="#modal-planning">
+            Planificar jornada
+          </button>
+          <button type="button" class="club-action" data-modal-target="#modal-league">
+            Clasificación liguera
+          </button>
+          <button type="button" class="club-action" data-modal-target="#modal-transfers">
+            Mercado de fichajes
+          </button>
+        </div>
+      </section>
+
+      <div class="modal" id="modal-planning" aria-hidden="true">
+        <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="planning-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar planificación">×</button>
+          <form class="game-form" id="game-form">
+            <h2 id="planning-title">Planifica la jornada</h2>
+            <label class="field">
+              <span class="field-label">Canallada previa</span>
+              <select id="decision-select" name="decision">
+                <option value="">Mantenerse pulcro (sin travesuras)</option>
+              </select>
+            </label>
+
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-label">Táctica</span>
+                <select id="tactic-select" name="tactic">
+                  <option value="balanced">Equilibrada</option>
+                  <option value="attacking">Ofensiva</option>
+                  <option value="defensive">Defensiva</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">Alineación</span>
+                <select id="formation-select" name="formation">
+                  <option value="4-4-2">4-4-2 Clásica</option>
+                  <option value="4-3-3">4-3-3 Picante</option>
+                  <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
+                  <option value="3-5-2">3-5-2 Superpoblado</option>
+                  <option value="5-3-2">5-3-2 Autobús Canalla</option>
+                  <option value="4-1-4-1">4-1-4-1 Presión Alta</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">¿Jugamos en casa?</span>
+                <input type="checkbox" id="home-checkbox" name="home" />
+              </label>
+              <label class="field">
+                <span class="field-label">Fuerza rival</span>
+                <input
+                  type="range"
+                  id="opponent-strength"
+                  name="opponentStrength"
+                  min="40"
+                  max="95"
+                  step="1"
+                />
+                <output id="opponent-output" for="opponent-strength"></output>
+              </label>
+            </div>
+
+            <div class="lineup-panel">
+              <div class="lineup-panel__header">
+                <h3>Define tu convocatoria</h3>
+                <p>Escoge 11 titulares y hasta 5 suplentes para la batalla semanal.</p>
               </div>
-              <dl class="club-stats" id="club-stats">
-                <div>
-                  <dt>Club</dt>
-                  <dd id="club-name"></dd>
+              <div class="lineup-panel__summary">
+                <span id="lineup-count" class="lineup-summary"></span>
+                <span id="subs-count" class="lineup-summary"></span>
+                <button id="lineup-autosort" type="button" class="lineup-auto-button">Autoordenar</button>
+              </div>
+              <div class="lineup-help">
+                <p>Consejos rápidos para mimar tu once:</p>
+                <ul>
+                  <li>Arrastra cualquier jugador para cambiarlo de rol al instante.</li>
+                  <li>Usa el botón «Vender» si necesitas aligerar nómina o abrir hueco.</li>
+                  <li>Prueba el atajo «Autoordenar por posición» para reordenar titulares y banquillo en segundos.</li>
+                </ul>
+              </div>
+              <p id="lineup-error" class="form-error" hidden></p>
+              <div id="lineup-board" class="lineup-board">
+                <div class="lineup-column" data-role="starter">
+                  <h4>Once titular</h4>
+                  <div class="lineup-dropzone" data-role="starter"></div>
                 </div>
+                <div class="lineup-column" data-role="sub">
+                  <h4>Banquillo</h4>
+                  <div class="lineup-dropzone" data-role="sub"></div>
+                </div>
+                <div class="lineup-column" data-role="none">
+                  <h4>Reservas</h4>
+                  <div class="lineup-dropzone" data-role="none"></div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="play-button" data-modal-initial-focus>Jugar jornada</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-league" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="league-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar clasificación">×</button>
+          <div class="league-panel card-panel">
+            <div class="league-panel__header">
+              <h2 id="league-title">Clasificación</h2>
+              <span id="league-matchday" class="league-badge"></span>
+            </div>
+            <table class="league-table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Club</th>
+                  <th scope="col">J</th>
+                  <th scope="col">G</th>
+                  <th scope="col">E</th>
+                  <th scope="col">P</th>
+                  <th scope="col">GF</th>
+                  <th scope="col">GC</th>
+                  <th scope="col">Pts</th>
+                </tr>
+              </thead>
+              <tbody id="league-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-transfers" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="transfers-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar mercado">×</button>
+          <div class="transfer-panel card-panel">
+            <h2 id="transfers-title">Mercado canalla</h2>
+            <p>Fichajes de barrio, promesas callejeras y veteranos curtidos al estilo PC Fútbol.</p>
+            <p id="transfer-message" class="transfer-feedback" hidden></p>
+            <div id="transfer-list" class="transfer-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-report" aria-hidden="true">
+        <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="report-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar crónica">×</button>
+          <section class="report-card">
+            <h2 id="report-title">Crónica de la jornada</h2>
+            <div class="report-top">
+              <div>
+                <h3>Marcador</h3>
+                <p id="scoreline" class="scoreline"></p>
+                <p id="finances-delta" class="finances"></p>
+              </div>
+              <div class="decision-report" id="decision-report" hidden>
+                <h3>Decisión canalla</h3>
+                <p id="decision-narrative"></p>
+                <ul id="decision-stats"></ul>
+              </div>
+            </div>
+
+            <div class="report-body">
+              <div>
+                <h3>Narrativa</h3>
+                <ol id="narrative-list"></ol>
+              </div>
+              <div>
+                <h3>Eventos destacados</h3>
+                <ul id="events-list"></ul>
+              </div>
+            </div>
+
+            <div class="club-update">
+              <h3>Estado del club tras la jornada</h3>
+              <dl class="club-stats">
                 <div>
                   <dt>Presupuesto</dt>
-                  <dd id="club-budget"></dd>
+                  <dd id="post-budget"></dd>
                 </div>
                 <div>
                   <dt>Reputación</dt>
-                  <dd id="club-reputation"></dd>
+                  <dd id="post-reputation"></dd>
                 </div>
                 <div>
                   <dt>Moral media</dt>
-                  <dd id="club-morale"></dd>
+                  <dd id="post-morale"></dd>
                 </div>
               </dl>
             </div>
 
-            <div class="league-panel card-panel">
-              <div class="league-panel__header">
-                <h2>Clasificación</h2>
-                <span id="league-matchday" class="league-badge"></span>
-              </div>
-              <table class="league-table">
-                <thead>
-                  <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Club</th>
-                    <th scope="col">J</th>
-                    <th scope="col">G</th>
-                    <th scope="col">E</th>
-                    <th scope="col">P</th>
-                    <th scope="col">GF</th>
-                    <th scope="col">GC</th>
-                    <th scope="col">Pts</th>
-                  </tr>
-                </thead>
-                <tbody id="league-table-body"></tbody>
-              </table>
-            </div>
-
-            <div class="transfer-panel card-panel">
-              <h2>Mercado canalla</h2>
-              <p>Fichajes de barrio, promesas callejeras y veteranos curtidos al estilo PC Fútbol.</p>
-              <p id="transfer-message" class="transfer-feedback" hidden></p>
-              <div id="transfer-list" class="transfer-list"></div>
-            </div>
-          </div>
-
-          <form class="game-form" id="game-form">
-          <h2>Planifica la jornada</h2>
-          <label class="field">
-            <span class="field-label">Canallada previa</span>
-            <select id="decision-select" name="decision">
-              <option value="">Mantenerse pulcro (sin travesuras)</option>
-            </select>
-          </label>
-
-          <div class="field-grid">
-            <label class="field">
-              <span class="field-label">Táctica</span>
-              <select id="tactic-select" name="tactic">
-                <option value="balanced">Equilibrada</option>
-                <option value="attacking">Ofensiva</option>
-                <option value="defensive">Defensiva</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-label">Alineación</span>
-              <select id="formation-select" name="formation">
-                <option value="4-4-2">4-4-2 Clásica</option>
-                <option value="4-3-3">4-3-3 Picante</option>
-                <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
-                <option value="3-5-2">3-5-2 Superpoblado</option>
-                <option value="5-3-2">5-3-2 Autobús Canalla</option>
-                <option value="4-1-4-1">4-1-4-1 Presión Alta</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-label">¿Jugamos en casa?</span>
-              <input type="checkbox" id="home-checkbox" name="home" />
-            </label>
-            <label class="field">
-              <span class="field-label">Fuerza rival</span>
-              <input
-                type="range"
-                id="opponent-strength"
-                name="opponentStrength"
-                min="40"
-                max="95"
-                step="1"
-              />
-              <output id="opponent-output" for="opponent-strength"></output>
-            </label>
-          </div>
-
-          <div class="lineup-panel">
-            <div class="lineup-panel__header">
-              <h3>Define tu convocatoria</h3>
-              <p>Escoge 11 titulares y hasta 5 suplentes para la batalla semanal.</p>
-            </div>
-            <div class="lineup-panel__summary">
-              <span id="lineup-count" class="lineup-summary"></span>
-              <span id="subs-count" class="lineup-summary"></span>
-              <button id="lineup-autosort" type="button" class="lineup-auto-button">Autoordenar</button>
-            </div>
-            <div class="lineup-help">
-              <p>Consejos rápidos para mimar tu once:</p>
-              <ul>
-                <li>Arrastra cualquier jugador para cambiarlo de rol al instante.</li>
-                <li>Usa el botón «Vender» si necesitas aligerar nómina o abrir hueco.</li>
-                <li>Prueba el atajo «Autoordenar por posición» para reordenar titulares y banquillo en segundos.</li>
-              </ul>
-            </div>
-            <p id="lineup-error" class="form-error" hidden></p>
-            <div id="lineup-board" class="lineup-board">
-              <div class="lineup-column" data-role="starter">
-                <h4>Once titular</h4>
-                <div class="lineup-dropzone" data-role="starter"></div>
-              </div>
-              <div class="lineup-column" data-role="sub">
-                <h4>Banquillo</h4>
-                <div class="lineup-dropzone" data-role="sub"></div>
-              </div>
-              <div class="lineup-column" data-role="none">
-                <h4>Reservas</h4>
-                <div class="lineup-dropzone" data-role="none"></div>
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" class="play-button">Jugar jornada</button>
-        </form>
+            <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
+          </section>
         </div>
-      </section>
-
-      <section class="card report-card" id="report-card" hidden>
-        <h2>Crónica de la jornada</h2>
-        <div class="report-top">
-          <div>
-            <h3>Marcador</h3>
-            <p id="scoreline" class="scoreline"></p>
-            <p id="finances-delta" class="finances"></p>
-          </div>
-          <div class="decision-report" id="decision-report" hidden>
-            <h3>Decisión canalla</h3>
-            <p id="decision-narrative"></p>
-            <ul id="decision-stats"></ul>
-          </div>
-        </div>
-
-        <div class="report-body">
-          <div>
-            <h3>Narrativa</h3>
-            <ol id="narrative-list"></ol>
-          </div>
-          <div>
-            <h3>Eventos destacados</h3>
-            <ul id="events-list"></ul>
-          </div>
-        </div>
-
-        <div class="club-update">
-          <h3>Estado del club tras la jornada</h3>
-          <dl class="club-stats">
-            <div>
-              <dt>Presupuesto</dt>
-              <dd id="post-budget"></dd>
-            </div>
-            <div>
-              <dt>Reputación</dt>
-              <dd id="post-reputation"></dd>
-            </div>
-            <div>
-              <dt>Moral media</dt>
-              <dd id="post-morale"></dd>
-            </div>
-          </dl>
-        </div>
-
-        <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
-      </section>
+      </div>
 
       <footer class="footer">
         <p>Hecho con pasión canalla por la comunidad IA ⚽</p>

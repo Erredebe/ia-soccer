@@ -26,7 +26,8 @@ const lineupCountEl = document.querySelector('#lineup-count');
 const subsCountEl = document.querySelector('#subs-count');
 const lineupAutosortButton = document.querySelector('#lineup-autosort');
 const lineupErrorEl = document.querySelector('#lineup-error');
-const planningCard = document.querySelector('#planning-card');
+const planningModal = document.querySelector('#modal-planning');
+const reportModal = document.querySelector('#modal-report');
 const planNextButton = document.querySelector('#plan-next');
 
 const clubNameEl = document.querySelector('#club-name');
@@ -39,7 +40,6 @@ const leagueTableBody = document.querySelector('#league-table-body');
 const transferListEl = document.querySelector('#transfer-list');
 const transferMessageEl = document.querySelector('#transfer-message');
 
-const reportCard = document.querySelector('#report-card');
 const scorelineEl = document.querySelector('#scoreline');
 const financesDeltaEl = document.querySelector('#finances-delta');
 const narrativeList = document.querySelector('#narrative-list');
@@ -50,6 +50,9 @@ const decisionStats = document.querySelector('#decision-stats');
 const postBudgetEl = document.querySelector('#post-budget');
 const postReputationEl = document.querySelector('#post-reputation');
 const postMoraleEl = document.querySelector('#post-morale');
+
+const FOCUSABLE_SELECTOR =
+  "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
 
 const decisions = listCanallaDecisions();
 const decisionLabels = {
@@ -85,6 +88,108 @@ let transferMarketState = createExampleTransferMarket(clubState);
 let configState = buildInitialConfig(clubState);
 let draggedPlayerId = null;
 let transferMessageTimeout;
+let modalHandlersAttached = false;
+
+function updateBodyModalState() {
+  const hasOpenModal = document.querySelector('.modal.is-open') !== null;
+  document.body.classList.toggle('modal-open', hasOpenModal);
+}
+
+function focusModal(modal) {
+  if (!(modal instanceof HTMLElement)) {
+    return;
+  }
+
+  const focusTarget =
+    modal.querySelector('[data-modal-initial-focus]') ?? modal.querySelector(FOCUSABLE_SELECTOR);
+
+  if (focusTarget instanceof HTMLElement) {
+    window.requestAnimationFrame(() => {
+      focusTarget.focus();
+    });
+  }
+}
+
+function closeModal(modal) {
+  if (!(modal instanceof HTMLElement)) {
+    return;
+  }
+
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden', 'true');
+  updateBodyModalState();
+}
+
+function closeAllModals() {
+  const openModals = document.querySelectorAll('.modal.is-open');
+  openModals.forEach((modal) => {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+  });
+  updateBodyModalState();
+}
+
+function openModal(modal) {
+  if (!(modal instanceof HTMLElement)) {
+    return;
+  }
+
+  if (modal.classList.contains('is-open')) {
+    focusModal(modal);
+    return;
+  }
+
+  closeAllModals();
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden', 'false');
+  updateBodyModalState();
+  focusModal(modal);
+}
+
+function attachModalHandlers() {
+  if (modalHandlersAttached) {
+    return;
+  }
+  modalHandlersAttached = true;
+
+  const triggers = document.querySelectorAll('[data-modal-target]');
+  triggers.forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const targetSelector = trigger.getAttribute('data-modal-target');
+      if (!targetSelector) {
+        return;
+      }
+      const modal = document.querySelector(targetSelector);
+      openModal(modal);
+    });
+  });
+
+  const closers = document.querySelectorAll('[data-modal-close]');
+  closers.forEach((closer) => {
+    closer.addEventListener('click', () => {
+      const modal = closer.closest('.modal');
+      closeModal(modal);
+    });
+  });
+
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach((modal) => {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeModal(modal);
+      }
+    });
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      const openModalElement = document.querySelector('.modal.is-open');
+      if (openModalElement) {
+        closeModal(openModalElement);
+      }
+    }
+  });
+}
 
 function populateDecisions() {
   if (!decisionSelect || decisionSelect.dataset.populated === 'true') {
@@ -499,21 +604,15 @@ function renderLineupBoard() {
 }
 
 function switchToPlanningView() {
-  if (planningCard) {
-    planningCard.hidden = false;
-  }
-  if (reportCard) {
-    reportCard.hidden = true;
+  if (planningModal) {
+    openModal(planningModal);
   }
   renderLineupBoard();
 }
 
 function switchToReportView() {
-  if (planningCard) {
-    planningCard.hidden = true;
-  }
-  if (reportCard) {
-    reportCard.hidden = false;
+  if (reportModal) {
+    openModal(reportModal);
   }
 }
 
@@ -737,9 +836,7 @@ function sellPlayer(playerId) {
 }
 
 function clearReport() {
-  if (reportCard) {
-    reportCard.hidden = true;
-  }
+  closeModal(reportModal);
   scorelineEl.textContent = '';
   financesDeltaEl.textContent = '';
   narrativeList.innerHTML = '';
@@ -750,9 +847,6 @@ function clearReport() {
   postBudgetEl.textContent = '';
   postReputationEl.textContent = '';
   postMoraleEl.textContent = '';
-  if (planningCard) {
-    planningCard.hidden = false;
-  }
   hideLineupError();
 }
 
@@ -819,8 +913,6 @@ function renderMatchReport(report, decisionOutcome) {
   postBudgetEl.textContent = numberFormatter.format(report.updatedClub.budget);
   postReputationEl.textContent = `${report.updatedClub.reputation}`;
   postMoraleEl.textContent = formatMorale(averageMorale(report.updatedClub));
-
-  reportCard.hidden = false;
 }
 
 form.addEventListener('submit', (event) => {
@@ -896,6 +988,7 @@ opponentStrength.addEventListener('input', updateOpponentOutput);
 
 if (planNextButton) {
   planNextButton.addEventListener('click', () => {
+    closeModal(reportModal);
     switchToPlanningView();
   });
 }
@@ -910,6 +1003,7 @@ function attachDropzoneHandlers() {
 }
 
 function init() {
+  attachModalHandlers();
   populateDecisions();
   updateFormDefaults();
   updateClubSummary();
