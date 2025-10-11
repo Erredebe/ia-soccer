@@ -638,14 +638,40 @@ function renderLineupBoard() {
 
   lineupTableBody.innerHTML = '';
 
+  const roleHeaders = {
+    starter: 'Titulares',
+    sub: 'Banquillo',
+    none: 'Reservas',
+  };
+  const columnCount =
+    lineupTableBody.closest('table')?.tHead?.rows?.[0]?.cells.length ?? 13;
+  let currentRole = null;
+  let playerIndex = 0;
+
   players.forEach((player) => {
     const row = document.createElement('tr');
     row.dataset.playerId = player.id;
-    row.dataset.role = getPlayerRole(player.id);
+    const playerRole = getPlayerRole(player.id);
+    row.dataset.role = playerRole;
+
+    if (playerRole !== currentRole) {
+      currentRole = playerRole;
+      const headerRow = document.createElement('tr');
+      headerRow.className = 'lineup-group-header';
+      headerRow.dataset.roleGroup = playerRole;
+      const headerCell = document.createElement('th');
+      headerCell.scope = 'rowgroup';
+      headerCell.setAttribute('role', 'rowheader');
+      headerCell.colSpan = columnCount;
+      headerCell.textContent = roleHeaders[playerRole] ?? 'Plantilla';
+      headerRow.append(headerCell);
+      lineupTableBody.append(headerRow);
+    }
 
     const indexCell = document.createElement('th');
     indexCell.scope = 'row';
-    indexCell.textContent = String(lineupTableBody.children.length + 1);
+    playerIndex += 1;
+    indexCell.textContent = String(playerIndex);
 
     const playerCell = document.createElement('td');
     playerCell.className = 'lineup-table__player';
