@@ -13,6 +13,8 @@
         <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
       </header>
 
+      <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
+
       <section class="card club-card" id="club-card">
         <header class="club-card__header">
           <div>
@@ -49,7 +51,10 @@
           <button type="button" class="club-action" data-modal-target="#modal-transfers">
             Mercado de fichajes
           </button>
+          <button type="button" class="club-action" id="save-game">Guardar/Continuar</button>
         </div>
+        <p id="save-feedback" class="save-feedback" hidden></p>
+        <p id="save-version" class="save-version"></p>
       </section>
 
       <section class="card match-card" id="match-card">
@@ -123,6 +128,21 @@
                   step="1"
                 />
                 <output id="opponent-output" for="opponent-strength"></output>
+              </label>
+              <label class="field">
+                <span class="field-label">Semilla reproducible</span>
+                <input
+                  type="text"
+                  id="seed-input"
+                  name="seed"
+                  placeholder="ej. derby-123"
+                  autocomplete="off"
+                  inputmode="text"
+                  aria-describedby="seed-hint"
+                />
+                <span id="seed-hint" class="field-hint"
+                  >Si introduces una semilla podrás repetir exactamente este partido más adelante.</span
+                >
               </label>
             </div>
 
@@ -246,34 +266,50 @@
           <section class="report-card">
             <h2 id="report-title">Crónica de la jornada</h2>
             <div class="report-top">
-              <div>
-                <h3>Marcador</h3>
-                <p id="scoreline" class="scoreline"></p>
-                <p id="finances-delta" class="finances"></p>
-              </div>
-              <div class="decision-report" id="decision-report" hidden>
-                <h3>Decisión canalla</h3>
-                <p id="decision-narrative"></p>
-                <ul id="decision-stats"></ul>
-              </div>
+            <div>
+              <h3>Marcador</h3>
+              <p id="scoreline" class="scoreline"></p>
+              <p id="finances-delta" class="finances"></p>
+              <p id="finances-attendance" class="finances-attendance"></p>
+              <p id="match-seed" class="match-seed" hidden></p>
             </div>
+            <div class="decision-report" id="decision-report" hidden>
+              <h3>Decisión canalla</h3>
+              <p id="decision-narrative"></p>
+              <ul id="decision-stats"></ul>
+            </div>
+            <div class="mvp-wrapper">
+              <span id="mvp-badge" class="mvp-badge" hidden></span>
+            </div>
+          </div>
 
-            <div class="report-body">
-              <div>
-                <h3>Narrativa</h3>
-                <ol id="narrative-list"></ol>
-              </div>
+          <div class="finances-breakdown">
+            <div>
+              <h3>Ingresos</h3>
+              <ul id="finances-income"></ul>
+            </div>
+            <div>
+              <h3>Gastos</h3>
+              <ul id="finances-expenses"></ul>
+            </div>
+          </div>
+
+          <div class="report-body">
+            <div>
+              <h3>Narrativa</h3>
+              <ol id="narrative-list"></ol>
+            </div>
               <div>
                 <h3>Eventos destacados</h3>
                 <ul id="events-list"></ul>
               </div>
             </div>
 
-            <div class="club-update">
-              <h3>Estado del club tras la jornada</h3>
-              <dl class="club-stats">
-                <div>
-                  <dt>Presupuesto</dt>
+          <div class="club-update">
+            <h3>Estado del club tras la jornada</h3>
+            <dl class="club-stats">
+              <div>
+                <dt>Presupuesto</dt>
                   <dd id="post-budget"></dd>
                 </div>
                 <div>
@@ -284,12 +320,30 @@
                   <dt>Moral media</dt>
                   <dd id="post-morale"></dd>
                 </div>
-              </dl>
-            </div>
+            </dl>
+          </div>
 
-            <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
+          <section id="season-summary" class="season-summary" hidden>
+            <h3>Resumen de temporada</h3>
+            <p><strong>Campeón:</strong> <span id="season-champion"></span></p>
+            <p><strong>Posesión media:</strong> <span id="season-average-possession"></span></p>
+            <p id="season-streak"></p>
+            <div class="season-summary__lists">
+              <div>
+                <h4>Goleadores</h4>
+                <ol id="season-top-scorers"></ol>
+              </div>
+              <div>
+                <h4>Asistentes</h4>
+                <ol id="season-top-assists"></ol>
+              </div>
+            </div>
+            <button type="button" id="new-season" class="plan-button" hidden>Comenzar nueva temporada</button>
           </section>
-        </div>
+
+          <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
+        </section>
+      </div>
       </div>
 
       <footer class="footer">

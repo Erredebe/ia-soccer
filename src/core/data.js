@@ -18,6 +18,8 @@
 /** @typedef {import('../types.js').InfrastructureState} InfrastructureState */
 /** @typedef {import('../types.js').OperatingExpenses} OperatingExpenses */
 
+export const TOTAL_MATCHDAYS = 22;
+
 const LEAGUE_RIVALS = [
   'Club Verbena del Sur',
   'Rayo Chulapo',
@@ -162,6 +164,62 @@ const MARKET_BLUEPRINTS = [
 /** @returns {TacticalInstructions} */
 export function createDefaultInstructions() {
   return { ...DEFAULT_INSTRUCTIONS };
+}
+
+/** @returns {import('../types.js').PlayerAvailability} */
+function createDefaultAvailability() {
+  return { injuryMatches: 0, suspensionMatches: 0 };
+}
+
+/** @returns {import('../types.js').PlayerSeasonLog} */
+export function createEmptySeasonLog() {
+  return {
+    goals: 0,
+    assists: 0,
+    yellowCards: 0,
+    redCards: 0,
+    matches: 0,
+    minutes: 0,
+    injuries: 0,
+    cleanSheets: 0,
+  };
+}
+
+/** @returns {import('../types.js').ClubSeasonStats} */
+export function createSeasonStats() {
+  return {
+    matches: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    goalsFor: 0,
+    goalsAgainst: 0,
+    possessionFor: 0,
+    unbeatenRun: 0,
+    bestUnbeatenRun: 0,
+  };
+}
+
+/**
+ * @param {import('../types.js').Player} player
+ */
+export function isPlayerAvailable(player) {
+  const availability = player.availability ?? createDefaultAvailability();
+  return availability.injuryMatches <= 0 && availability.suspensionMatches <= 0;
+}
+
+/**
+ * @param {import('../types.js').Player} player
+ */
+export function resetPlayerForNewSeason(player) {
+  const baseAvailability = player.availability ?? createDefaultAvailability();
+  return {
+    ...player,
+    morale: Math.min(100, Math.round((player.morale ?? 50) * 0.9 + 10)),
+    fitness: 80,
+    availability: { ...baseAvailability, injuryMatches: 0, suspensionMatches: 0 },
+    seasonLog: createEmptySeasonLog(),
+  };
 }
 
 /** @returns {SponsorContract[]} */
@@ -342,6 +400,11 @@ export function createExampleTransferMarket(club) {
  * @returns {Player}
  */
 function createPlayer(partial) {
+  const availability = {
+    injuryMatches: partial.availability?.injuryMatches ?? 0,
+    suspensionMatches: partial.availability?.suspensionMatches ?? 0,
+  };
+  const seasonLog = { ...createEmptySeasonLog(), ...partial.seasonLog };
   return {
     id: partial.id,
     name: partial.name,
@@ -365,6 +428,8 @@ function createPlayer(partial) {
       duration: 3,
       releaseClause: 5000000,
     },
+    availability,
+    seasonLog,
   };
 }
 
@@ -665,6 +730,7 @@ export function createExampleClub() {
     merchandising: createExampleMerchandising(),
     infrastructure: createExampleInfrastructure(),
     operatingExpenses: createExampleOperatingExpenses(),
+    seasonStats: createSeasonStats(),
   };
 }
 
@@ -685,6 +751,7 @@ export function createDefaultMatchConfig() {
     },
     inMatchAdjustments: [],
     viewMode: 'text',
+    seed: '',
   };
 }
 
@@ -693,8 +760,13 @@ export function createDefaultMatchConfig() {
  * @param {ClubState} club
  */
 export function createDefaultLineup(club) {
-  const starters = club.squad.slice(0, 11).map((player) => player.id);
-  const substitutes = club.squad.slice(11, 16).map((player) => player.id);
+  const eligible = club.squad.filter((player) => isPlayerAvailable(player));
+  const startersPool = eligible.length >= 11 ? eligible : club.squad;
+  const starters = startersPool.slice(0, 11).map((player) => player.id);
+  const poolWithoutStarters = club.squad.filter((player) => !starters.includes(player.id));
+  const availableSubs = poolWithoutStarters.filter((player) => isPlayerAvailable(player));
+  const subsPool = availableSubs.length >= 5 ? availableSubs : poolWithoutStarters;
+  const substitutes = subsPool.slice(0, 5).map((player) => player.id);
   return { starters, substitutes };
 }
 

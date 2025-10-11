@@ -4,11 +4,18 @@ import {
   createDefaultLineup,
   createExampleClub,
   createExampleTransferMarket,
+  createExampleLeague,
+  createSeasonStats,
+  createDefaultInstructions,
   estimatePlayerValue,
   listCanallaDecisions,
   updateLeagueTableAfterMatch,
+  TOTAL_MATCHDAYS,
+  isPlayerAvailable,
+  resetPlayerForNewSeason,
 } from '../src/core/data.js';
 import { resolveCanallaDecision } from '../src/core/reputation.js';
+import { clearSavedGame, loadSavedGame, saveGame, SAVE_VERSION } from '../src/core/persistence.js';
 
 const decisionSelect = document.querySelector('#decision-select');
 const tacticSelect = document.querySelector('#tactic-select');
@@ -16,6 +23,7 @@ const formationSelect = document.querySelector('#formation-select');
 const homeCheckbox = document.querySelector('#home-checkbox');
 const opponentStrength = document.querySelector('#opponent-strength');
 const opponentOutput = document.querySelector('#opponent-output');
+const seedInput = document.querySelector('#seed-input');
 const form = document.querySelector('#game-form');
 const resetButton = document.querySelector('#reset-club');
 const lineupBoard = document.querySelector('#lineup-board');
@@ -27,6 +35,10 @@ const lineupErrorEl = document.querySelector('#lineup-error');
 const lineupModal = document.querySelector('#modal-lineup');
 const reportModal = document.querySelector('#modal-report');
 const planNextButton = document.querySelector('#plan-next');
+const saveButton = document.querySelector('#save-game');
+const saveFeedback = document.querySelector('#save-feedback');
+const saveVersionEl = document.querySelector('#save-version');
+const loadNoticeEl = document.querySelector('#load-notice');
 
 const matchdayBadgeEl = document.querySelector('#matchday-badge');
 const matchOpponentNameEl = document.querySelector('#match-opponent-name');
@@ -34,6 +46,7 @@ const matchOpponentStrengthEl = document.querySelector('#match-opponent-strength
 const matchOpponentRecordEl = document.querySelector('#match-opponent-record');
 const matchLocationEl = document.querySelector('#match-location');
 const matchLineupStatusEl = document.querySelector('#match-lineup-status');
+const matchSeedEl = document.querySelector('#match-seed');
 
 const clubNameEl = document.querySelector('#club-name');
 const clubBudgetEl = document.querySelector('#club-budget');
@@ -47,6 +60,9 @@ const transferMessageEl = document.querySelector('#transfer-message');
 
 const scorelineEl = document.querySelector('#scoreline');
 const financesDeltaEl = document.querySelector('#finances-delta');
+const financesAttendanceEl = document.querySelector('#finances-attendance');
+const financesIncomeList = document.querySelector('#finances-income');
+const financesExpenseList = document.querySelector('#finances-expenses');
 const narrativeList = document.querySelector('#narrative-list');
 const eventsList = document.querySelector('#events-list');
 const decisionReport = document.querySelector('#decision-report');
@@ -55,6 +71,15 @@ const decisionStats = document.querySelector('#decision-stats');
 const postBudgetEl = document.querySelector('#post-budget');
 const postReputationEl = document.querySelector('#post-reputation');
 const postMoraleEl = document.querySelector('#post-morale');
+const mvpBadge = document.querySelector('#mvp-badge');
+
+const seasonSummarySection = document.querySelector('#season-summary');
+const seasonChampionEl = document.querySelector('#season-champion');
+const seasonTopScorersList = document.querySelector('#season-top-scorers');
+const seasonTopAssistsList = document.querySelector('#season-top-assists');
+const seasonAveragePossessionEl = document.querySelector('#season-average-possession');
+const seasonStreakEl = document.querySelector('#season-streak');
+const newSeasonButton = document.querySelector('#new-season');
 
 const FOCUSABLE_SELECTOR =
   "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
@@ -76,14 +101,33 @@ const numberFormatter = new Intl.NumberFormat('es-ES', {
 const STARTERS_LIMIT = 11;
 const SUBS_LIMIT = 5;
 const POSITION_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+const SAVE_NOTICE_DURATION = 4000;
+
+function isSelectable(player) {
+  return isPlayerAvailable(player);
+}
+
+function describeAvailability(player) {
+  const availability = player.availability ?? { injuryMatches: 0, suspensionMatches: 0 };
+  if (availability.injuryMatches > 0) {
+    return `Lesionado (${availability.injuryMatches} jornada${availability.injuryMatches > 1 ? 's' : ''})`;
+  }
+  if (availability.suspensionMatches > 0) {
+    return `Sancionado (${availability.suspensionMatches} jornada${availability.suspensionMatches > 1 ? 's' : ''})`;
+  }
+  return '';
+}
 
 function buildInitialConfig(club) {
   const baseConfig = createDefaultMatchConfig();
+  const instructions = { ...createDefaultInstructions(), ...(baseConfig.instructions ?? {}) };
   const defaultLineup = createDefaultLineup(club);
   return {
     ...baseConfig,
     startingLineup: defaultLineup.starters,
     substitutes: defaultLineup.substitutes,
+    instructions,
+    seed: typeof baseConfig.seed === 'string' ? baseConfig.seed : '',
   };
 }
 
@@ -101,6 +145,8 @@ let configState = buildInitialConfig(clubState);
 let transferMessageTimeout;
 let modalHandlersAttached = false;
 let opponentRotation = computeOpponentRotation(leagueState, clubState.name);
+let saveMessageTimeout;
+let loadNoticeTimeout;
 
 function updateBodyModalState() {
   const hasOpenModal = document.querySelector('.modal.is-open') !== null;
@@ -226,6 +272,9 @@ function updateFormDefaults() {
   }
   homeCheckbox.checked = configState.home;
   opponentStrength.value = String(configState.opponentStrength);
+  if (seedInput) {
+    seedInput.value = typeof configState.seed === 'string' ? configState.seed : '';
+  }
   updateOpponentOutput();
 }
 
@@ -364,26 +413,50 @@ function findPlayerById(playerId) {
 }
 
 function ensureLineupCompleteness() {
-  const availableIds = clubState.squad.map((player) => player.id);
   const used = new Set([...configState.startingLineup, ...configState.substitutes]);
+  const availablePlayers = clubState.squad.filter((player) => isSelectable(player));
 
-  for (const id of availableIds) {
+  for (const player of availablePlayers) {
     if (configState.startingLineup.length >= STARTERS_LIMIT) {
       break;
     }
-    if (!used.has(id)) {
-      configState.startingLineup.push(id);
-      used.add(id);
+    if (!used.has(player.id)) {
+      configState.startingLineup.push(player.id);
+      used.add(player.id);
     }
   }
 
-  for (const id of availableIds) {
+  if (configState.startingLineup.length < STARTERS_LIMIT) {
+    for (const player of clubState.squad) {
+      if (configState.startingLineup.length >= STARTERS_LIMIT) {
+        break;
+      }
+      if (!used.has(player.id)) {
+        configState.startingLineup.push(player.id);
+        used.add(player.id);
+      }
+    }
+  }
+
+  for (const player of availablePlayers) {
     if (configState.substitutes.length >= SUBS_LIMIT) {
       break;
     }
-    if (!used.has(id)) {
-      configState.substitutes.push(id);
-      used.add(id);
+    if (!used.has(player.id)) {
+      configState.substitutes.push(player.id);
+      used.add(player.id);
+    }
+  }
+
+  if (configState.substitutes.length < SUBS_LIMIT) {
+    for (const player of clubState.squad) {
+      if (configState.substitutes.length >= SUBS_LIMIT) {
+        break;
+      }
+      if (!used.has(player.id)) {
+        configState.substitutes.push(player.id);
+        used.add(player.id);
+      }
     }
   }
 }
@@ -457,6 +530,16 @@ function createRoleControl(player) {
 
 function handleRoleSelection(playerId, role) {
   if (!playerId) {
+    return;
+  }
+
+  const player = findPlayerById(playerId);
+  if (!player) {
+    return;
+  }
+
+  if ((role === 'starter' || role === 'sub') && !isSelectable(player)) {
+    showLineupError('Ese jugador no está disponible: lesión o sanción en curso.');
     return;
   }
 
@@ -576,6 +659,17 @@ function renderLineupBoard() {
       createMetaSpan(`${player.age} años`),
       createMetaSpan(`Valor ${numberFormatter.format(estimatePlayerValue(player))}`)
     );
+    const availabilityLabel = describeAvailability(player);
+    if (availabilityLabel) {
+      const availabilityTag = document.createElement('span');
+      availabilityTag.className = 'lineup-table__player-availability';
+      availabilityTag.textContent = availabilityLabel;
+      meta.append(availabilityTag);
+      row.classList.add('is-unavailable');
+      row.dataset.availability = availabilityLabel;
+    } else {
+      row.dataset.availability = 'available';
+    }
     playerCell.append(name, meta);
 
     const statValues = [
@@ -668,8 +762,12 @@ function formatOpponentRecord(standing) {
 
 function updateMatchSummary() {
   if (matchdayBadgeEl) {
-    const nextMatchday = leagueState ? leagueState.matchDay + 1 : 1;
-    matchdayBadgeEl.textContent = `Jornada ${nextMatchday}`;
+    if (leagueState && leagueState.matchDay >= TOTAL_MATCHDAYS) {
+      matchdayBadgeEl.textContent = `Temporada ${clubState.season} completada`;
+    } else {
+      const nextMatchday = leagueState ? leagueState.matchDay + 1 : 1;
+      matchdayBadgeEl.textContent = `Jornada ${nextMatchday} de ${TOTAL_MATCHDAYS}`;
+    }
   }
 
   const opponent = getUpcomingOpponent();
@@ -689,9 +787,24 @@ function updateMatchSummary() {
   }
 }
 
+function describeOpponentStrength(value) {
+  if (value < 55) {
+    return 'Asequible';
+  }
+  if (value < 70) {
+    return 'Competitivo';
+  }
+  if (value < 85) {
+    return 'Exigente';
+  }
+  return 'Élite';
+}
+
 function updateOpponentOutput() {
-  opponentOutput.value = opponentStrength.value;
-  opponentOutput.textContent = opponentStrength.value;
+  const numericValue = Number.parseInt(opponentStrength.value, 10);
+  opponentOutput.value = String(numericValue);
+  opponentOutput.textContent = `${numericValue} (${describeOpponentStrength(numericValue)})`;
+  opponentStrength.title = `Fortaleza rival estimada: ${describeOpponentStrength(numericValue)}`;
   updateMatchSummary();
 }
 
@@ -730,7 +843,13 @@ function renderLeagueTable() {
   });
 
   if (leagueMatchdayEl) {
-    leagueMatchdayEl.textContent = leagueState.matchDay > 0 ? `Jornada ${leagueState.matchDay}` : 'Pretemporada';
+    if (leagueState.matchDay === 0) {
+      leagueMatchdayEl.textContent = 'Pretemporada';
+    } else if (leagueState.matchDay >= TOTAL_MATCHDAYS) {
+      leagueMatchdayEl.textContent = `Jornada final (${TOTAL_MATCHDAYS})`;
+    } else {
+      leagueMatchdayEl.textContent = `Jornada ${leagueState.matchDay}`;
+    }
   }
 }
 
@@ -756,6 +875,58 @@ function showTransferMessage(message, type = 'info') {
   transferMessageTimeout = window.setTimeout(() => {
     clearTransferMessage();
   }, 4000);
+}
+
+function clearSaveMessage() {
+  if (!saveFeedback) {
+    return;
+  }
+  saveFeedback.hidden = true;
+  saveFeedback.textContent = '';
+  saveFeedback.classList.remove('error');
+  if (saveMessageTimeout) {
+    window.clearTimeout(saveMessageTimeout);
+  }
+}
+
+function showSaveMessage(message, type = 'info') {
+  if (!saveFeedback) {
+    return;
+  }
+  saveFeedback.textContent = message;
+  saveFeedback.hidden = false;
+  saveFeedback.classList.toggle('error', type === 'error');
+  if (saveMessageTimeout) {
+    window.clearTimeout(saveMessageTimeout);
+  }
+  saveMessageTimeout = window.setTimeout(() => {
+    clearSaveMessage();
+  }, SAVE_NOTICE_DURATION);
+}
+
+function clearLoadNotice() {
+  if (!loadNoticeEl) {
+    return;
+  }
+  loadNoticeEl.hidden = true;
+  loadNoticeEl.textContent = '';
+  if (loadNoticeTimeout) {
+    window.clearTimeout(loadNoticeTimeout);
+  }
+}
+
+function showLoadNotice(message) {
+  if (!loadNoticeEl) {
+    return;
+  }
+  loadNoticeEl.textContent = message;
+  loadNoticeEl.hidden = false;
+  if (loadNoticeTimeout) {
+    window.clearTimeout(loadNoticeTimeout);
+  }
+  loadNoticeTimeout = window.setTimeout(() => {
+    clearLoadNotice();
+  }, SAVE_NOTICE_DURATION);
 }
 
 function renderTransferMarket() {
@@ -906,6 +1077,19 @@ function clearReport() {
   closeModal(reportModal);
   scorelineEl.textContent = '';
   financesDeltaEl.textContent = '';
+  if (financesAttendanceEl) {
+    financesAttendanceEl.textContent = '';
+  }
+  if (financesIncomeList) {
+    financesIncomeList.innerHTML = '';
+  }
+  if (financesExpenseList) {
+    financesExpenseList.innerHTML = '';
+  }
+  if (matchSeedEl) {
+    matchSeedEl.textContent = '';
+    matchSeedEl.hidden = true;
+  }
   narrativeList.innerHTML = '';
   eventsList.innerHTML = '';
   decisionReport.hidden = true;
@@ -914,11 +1098,30 @@ function clearReport() {
   postBudgetEl.textContent = '';
   postReputationEl.textContent = '';
   postMoraleEl.textContent = '';
+  if (mvpBadge) {
+    mvpBadge.textContent = '';
+    mvpBadge.hidden = true;
+  }
+  if (seasonSummarySection) {
+    seasonSummarySection.hidden = true;
+  }
   hideLineupError();
 }
 
 if (lineupAutosortButton) {
   lineupAutosortButton.addEventListener('click', autoSortLineup);
+}
+
+if (saveButton) {
+  saveButton.addEventListener('click', () => {
+    persistState('manual');
+  });
+}
+
+if (newSeasonButton) {
+  newSeasonButton.addEventListener('click', () => {
+    startNewSeason();
+  });
 }
 
 function renderDecisionOutcome(decisionOutcome) {
@@ -952,7 +1155,34 @@ function renderDecisionOutcome(decisionOutcome) {
   });
 }
 
-function renderMatchReport(report, decisionOutcome, opponentName = 'Rival misterioso') {
+function renderFinancialBreakdown(finances) {
+  if (!finances) {
+    return;
+  }
+  if (financesAttendanceEl) {
+    financesAttendanceEl.textContent = finances.attendance
+      ? `${finances.attendance.toLocaleString('es-ES')} espectadores`
+      : 'Asistencia no disponible';
+  }
+  if (financesIncomeList) {
+    financesIncomeList.innerHTML = '';
+    Object.entries(finances.incomeBreakdown ?? {}).forEach(([key, value]) => {
+      const item = document.createElement('li');
+      item.textContent = `${key}: ${numberFormatter.format(value)}`;
+      financesIncomeList.append(item);
+    });
+  }
+  if (financesExpenseList) {
+    financesExpenseList.innerHTML = '';
+    Object.entries(finances.expenseBreakdown ?? {}).forEach(([key, value]) => {
+      const item = document.createElement('li');
+      item.textContent = `${key}: ${numberFormatter.format(value)}`;
+      financesExpenseList.append(item);
+    });
+  }
+}
+
+function renderMatchReport(report, decisionOutcome, opponentName = 'Rival misterioso', metadata = {}) {
   const clubName = clubState.name;
   const scoreline = `${clubName} ${report.match.goalsFor} - ${report.match.goalsAgainst} ${opponentName}`;
   scorelineEl.textContent = scoreline;
@@ -960,6 +1190,23 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
   const financesPrefix = report.financesDelta >= 0 ? '+' : '−';
   const absFinances = Math.abs(report.financesDelta);
   financesDeltaEl.textContent = `Balance de la jornada: ${financesPrefix}${numberFormatter.format(absFinances)}`;
+  renderFinancialBreakdown(report.finances);
+
+  if (matchSeedEl) {
+    const rawSeed = typeof metadata.seedInputValue === 'string' ? metadata.seedInputValue.trim() : '';
+    const usedSeed = report.match.seed;
+    if (usedSeed !== undefined && Number.isFinite(usedSeed)) {
+      const displayValue = rawSeed && rawSeed !== String(usedSeed) ? `${rawSeed} (hash ${usedSeed})` : rawSeed || `${usedSeed}`;
+      matchSeedEl.textContent = `Semilla reproducible: ${displayValue}`;
+      matchSeedEl.hidden = false;
+    } else if (rawSeed) {
+      matchSeedEl.textContent = `Semilla reproducible: ${rawSeed}`;
+      matchSeedEl.hidden = false;
+    } else {
+      matchSeedEl.textContent = '';
+      matchSeedEl.hidden = true;
+    }
+  }
 
   narrativeList.innerHTML = '';
   report.match.narrative.forEach((line) => {
@@ -971,6 +1218,14 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
   eventsList.innerHTML = '';
   report.match.events.forEach((event) => {
     const item = document.createElement('li');
+    item.className = 'event-item';
+    if (['gol', 'penalti'].includes(event.type)) {
+      item.classList.add('event-item--goal');
+    } else if (['doble_amarilla', 'expulsion', 'tarjeta'].includes(event.type)) {
+      item.classList.add('event-item--card');
+    } else if (event.type.includes('lesion')) {
+      item.classList.add('event-item--injury');
+    }
     item.textContent = `[${event.minute}'] ${event.description}`;
     eventsList.append(item);
   });
@@ -980,6 +1235,157 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
   postBudgetEl.textContent = numberFormatter.format(report.updatedClub.budget);
   postReputationEl.textContent = `${report.updatedClub.reputation}`;
   postMoraleEl.textContent = formatMorale(averageMorale(report.updatedClub));
+
+  if (mvpBadge) {
+    if (report.match.manOfTheMatch) {
+      const hero = clubState.squad.find((player) => player.id === report.match.manOfTheMatch);
+      mvpBadge.textContent = hero ? `MVP: ${hero.name}` : 'MVP destacado';
+      mvpBadge.hidden = false;
+    } else {
+      mvpBadge.hidden = true;
+    }
+  }
+
+  renderSeasonSummary();
+}
+
+function renderSeasonList(listElement, entries, formatter) {
+  if (!listElement) {
+    return;
+  }
+  listElement.innerHTML = '';
+  entries.forEach((entry, index) => {
+    const item = document.createElement('li');
+    item.textContent = formatter(entry, index);
+    listElement.append(item);
+  });
+}
+
+function renderSeasonSummary() {
+  if (!seasonSummarySection) {
+    return;
+  }
+  if (!leagueState || leagueState.matchDay < TOTAL_MATCHDAYS) {
+    seasonSummarySection.hidden = true;
+    if (newSeasonButton) {
+      newSeasonButton.hidden = true;
+    }
+    return;
+  }
+
+  seasonSummarySection.hidden = false;
+  if (newSeasonButton) {
+    newSeasonButton.hidden = false;
+  }
+
+  const champion = leagueState.table[0]?.club ?? 'Sin datos';
+  if (seasonChampionEl) {
+    seasonChampionEl.textContent =
+      champion === clubState.name ? `${champion} (¡campeón!)` : champion;
+  }
+
+  const stats = clubState.seasonStats ?? createSeasonStats();
+  if (seasonAveragePossessionEl) {
+    const possessionAvg = stats.matches > 0 ? stats.possessionFor / stats.matches : 0;
+    seasonAveragePossessionEl.textContent = `${possessionAvg.toFixed(1)} %`;
+  }
+  if (seasonStreakEl) {
+    seasonStreakEl.textContent = `Mejor racha sin perder: ${stats.bestUnbeatenRun} partidos`;
+  }
+
+  const scorers = [...clubState.squad]
+    .map((player) => ({
+      name: player.name,
+      goals: player.seasonLog?.goals ?? 0,
+    }))
+    .sort((a, b) => b.goals - a.goals)
+    .slice(0, 3);
+
+  const assisters = [...clubState.squad]
+    .map((player) => ({
+      name: player.name,
+      assists: player.seasonLog?.assists ?? 0,
+    }))
+    .sort((a, b) => b.assists - a.assists)
+    .slice(0, 3);
+
+  renderSeasonList(seasonTopScorersList, scorers, (entry) => `${entry.name} · ${entry.goals} goles`);
+  renderSeasonList(seasonTopAssistsList, assisters, (entry) => `${entry.name} · ${entry.assists} asistencias`);
+}
+
+function persistState(reason = 'auto') {
+  const payload = saveGame(
+    {
+      club: clubState,
+      league: leagueState,
+      config: configState,
+      transferMarket: transferMarketState,
+    },
+    undefined
+  );
+  if (!payload) {
+    return;
+  }
+  if (reason === 'auto') {
+    showSaveMessage('Guardado automático tras la jornada.');
+  } else if (reason === 'manual') {
+    showSaveMessage('Partida guardada.');
+  }
+}
+
+function startNewSeason() {
+  const nextSeason = clubState.season + 1;
+  const refreshedSquad = clubState.squad.map((player) => resetPlayerForNewSeason(player));
+  const newLeague = createExampleLeague(clubState.name);
+  opponentRotation = computeOpponentRotation(newLeague, clubState.name);
+
+  clubState = {
+    ...clubState,
+    season: nextSeason,
+    league: newLeague,
+    squad: refreshedSquad,
+    seasonStats: createSeasonStats(),
+    weeklyWageBill: calculateWeeklyWageBill(refreshedSquad),
+  };
+  leagueState = newLeague;
+  transferMarketState = createExampleTransferMarket(clubState);
+  configState = buildInitialConfig(clubState);
+
+  renderLeagueTable();
+  renderTransferMarket();
+  renderLineupBoard();
+  updateMatchSummary();
+  updateClubSummary();
+  clearReport();
+  showSaveMessage('Nueva temporada lista: plantilla puesta a tono.');
+  persistState('silent');
+}
+
+function applyLoadedState(saved) {
+  clubState = {
+    ...saved.club,
+    weeklyWageBill: calculateWeeklyWageBill(saved.club.squad),
+  };
+  leagueState = saved.league;
+  transferMarketState = saved.transferMarket.length
+    ? saved.transferMarket
+    : createExampleTransferMarket(clubState);
+  const baseConfig = buildInitialConfig(clubState);
+  const loadedSeed = saved.config?.seed;
+  const seedValue =
+    typeof loadedSeed === 'string'
+      ? loadedSeed
+      : typeof loadedSeed === 'number'
+        ? String(loadedSeed)
+        : baseConfig.seed ?? '';
+  configState = {
+    ...baseConfig,
+    ...saved.config,
+    instructions: { ...createDefaultInstructions(), ...(saved.config.instructions ?? {}) },
+    seed: seedValue,
+  };
+  opponentRotation = computeOpponentRotation(leagueState, clubState.name);
+  ensureLineupCompleteness();
 }
 
 form.addEventListener('submit', (event) => {
@@ -1010,15 +1416,22 @@ form.addEventListener('submit', (event) => {
     decisionOutcome = resolution.outcome;
   }
 
+  const seedValue = seedInput ? seedInput.value.trim() : '';
   configState = {
     ...configState,
     home: homeCheckbox.checked,
     opponentStrength: Number.parseInt(opponentStrength.value, 10),
     tactic: tacticSelect.value,
     formation: formationSelect.value,
+    seed: seedValue,
   };
 
-  const report = playMatchDay(workingClub, configState, { decision, decisionOutcome });
+  const simulationOptions = { decision, decisionOutcome };
+  if (seedValue) {
+    simulationOptions.seed = seedValue;
+  }
+
+  const report = playMatchDay(workingClub, configState, simulationOptions);
   const updatedLeague = updateLeagueTableAfterMatch(leagueState ?? workingClub.league, workingClub.name, report.match);
   leagueState = updatedLeague;
 
@@ -1034,12 +1447,16 @@ form.addEventListener('submit', (event) => {
   renderTransferMarket();
   renderLineupBoard();
   updateMatchSummary();
-  renderMatchReport(report, decisionOutcome, opponentName);
+  renderMatchReport(report, decisionOutcome, opponentName, { seedInputValue: seedValue });
   updateClubSummary();
+  persistState('auto');
   switchToReportView();
 });
 
 resetButton.addEventListener('click', () => {
+  clearSavedGame();
+  clearSaveMessage();
+  clearLoadNotice();
   clubState = createExampleClub();
   leagueState = clubState.league;
   opponentRotation = computeOpponentRotation(leagueState, clubState.name);
@@ -1054,10 +1471,17 @@ resetButton.addEventListener('click', () => {
   switchToPlanningView();
   clearTransferMessage();
   clearReport();
+  showLoadNotice('Club reiniciado. Guardado anterior eliminado.');
 });
 
 opponentStrength.addEventListener('input', updateOpponentOutput);
 homeCheckbox.addEventListener('change', updateMatchSummary);
+if (seedInput) {
+  seedInput.addEventListener('input', () => {
+    const value = seedInput.value.trim();
+    configState = { ...configState, seed: value };
+  });
+}
 
 if (planNextButton) {
   planNextButton.addEventListener('click', () => {
@@ -1069,6 +1493,14 @@ if (planNextButton) {
 function init() {
   attachModalHandlers();
   populateDecisions();
+  if (saveVersionEl) {
+    saveVersionEl.textContent = `Versión guardado v${SAVE_VERSION}`;
+  }
+  const saved = loadSavedGame();
+  if (saved) {
+    applyLoadedState(saved);
+    showLoadNotice('Partida recuperada del guardado local.');
+  }
   updateFormDefaults();
   updateClubSummary();
   renderLeagueTable();

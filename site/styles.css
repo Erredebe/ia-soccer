@@ -28,6 +28,28 @@ body {
   margin-bottom: 1rem;
 }
 
+.load-notice,
+.save-feedback,
+.save-version {
+  text-align: center;
+  margin: 0;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.load-notice,
+.save-feedback {
+  background: rgba(191, 219, 254, 0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.save-feedback.error {
+  color: #991b1b;
+  background: rgba(252, 165, 165, 0.35);
+}
+
 .hero h1 {
   font-size: clamp(2.8rem, 8vw, 4rem);
   margin: 0;
@@ -564,13 +586,20 @@ body.modal-open {
   gap: 0.5rem;
 }
 
+.field-hint {
+  margin: -0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
 .field-label {
   font-weight: 600;
   color: #1e293b;
 }
 
 .field select,
-.field input[type='range'] {
+.field input[type='range'],
+.field input[type='text'] {
   appearance: none;
   border: 1px solid rgba(148, 163, 184, 0.6);
   border-radius: 12px;
@@ -786,6 +815,18 @@ body.modal-open {
   display: none;
 }
 
+.lineup-table__player-availability {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.25);
+  color: #92400e;
+  font-weight: 600;
+}
+
+.lineup-table tr.is-unavailable {
+  opacity: 0.72;
+}
+
 .lineup-table__stat {
   min-width: 72px;
 }
@@ -952,6 +993,50 @@ body.modal-open {
   color: #0f172a;
 }
 
+.finances-attendance {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.match-seed {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: #1d4ed8;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.finances-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.finances-breakdown ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+  color: #1f2937;
+}
+
+.mvp-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.mvp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.9), rgba(250, 204, 21, 0.8));
+  color: #92400e;
+  font-weight: 700;
+}
+
 .finances {
   font-weight: 600;
   color: #0f172a;
@@ -974,8 +1059,54 @@ body.modal-open {
   margin-top: 0.35rem;
 }
 
+.event-item {
+  margin: 0.4rem 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(226, 232, 240, 0.45);
+}
+
+.event-item--goal {
+  background: rgba(134, 239, 172, 0.35);
+  color: #166534;
+  font-weight: 600;
+}
+
+.event-item--card {
+  background: rgba(254, 215, 170, 0.5);
+  color: #9a3412;
+}
+
+.event-item--injury {
+  background: rgba(252, 165, 165, 0.45);
+  color: #991b1b;
+}
+
 .club-update .club-stats div {
   background: rgba(226, 232, 240, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.season-summary {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(226, 232, 240, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.season-summary__lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.season-summary ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
 }
 
 .footer {
