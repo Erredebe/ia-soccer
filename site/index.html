@@ -40,8 +40,8 @@
           </div>
         </dl>
         <div class="club-actions">
-          <button type="button" class="club-action club-action--primary" data-modal-target="#modal-planning">
-            Planificar jornada
+          <button type="button" class="club-action club-action--primary" data-modal-target="#modal-lineup">
+            Gestionar alineación
           </button>
           <button type="button" class="club-action" data-modal-target="#modal-league">
             Clasificación liguera
@@ -52,11 +52,35 @@
         </div>
       </section>
 
-      <div class="modal" id="modal-planning" aria-hidden="true">
-        <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="planning-title">
-          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar planificación">×</button>
+      <section class="card match-card" id="match-card">
+        <header class="match-card__header">
+          <div>
+            <h2>Jornada en curso</h2>
+            <p class="match-card__tagline">Analiza al rival y ajusta tu plan antes del pitido inicial.</p>
+          </div>
+          <span class="match-card__badge" id="matchday-badge">Jornada 1</span>
+        </header>
+        <div class="match-card__body">
+          <dl class="match-summary">
+            <div>
+              <dt>Rival</dt>
+              <dd id="match-opponent-name">Rival misterioso</dd>
+            </div>
+            <div>
+              <dt>Fortaleza estimada</dt>
+              <dd id="match-opponent-strength">68/100</dd>
+            </div>
+            <div>
+              <dt>Estadísticas</dt>
+              <dd id="match-opponent-record">Sin registros disponibles</dd>
+            </div>
+            <div>
+              <dt>Sede</dt>
+              <dd id="match-location">Tu estadio</dd>
+            </div>
+          </dl>
+
           <form class="game-form" id="game-form">
-            <h2 id="planning-title">Planifica la jornada</h2>
             <label class="field">
               <span class="field-label">Canallada previa</span>
               <select id="decision-select" name="decision">
@@ -102,53 +126,77 @@
               </label>
             </div>
 
-            <div class="lineup-panel">
-              <div class="lineup-panel__header">
-                <h3>Define tu convocatoria</h3>
-                <p>Escoge 11 titulares y hasta 5 suplentes para la batalla semanal.</p>
-              </div>
-              <div class="lineup-panel__summary">
-                <span id="lineup-count" class="lineup-summary"></span>
-                <span id="subs-count" class="lineup-summary"></span>
-                <button id="lineup-autosort" type="button" class="lineup-auto-button">Autoordenar</button>
-              </div>
-              <div class="lineup-help">
-                <p>Consejos rápidos para mimar tu once:</p>
-                <ul>
-                  <li>Cambia el rol con los botones Titular/Banquillo/Reserva y replica la tabla clásica de tus juegos favoritos.</li>
-                  <li>Usa el botón «Vender» si necesitas aligerar nómina o abrir hueco.</li>
-                  <li>Prueba el atajo «Autoordenar por posición» para reordenar titulares y banquillo en segundos.</li>
-                </ul>
-              </div>
-              <p id="lineup-error" class="form-error" hidden></p>
-              <div id="lineup-board" class="lineup-board">
-                <div class="lineup-table-wrapper">
-                  <table class="lineup-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">N.º</th>
-                        <th scope="col">Jugador</th>
-                        <th scope="col">EN</th>
-                        <th scope="col">VE</th>
-                        <th scope="col">RE</th>
-                        <th scope="col">AT</th>
-                        <th scope="col">DE</th>
-                        <th scope="col">MI</th>
-                        <th scope="col">CO</th>
-                        <th scope="col">LI</th>
-                        <th scope="col">MO</th>
-                        <th scope="col">Rol</th>
-                        <th scope="col" class="lineup-table__actions-header">Gestión</th>
-                      </tr>
-                    </thead>
-                    <tbody id="lineup-table-body"></tbody>
-                  </table>
-                </div>
+            <div class="match-form__actions">
+              <p id="match-lineup-status" class="match-lineup-status"></p>
+              <div class="match-actions">
+                <button
+                  type="button"
+                  class="club-action club-action--primary"
+                  data-modal-target="#modal-lineup"
+                >
+                  Gestionar alineación
+                </button>
+                <button type="submit" class="play-button">Jugar jornada</button>
               </div>
             </div>
-
-            <button type="submit" class="play-button" data-modal-initial-focus>Jugar jornada</button>
           </form>
+        </div>
+      </section>
+
+      <div class="modal" id="modal-lineup" aria-hidden="true">
+        <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="lineup-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar gestión de alineación">×</button>
+          <section class="lineup-panel">
+            <div class="lineup-panel__header">
+              <h2 id="lineup-title">Gestiona tu alineación</h2>
+              <p>Escoge 11 titulares y hasta 5 suplentes antes de lanzarte a la jornada.</p>
+            </div>
+            <div class="lineup-panel__summary">
+              <span id="lineup-count" class="lineup-summary"></span>
+              <span id="subs-count" class="lineup-summary"></span>
+              <button
+                id="lineup-autosort"
+                type="button"
+                class="lineup-auto-button"
+                data-modal-initial-focus
+              >
+                Autoordenar
+              </button>
+            </div>
+            <div class="lineup-help">
+              <p>Consejos rápidos para mimar tu once:</p>
+              <ul>
+                <li>Cambia el rol con los botones Titular/Banquillo/Reserva y replica la tabla clásica de tus juegos favoritos.</li>
+                <li>Usa el botón «Vender» si necesitas aligerar nómina o abrir hueco.</li>
+                <li>Prueba el atajo «Autoordenar por posición» para reordenar titulares y banquillo en segundos.</li>
+              </ul>
+            </div>
+            <p id="lineup-error" class="form-error" hidden></p>
+            <div id="lineup-board" class="lineup-board">
+              <div class="lineup-table-wrapper">
+                <table class="lineup-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">N.º</th>
+                      <th scope="col">Jugador</th>
+                      <th scope="col">EN</th>
+                      <th scope="col">VE</th>
+                      <th scope="col">RE</th>
+                      <th scope="col">AT</th>
+                      <th scope="col">DE</th>
+                      <th scope="col">MI</th>
+                      <th scope="col">CO</th>
+                      <th scope="col">LI</th>
+                      <th scope="col">MO</th>
+                      <th scope="col">Rol</th>
+                      <th scope="col" class="lineup-table__actions-header">Gestión</th>
+                    </tr>
+                  </thead>
+                  <tbody id="lineup-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
