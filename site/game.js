@@ -127,6 +127,10 @@ function hideLineupError() {
   }
   lineupErrorEl.hidden = true;
   lineupErrorEl.textContent = '';
+  if (lineupErrorEl.dataset.state) {
+    delete lineupErrorEl.dataset.state;
+  }
+  lineupErrorEl.classList.remove('lineup-message');
 }
 
 function showLineupError(message) {
@@ -135,6 +139,18 @@ function showLineupError(message) {
   }
   lineupErrorEl.textContent = message;
   lineupErrorEl.hidden = false;
+  lineupErrorEl.dataset.state = 'error';
+  lineupErrorEl.classList.remove('lineup-message');
+}
+
+function showLineupNotice(message) {
+  if (!lineupErrorEl) {
+    return;
+  }
+  lineupErrorEl.textContent = message;
+  lineupErrorEl.hidden = false;
+  lineupErrorEl.dataset.state = 'notice';
+  lineupErrorEl.classList.add('lineup-message');
 }
 
 function updateSelectionCounts() {
@@ -188,15 +204,34 @@ function getPlayerRole(playerId) {
   return 'none';
 }
 
-function setPlayerRole(playerId, role) {
-  configState.startingLineup = configState.startingLineup.filter((id) => id !== playerId);
-  configState.substitutes = configState.substitutes.filter((id) => id !== playerId);
+function clampIndex(list, desiredIndex) {
+  if (typeof desiredIndex !== 'number' || Number.isNaN(desiredIndex)) {
+    return list.length;
+  }
+  return Math.max(0, Math.min(desiredIndex, list.length));
+}
+
+function applyRoleChange(playerId, role, options = {}) {
+  const { preferredIndex } = options;
+  const starters = configState.startingLineup.filter((id) => id !== playerId);
+  const subs = configState.substitutes.filter((id) => id !== playerId);
 
   if (role === 'starter') {
-    configState.startingLineup = [...configState.startingLineup, playerId];
+    const index = clampIndex(starters, preferredIndex);
+    starters.splice(index, 0, playerId);
   } else if (role === 'sub') {
-    configState.substitutes = [...configState.substitutes, playerId];
+    const index = clampIndex(subs, preferredIndex);
+    subs.splice(index, 0, playerId);
   }
+
+  configState.startingLineup = starters;
+  configState.substitutes = subs;
+}
+
+const setPlayerRole = applyRoleChange;
+
+function findPlayerById(playerId) {
+  return clubState.squad.find((player) => player.id === playerId);
 }
 
 function ensureLineupCompleteness() {
@@ -334,20 +369,100 @@ function handleDrop(event) {
     return;
   }
   const previousRole = getPlayerRole(playerId);
+  const dropTarget = event.target instanceof HTMLElement ? event.target.closest('.player-chip') : null;
+  const dropTargetId = dropTarget?.dataset.playerId ?? null;
+  const startersIndex = configState.startingLineup.indexOf(playerId);
+  const subsIndex = configState.substitutes.indexOf(playerId);
+  const previousIndex = previousRole === 'starter' ? startersIndex : previousRole === 'sub' ? subsIndex : -1;
 
-  if (role === 'starter' && previousRole !== 'starter' && configState.startingLineup.length >= STARTERS_LIMIT) {
-    showLineupError('Solo caben 11 titulares. Haz hueco antes de sumar otro.');
+  const getTargetIndex = () => {
+    if (role === 'starter') {
+      if (dropTargetId) {
+        return configState.startingLineup.indexOf(dropTargetId);
+      }
+      return configState.startingLineup.length;
+    }
+    if (role === 'sub') {
+      if (dropTargetId) {
+        return configState.substitutes.indexOf(dropTargetId);
+      }
+      return configState.substitutes.length;
+    }
+    return -1;
+  };
+
+  const targetIndex = getTargetIndex();
+
+  const getCollectionForRole = (targetRole) => {
+    if (targetRole === 'starter') {
+      return configState.startingLineup;
+    }
+    if (targetRole === 'sub') {
+      return configState.substitutes;
+    }
+    return null;
+  };
+
+  const targetCollection = getCollectionForRole(role);
+  const targetLimit = role === 'starter' ? STARTERS_LIMIT : role === 'sub' ? SUBS_LIMIT : Number.POSITIVE_INFINITY;
+
+  let noticeMessage = '';
+
+  const findDisplacedCandidate = () => {
+    if (!targetCollection || targetCollection.length === 0) {
+      return null;
+    }
+    if (dropTargetId && targetCollection.includes(dropTargetId) && dropTargetId !== playerId) {
+      return dropTargetId;
+    }
+    const oldestId = targetCollection.find((id) => id !== playerId);
+    return oldestId ?? null;
+  };
+
+  if (role !== previousRole && targetCollection && targetCollection.length >= targetLimit) {
+    const candidateId = findDisplacedCandidate();
+    if (!candidateId) {
+      if (role === 'starter') {
+        showLineupError('Solo caben 11 titulares. Haz hueco antes de sumar otro.');
+      } else if (role === 'sub') {
+        showLineupError('El banquillo está lleno: máximo 5 suplentes.');
+      }
+      return;
+    }
+
+    const fallbackRole = previousRole;
+    const fallbackIndex = fallbackRole === 'starter' ? previousIndex : fallbackRole === 'sub' ? previousIndex : -1;
+    const displacedPlayer = findPlayerById(candidateId);
+
+    applyRoleChange(candidateId, fallbackRole, { preferredIndex: fallbackIndex });
+
+    if (displacedPlayer) {
+      const fallbackLabel =
+        fallbackRole === 'starter'
+          ? 'titularidad'
+          : fallbackRole === 'sub'
+            ? 'banquillo'
+            : 'lista de reservas';
+      noticeMessage = `${displacedPlayer.name} se movió a la ${fallbackLabel}.`;
+    }
+  } else if (role !== previousRole && targetCollection && targetCollection.length > targetLimit) {
+    if (role === 'starter') {
+      showLineupError('Solo caben 11 titulares. Haz hueco antes de sumar otro.');
+    } else if (role === 'sub') {
+      showLineupError('El banquillo está lleno: máximo 5 suplentes.');
+    }
     return;
   }
 
-  if (role === 'sub' && previousRole !== 'sub' && configState.substitutes.length >= SUBS_LIMIT) {
-    showLineupError('El banquillo está lleno: máximo 5 suplentes.');
-    return;
-  }
+  applyRoleChange(playerId, role, { preferredIndex: targetIndex });
 
-  setPlayerRole(playerId, role);
-  hideLineupError();
   renderLineupBoard();
+
+  if (noticeMessage) {
+    showLineupNotice(noticeMessage);
+  } else {
+    hideLineupError();
+  }
 }
 
 function renderLineupBoard() {
