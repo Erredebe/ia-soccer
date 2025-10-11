@@ -15,6 +15,71 @@
 
       <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
 
+      <section class="card control-card" id="control-card">
+        <header class="control-card__header">
+          <div>
+            <h2>Panel de control retro</h2>
+            <p class="control-card__tagline">Accede rápido a cada área del club como en los clásicos PC Fútbol.</p>
+          </div>
+          <span class="control-card__badge">Modo manager</span>
+        </header>
+        <div class="control-panel" role="list">
+          <button
+            type="button"
+            class="control-panel__option control-panel__option--highlight"
+            data-panel-action="results"
+            data-modal-target="#modal-report"
+            disabled
+            aria-disabled="true"
+          >
+            Resultados
+          </button>
+          <button
+            type="button"
+            class="control-panel__option control-panel__option--highlight"
+            data-modal-target="#modal-league"
+          >
+            Clasificación
+          </button>
+          <button type="button" class="control-panel__option" data-modal-target="#modal-calendar">
+            Calendario
+          </button>
+          <button
+            type="button"
+            class="control-panel__option"
+            data-modal-target="#modal-lineup"
+          >
+            Alineación
+          </button>
+          <button type="button" class="control-panel__option" data-modal-target="#modal-tactics">
+            Tácticas
+          </button>
+          <button type="button" class="control-panel__option" data-modal-target="#modal-opponent">
+            Rival
+          </button>
+          <button
+            type="button"
+            class="control-panel__option control-panel__option--highlight"
+            data-modal-target="#modal-transfers"
+          >
+            Fichar
+          </button>
+          <button type="button" class="control-panel__option" data-modal-target="#modal-staff">
+            Empleados
+          </button>
+          <button type="button" class="control-panel__option" data-modal-target="#modal-finances">
+            Caja
+          </button>
+          <button type="button" class="control-panel__option" data-modal-target="#modal-decisions">
+            Decisiones
+          </button>
+          <button type="button" class="control-panel__option" data-modal-target="#modal-stadium">
+            Estadio
+          </button>
+        </div>
+        <p class="control-card__hint">Selecciona un módulo para gestionar tu club con estilo noventero.</p>
+      </section>
+
       <section class="card club-card" id="club-card">
         <header class="club-card__header">
           <div>
@@ -298,6 +363,147 @@
             <p id="transfer-message" class="transfer-feedback" hidden></p>
             <div id="transfer-list" class="transfer-list"></div>
           </div>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-calendar" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="calendar-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar calendario">×</button>
+          <section class="control-modal card-panel">
+            <h2 id="calendar-title">Calendario de la temporada</h2>
+            <p>Consulta las próximas jornadas y planifica tus rotaciones con calma.</p>
+            <ol id="calendar-list" class="control-list control-list--calendar"></ol>
+            <p id="calendar-note" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-tactics" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="tactics-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar tácticas">×</button>
+          <section class="control-modal card-panel">
+            <h2 id="tactics-title">Pizarra táctica</h2>
+            <p>Revisa de un vistazo la idea de juego seleccionada para la próxima jornada.</p>
+            <dl class="control-dl">
+              <div>
+                <dt>Plan general</dt>
+                <dd id="tactic-plan"></dd>
+              </div>
+              <div>
+                <dt>Esquema</dt>
+                <dd id="tactic-formation"></dd>
+              </div>
+            </dl>
+            <h3>Ajustes finos</h3>
+            <ul id="tactic-instructions" class="control-list"></ul>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-opponent" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="opponent-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar informe de rival">×</button>
+          <section class="control-modal card-panel">
+            <h2 id="opponent-title">Informe del rival</h2>
+            <dl class="control-dl">
+              <div>
+                <dt>Club</dt>
+                <dd id="opponent-modal-name"></dd>
+              </div>
+              <div>
+                <dt>Balance</dt>
+                <dd id="opponent-modal-record"></dd>
+              </div>
+              <div>
+                <dt>Fortaleza prevista</dt>
+                <dd id="opponent-modal-strength"></dd>
+              </div>
+              <div>
+                <dt>Escenario</dt>
+                <dd id="opponent-modal-location"></dd>
+              </div>
+            </dl>
+            <p id="opponent-modal-comment" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-staff" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="staff-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar personal">×</button>
+          <section class="control-modal card-panel">
+            <h2 id="staff-title">Gestión de empleados</h2>
+            <p>Controla el gasto en cuerpo técnico, cantera y área médica.</p>
+            <dl id="staff-breakdown" class="control-dl"></dl>
+            <p id="staff-note" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-finances" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="finances-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar caja">×</button>
+          <section class="control-modal card-panel">
+            <h2 id="finances-title">Caja y gastos</h2>
+            <dl class="control-dl">
+              <div>
+                <dt>Presupuesto disponible</dt>
+                <dd id="finances-budget"></dd>
+              </div>
+              <div>
+                <dt>Nómina semanal</dt>
+                <dd id="finances-wages"></dd>
+              </div>
+              <div>
+                <dt>Costes operativos</dt>
+                <dd id="finances-operating"></dd>
+              </div>
+            </dl>
+            <p id="finances-note" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-decisions" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="decisions-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar decisiones">×</button>
+          <section class="control-modal card-panel">
+            <h2 id="decisions-title">Decisiones canallas</h2>
+            <p>Evalúa cada travesura y su intensidad antes de arriesgar la reputación.</p>
+            <ul id="decisions-list" class="control-list control-list--decisions"></ul>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-stadium" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="stadium-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar estadio">×</button>
+          <section class="control-modal card-panel">
+            <h2 id="stadium-title">Estado del estadio</h2>
+            <dl class="control-dl">
+              <div>
+                <dt>Capacidad</dt>
+                <dd id="stadium-capacity"></dd>
+              </div>
+              <div>
+                <dt>Nivel de grada</dt>
+                <dd id="stadium-level"></dd>
+              </div>
+              <div>
+                <dt>Centro de entrenamiento</dt>
+                <dd id="stadium-training"></dd>
+              </div>
+              <div>
+                <dt>Área médica</dt>
+                <dd id="stadium-medical"></dd>
+              </div>
+              <div>
+                <dt>Cantera</dt>
+                <dd id="stadium-academy"></dd>
+              </div>
+            </dl>
+            <p id="stadium-note" class="control-modal__note"></p>
+          </section>
         </div>
       </div>
 

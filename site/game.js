@@ -81,6 +81,31 @@ const seasonAveragePossessionEl = document.querySelector('#season-average-posses
 const seasonStreakEl = document.querySelector('#season-streak');
 const newSeasonButton = document.querySelector('#new-season');
 
+const resultsControlButton = document.querySelector('[data-panel-action="results"]');
+const calendarList = document.querySelector('#calendar-list');
+const calendarNoteEl = document.querySelector('#calendar-note');
+const tacticPlanEl = document.querySelector('#tactic-plan');
+const tacticFormationEl = document.querySelector('#tactic-formation');
+const tacticInstructionsList = document.querySelector('#tactic-instructions');
+const opponentModalNameEl = document.querySelector('#opponent-modal-name');
+const opponentModalRecordEl = document.querySelector('#opponent-modal-record');
+const opponentModalStrengthEl = document.querySelector('#opponent-modal-strength');
+const opponentModalLocationEl = document.querySelector('#opponent-modal-location');
+const opponentModalCommentEl = document.querySelector('#opponent-modal-comment');
+const staffBreakdownEl = document.querySelector('#staff-breakdown');
+const staffNoteEl = document.querySelector('#staff-note');
+const financesBudgetModalEl = document.querySelector('#finances-budget');
+const financesWagesModalEl = document.querySelector('#finances-wages');
+const financesOperatingModalEl = document.querySelector('#finances-operating');
+const financesNoteEl = document.querySelector('#finances-note');
+const decisionsListEl = document.querySelector('#decisions-list');
+const stadiumCapacityEl = document.querySelector('#stadium-capacity');
+const stadiumLevelEl = document.querySelector('#stadium-level');
+const stadiumTrainingEl = document.querySelector('#stadium-training');
+const stadiumMedicalEl = document.querySelector('#stadium-medical');
+const stadiumAcademyEl = document.querySelector('#stadium-academy');
+const stadiumNoteEl = document.querySelector('#stadium-note');
+
 const FOCUSABLE_SELECTOR =
   "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
 
@@ -90,6 +115,32 @@ const decisionLabels = {
   filtrarRumor: 'Filtrar rumor',
   fiestaIlegal: 'Fiesta ilegal',
   presionarFederacion: 'Presionar a la federación',
+};
+
+const instructionText = {
+  pressing: {
+    low: 'Presión baja',
+    medium: 'Presión media',
+    high: 'Presión alta',
+  },
+  tempo: {
+    slow: 'Ritmo pausado',
+    balanced: 'Ritmo equilibrado',
+    fast: 'Ritmo alto',
+  },
+  width: {
+    narrow: 'Juego cerrado',
+    balanced: 'Anchura equilibrada',
+    wide: 'Ataque por bandas',
+  },
+};
+
+const booleanInstructionText = {
+  counterAttack: { true: 'Buscar contragolpes', false: 'Sin contraataques' },
+  playThroughMiddle: {
+    true: 'Construir por dentro',
+    false: 'Abrir el juego a las bandas',
+  },
 };
 
 const numberFormatter = new Intl.NumberFormat('es-ES', {
@@ -147,6 +198,7 @@ let modalHandlersAttached = false;
 let opponentRotation = computeOpponentRotation(leagueState, clubState.name);
 let saveMessageTimeout;
 let loadNoticeTimeout;
+let hasLatestReport = false;
 
 function updateBodyModalState() {
   const hasOpenModal = document.querySelector('.modal.is-open') !== null;
@@ -265,6 +317,285 @@ function populateDecisions() {
   decisionSelect.dataset.populated = 'true';
 }
 
+function getSelectLabel(selectElement, value) {
+  if (!selectElement) {
+    return value;
+  }
+  const option = selectElement.querySelector(`option[value="${value}"]`);
+  return option?.textContent ?? value;
+}
+
+function describeInstructionEntry(key, value) {
+  if (typeof value === 'boolean') {
+    const map = booleanInstructionText[key];
+    if (map) {
+      return map[String(value)] ?? `${key}: ${value ? 'sí' : 'no'}`;
+    }
+    return `${key}: ${value ? 'sí' : 'no'}`;
+  }
+  if (typeof value === 'string') {
+    const map = instructionText[key];
+    if (map && map[value]) {
+      return map[value];
+    }
+    return `${key}: ${value}`;
+  }
+  return `${key}: ${String(value)}`;
+}
+
+function updateResultsButtonState() {
+  if (!resultsControlButton) {
+    return;
+  }
+  resultsControlButton.disabled = !hasLatestReport;
+  resultsControlButton.setAttribute('aria-disabled', hasLatestReport ? 'false' : 'true');
+}
+
+function renderCalendarModal() {
+  if (!calendarList || !calendarNoteEl) {
+    return;
+  }
+
+  calendarList.innerHTML = '';
+  calendarNoteEl.textContent = '';
+
+  if (!leagueState) {
+    calendarNoteEl.textContent = 'Todavía no hay calendario porque la liga no está cargada.';
+    return;
+  }
+
+  if (leagueState.matchDay >= TOTAL_MATCHDAYS) {
+    calendarNoteEl.textContent = `Temporada completada tras ${TOTAL_MATCHDAYS} jornadas.`;
+    return;
+  }
+
+  const rotation = computeOpponentRotation(leagueState, clubState.name);
+  if (rotation.length === 0) {
+    calendarNoteEl.textContent = 'Los rivales están por confirmar. Vuelve tras el sorteo.';
+    return;
+  }
+
+  const remaining = TOTAL_MATCHDAYS - leagueState.matchDay;
+  const itemsToShow = Math.min(6, remaining);
+
+  for (let offset = 0; offset < itemsToShow; offset += 1) {
+    const listItem = document.createElement('li');
+    if (offset === 0) {
+      listItem.classList.add('is-next');
+    }
+    const matchDayNumber = leagueState.matchDay + offset + 1;
+    const rotationIndex = (leagueState.matchDay + offset) % rotation.length;
+    const opponentName = rotation[rotationIndex];
+    const isHome = offset === 0 ? homeCheckbox.checked : (leagueState.matchDay + offset) % 2 === 0;
+    const opponentSpan = document.createElement('span');
+    opponentSpan.className = 'control-calendar__opponent';
+    opponentSpan.textContent = `${isHome ? 'vs' : '@'} ${opponentName}`;
+
+    const meta = document.createElement('span');
+    meta.className = 'control-calendar__meta';
+    const position = leagueState.table.findIndex((entry) => entry.club === opponentName);
+    const standing = position !== -1 ? leagueState.table[position] : undefined;
+    const placeLabel = position !== -1 ? `${position + 1}º` : 'Sin ranking';
+    const pointsLabel = standing ? `${standing.points} pts` : 'Puntos por estrenar';
+    meta.textContent = `Jornada ${matchDayNumber} · ${placeLabel} · ${pointsLabel}`;
+
+    listItem.append(opponentSpan, meta);
+    calendarList.append(listItem);
+  }
+
+  if (remaining > 6) {
+    calendarNoteEl.textContent = `Quedan ${remaining - 6} jornadas más tras las mostradas.`;
+  } else {
+    calendarNoteEl.textContent = `Restan ${remaining} jornadas para completar la temporada.`;
+  }
+}
+
+function renderTacticsModal() {
+  if (!tacticPlanEl || !tacticFormationEl || !tacticInstructionsList) {
+    return;
+  }
+  const tacticLabel = getSelectLabel(tacticSelect, configState.tactic);
+  tacticPlanEl.textContent = tacticLabel;
+
+  const formationLabel = getSelectLabel(formationSelect, configState.formation ?? '4-4-2');
+  tacticFormationEl.textContent = formationLabel;
+
+  const instructions = configState.instructions ?? createDefaultInstructions();
+  tacticInstructionsList.innerHTML = '';
+  Object.entries(instructions).forEach(([key, value]) => {
+    const item = document.createElement('li');
+    item.textContent = describeInstructionEntry(key, value);
+    tacticInstructionsList.append(item);
+  });
+}
+
+function renderOpponentModal() {
+  if (
+    !opponentModalNameEl ||
+    !opponentModalRecordEl ||
+    !opponentModalStrengthEl ||
+    !opponentModalLocationEl ||
+    !opponentModalCommentEl
+  ) {
+    return;
+  }
+
+  const opponent = getUpcomingOpponent();
+  const opponentName = opponent?.club ?? 'Rival misterioso';
+  opponentModalNameEl.textContent = opponentName;
+  opponentModalRecordEl.textContent = formatOpponentRecord(opponent);
+
+  const strengthValue = Number.parseInt(opponentStrength.value, 10) || configState.opponentStrength;
+  opponentModalStrengthEl.textContent = `${strengthValue} (${describeOpponentStrength(strengthValue)})`;
+
+  opponentModalLocationEl.textContent = homeCheckbox.checked ? 'Tu estadio' : 'Fuera de casa';
+
+  let comment = 'Aún no hay informes detallados del rival.';
+  if (opponent && leagueState) {
+    const position = leagueState.table.findIndex((entry) => entry.club === opponent.club);
+    if (position !== -1) {
+      const ordinal = position + 1;
+      const streakDescriptor = opponent.points >= 9 ? 'enrachado' : opponent.points === 0 ? 'necesitado' : 'peleón';
+      comment = `${opponent.club} marcha ${ordinal}º con ${opponent.points} puntos: equipo ${streakDescriptor}.`;
+    } else {
+      comment = `${opponent.club} todavía no ha debutado en la liga.`;
+    }
+  }
+  opponentModalCommentEl.textContent = comment;
+}
+
+function getOperatingExpenses() {
+  const expenses = clubState.operatingExpenses;
+  if (!expenses) {
+    return { maintenance: 0, staff: 0, academy: 0, medical: 0 };
+  }
+  return {
+    maintenance: expenses.maintenance ?? 0,
+    staff: expenses.staff ?? 0,
+    academy: expenses.academy ?? 0,
+    medical: expenses.medical ?? 0,
+  };
+}
+
+function renderStaffModal() {
+  if (!staffBreakdownEl || !staffNoteEl) {
+    return;
+  }
+  staffBreakdownEl.innerHTML = '';
+
+  const expenses = getOperatingExpenses();
+  const entries = [
+    { label: 'Cuerpo técnico', value: expenses.staff },
+    { label: 'Cantera', value: expenses.academy },
+    { label: 'Área médica', value: expenses.medical },
+    { label: 'Mantenimiento', value: expenses.maintenance },
+  ];
+
+  entries.forEach((entry) => {
+    const wrapper = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = entry.label;
+    const dd = document.createElement('dd');
+    dd.textContent = numberFormatter.format(entry.value);
+    wrapper.append(dt, dd);
+    staffBreakdownEl.append(wrapper);
+  });
+
+  const academyLevel = clubState.infrastructure?.academyLevel ?? 0;
+  const medicalLevel = clubState.infrastructure?.medicalLevel ?? 0;
+  staffNoteEl.textContent = `Cantera nivel ${academyLevel} · Área médica nivel ${medicalLevel}. Ajusta la inversión si necesitas potenciar jóvenes o recuperar lesionados.`;
+}
+
+function renderFinancesModal() {
+  if (!financesBudgetModalEl || !financesWagesModalEl || !financesOperatingModalEl || !financesNoteEl) {
+    return;
+  }
+  financesBudgetModalEl.textContent = numberFormatter.format(clubState.budget);
+  financesWagesModalEl.textContent = numberFormatter.format(clubState.weeklyWageBill ?? 0);
+
+  const expenses = getOperatingExpenses();
+  const totalOperating = Object.values(expenses).reduce((sum, value) => sum + value, 0);
+  financesOperatingModalEl.textContent = numberFormatter.format(totalOperating);
+
+  const projected = (clubState.weeklyWageBill ?? 0) + totalOperating;
+  financesNoteEl.textContent = `Proyección semanal estimada: ${numberFormatter.format(projected)} entre salarios y operaciones.`;
+}
+
+function renderDecisionsModal() {
+  if (!decisionsListEl) {
+    return;
+  }
+  decisionsListEl.innerHTML = '';
+
+  decisions.forEach((decision, index) => {
+    const item = document.createElement('li');
+    if (String(index) === decisionSelect.value) {
+      item.classList.add('is-active');
+    }
+    const label = document.createElement('span');
+    label.textContent = decisionLabels[decision.type] ?? decision.type;
+    const intensity = document.createElement('span');
+    intensity.textContent = `Intensidad ${decision.intensity}`;
+    item.append(label, intensity);
+    decisionsListEl.append(item);
+  });
+
+  if (decisions.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = 'No hay travesuras disponibles por ahora.';
+    decisionsListEl.append(empty);
+  }
+}
+
+function describeInfrastructureLevel(level) {
+  if (level >= 4) {
+    return 'élite urbana';
+  }
+  if (level === 3) {
+    return 'ambición continental';
+  }
+  if (level === 2) {
+    return 'nivel profesional';
+  }
+  if (level === 1) {
+    return 'espíritu de barrio';
+  }
+  return 'en obras';
+}
+
+function renderStadiumModal() {
+  if (
+    !stadiumCapacityEl ||
+    !stadiumLevelEl ||
+    !stadiumTrainingEl ||
+    !stadiumMedicalEl ||
+    !stadiumAcademyEl ||
+    !stadiumNoteEl
+  ) {
+    return;
+  }
+
+  stadiumCapacityEl.textContent = `${clubState.stadiumCapacity.toLocaleString('es-ES')} espectadores`;
+  const infrastructure = clubState.infrastructure ?? {};
+  stadiumLevelEl.textContent = `Nivel ${infrastructure.stadiumLevel ?? 0} (${describeInfrastructureLevel(infrastructure.stadiumLevel ?? 0)})`;
+  stadiumTrainingEl.textContent = `Nivel ${infrastructure.trainingLevel ?? 0}`;
+  stadiumMedicalEl.textContent = `Nivel ${infrastructure.medicalLevel ?? 0}`;
+  stadiumAcademyEl.textContent = `Nivel ${infrastructure.academyLevel ?? 0}`;
+
+  stadiumNoteEl.textContent = 'Invierte en grada y servicios para atraer más taquilla y mantener feliz a la afición.';
+}
+
+function refreshControlPanel() {
+  renderCalendarModal();
+  renderTacticsModal();
+  renderOpponentModal();
+  renderStaffModal();
+  renderFinancesModal();
+  renderDecisionsModal();
+  renderStadiumModal();
+  updateResultsButtonState();
+}
+
 function updateFormDefaults() {
   tacticSelect.value = configState.tactic;
   if (formationSelect) {
@@ -276,6 +607,7 @@ function updateFormDefaults() {
     seedInput.value = typeof configState.seed === 'string' ? configState.seed : '';
   }
   updateOpponentOutput();
+  refreshControlPanel();
 }
 
 function averageMorale(club) {
@@ -748,6 +1080,7 @@ function updateClubSummary() {
   clubBudgetEl.textContent = numberFormatter.format(clubState.budget);
   clubReputationEl.textContent = `${clubState.reputation}`;
   clubMoraleEl.textContent = formatMorale(averageMorale(clubState));
+  refreshControlPanel();
 }
 
 function getUpcomingOpponent() {
@@ -811,6 +1144,7 @@ function updateMatchSummary() {
   if (matchLocationEl) {
     matchLocationEl.textContent = homeCheckbox.checked ? 'Tu estadio' : 'Fuera de casa';
   }
+  refreshControlPanel();
 }
 
 function describeOpponentStrength(value) {
@@ -877,6 +1211,7 @@ function renderLeagueTable() {
       leagueMatchdayEl.textContent = `Jornada ${leagueState.matchDay}`;
     }
   }
+  refreshControlPanel();
 }
 
 function clearTransferMessage() {
@@ -1132,6 +1467,8 @@ function clearReport() {
     seasonSummarySection.hidden = true;
   }
   hideLineupError();
+  hasLatestReport = false;
+  refreshControlPanel();
 }
 
 if (lineupAutosortButton) {
@@ -1273,6 +1610,8 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
   }
 
   renderSeasonSummary();
+  hasLatestReport = true;
+  refreshControlPanel();
 }
 
 function renderSeasonList(listElement, entries, formatter) {
@@ -1507,6 +1846,10 @@ if (seedInput) {
     const value = seedInput.value.trim();
     configState = { ...configState, seed: value };
   });
+}
+
+if (decisionSelect) {
+  decisionSelect.addEventListener('change', renderDecisionsModal);
 }
 
 if (planNextButton) {
