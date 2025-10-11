@@ -1,10 +1,13 @@
+// @ts-check
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createExampleClub } from '../src/core/data.js';
 import { resolveCanallaDecision } from '../src/core/reputation.js';
 
+/** Retorna un valor bajo para forzar éxitos en las pruebas. */
 const alwaysSuccess = () => 0.01;
+/** Retorna un valor alto para simular fracasos continuados. */
 const alwaysFail = () => 0.99;
 
 test('resolveCanallaDecision mejora la moral y reputación cuando sale bien', () => {

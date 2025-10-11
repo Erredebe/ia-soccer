@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Utilidades económicas del simulador.
  * @module core/economy
@@ -200,8 +201,9 @@ export function processTransferOffer(club, playerId, offer) {
 }
 
 /**
- * @param {ClubState} club
- * @param {number} financesDelta
+ * Ajusta el presupuesto del club tras aplicar el balance económico de la jornada.
+ * @param {ClubState} club Estado original del club.
+ * @param {number} financesDelta Diferencia neta de la jornada.
  * @returns {ClubState}
  */
 export function adjustBudgetAfterMatch(club, financesDelta) {

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 /**
  * CLI canallesco para vivir la jornada desde la banda.
  * @module cli/index
@@ -18,6 +19,8 @@ import {
 import { resolveCanallaDecision } from '../core/reputation.js';
 
 /**
+ * Pregunta al usuario si desea intentar una decisión canalla antes del partido.
+ * Devuelve el objeto de decisión elegido o `undefined` si se prefiere jugar limpio.
  * @returns {Promise<import('../types.js').CanallaDecision | undefined>}
  */
 async function promptDecision() {
@@ -40,6 +43,10 @@ async function promptDecision() {
   return decisions[choice - 1];
 }
 
+/**
+ * Ejecuta la demostración interactiva completa: prepara el club, permite una decisión canalla
+ * opcional, simula la jornada y muestra un informe detallado en consola.
+ */
 async function runDemo() {
   console.log('Bienvenido al chiringuito canalla. Preparando temporada...');
   let club = createExampleClub();
