@@ -115,24 +115,34 @@
               <div class="lineup-help">
                 <p>Consejos rápidos para mimar tu once:</p>
                 <ul>
-                  <li>Arrastra cualquier jugador para cambiarlo de rol al instante.</li>
+                  <li>Cambia el rol con los botones Titular/Banquillo/Reserva y replica la tabla clásica de tus juegos favoritos.</li>
                   <li>Usa el botón «Vender» si necesitas aligerar nómina o abrir hueco.</li>
                   <li>Prueba el atajo «Autoordenar por posición» para reordenar titulares y banquillo en segundos.</li>
                 </ul>
               </div>
               <p id="lineup-error" class="form-error" hidden></p>
               <div id="lineup-board" class="lineup-board">
-                <div class="lineup-column" data-role="starter">
-                  <h4>Once titular</h4>
-                  <div class="lineup-dropzone" data-role="starter"></div>
-                </div>
-                <div class="lineup-column" data-role="sub">
-                  <h4>Banquillo</h4>
-                  <div class="lineup-dropzone" data-role="sub"></div>
-                </div>
-                <div class="lineup-column" data-role="none">
-                  <h4>Reservas</h4>
-                  <div class="lineup-dropzone" data-role="none"></div>
+                <div class="lineup-table-wrapper">
+                  <table class="lineup-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">N.º</th>
+                        <th scope="col">Jugador</th>
+                        <th scope="col">EN</th>
+                        <th scope="col">VE</th>
+                        <th scope="col">RE</th>
+                        <th scope="col">AT</th>
+                        <th scope="col">DE</th>
+                        <th scope="col">MI</th>
+                        <th scope="col">CO</th>
+                        <th scope="col">LI</th>
+                        <th scope="col">MO</th>
+                        <th scope="col">Rol</th>
+                        <th scope="col" class="lineup-table__actions-header">Gestión</th>
+                      </tr>
+                    </thead>
+                    <tbody id="lineup-table-body"></tbody>
+                  </table>
                 </div>
               </div>
             </div>
