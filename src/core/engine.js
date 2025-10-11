@@ -436,8 +436,12 @@ function pickReplacement(lineup, bench, injured) {
  */
 export function simulateMatch(club, config, options = {}) {
   const rng = options.rng ?? Math.random;
-  const moraleBoost = options.decisionOutcome?.success ? options.decisionOutcome.moraleChange : 0;
-  const intimidation = options.decisionOutcome?.success ? options.decisionOutcome.reputationChange * 0.2 : 0;
+  const decisionOutcome = options.decisionOutcome;
+  const decisionEffectsPending = Boolean(decisionOutcome) && decisionOutcome.appliedToClub !== true;
+  const moraleBoost =
+    decisionEffectsPending && decisionOutcome?.success ? decisionOutcome.moraleChange : 0;
+  const intimidation =
+    decisionEffectsPending && decisionOutcome?.success ? decisionOutcome.reputationChange * 0.2 : 0;
 
   const { starters, substitutes } = getMatchSquads(club, config);
   const lineup = starters.length > 0 ? [...starters] : [...club.squad.slice(0, 11)];
@@ -914,10 +918,13 @@ export function simulateMatch(club, config, options = {}) {
  * @returns {MatchDayReport}
  */
 export function playMatchDay(club, config, options = {}) {
-  const match = simulateMatch(club, config, options);
+  const decisionOutcomeInput = options.decisionOutcome;
+  const decisionOutcome = decisionOutcomeInput ? { ...decisionOutcomeInput } : undefined;
+  const match = simulateMatch(club, config, { ...options, decisionOutcome });
   const finances = calculateMatchdayFinances(club, match);
-  const reputationUpdate = options.decisionOutcome?.reputationChange ?? 0;
-  const moraleUpdate = options.decisionOutcome?.moraleChange ?? 0;
+  const decisionEffectsPending = Boolean(decisionOutcome) && decisionOutcome.appliedToClub !== true;
+  const reputationUpdate = decisionEffectsPending ? decisionOutcome?.reputationChange ?? 0 : 0;
+  const moraleUpdate = decisionEffectsPending ? decisionOutcome?.moraleChange ?? 0 : 0;
 
   const resultMorale = match.goalsFor > match.goalsAgainst ? 6 : match.goalsFor === match.goalsAgainst ? 1 : -6;
   const contributionMap = new Map(match.contributions.map((contribution) => [contribution.playerId, contribution]));
@@ -976,9 +983,13 @@ export function playMatchDay(club, config, options = {}) {
     sponsors: finances.updatedSponsors ?? club.sponsors,
   };
 
+  if (decisionOutcome) {
+    decisionOutcome.appliedToClub = true;
+  }
+
   return {
     match,
-    decisionOutcome: options.decisionOutcome,
+    decisionOutcome,
     financesDelta: finances.net,
     finances,
     updatedClub,

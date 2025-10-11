@@ -107,6 +107,7 @@ export function resolveCanallaDecision(club, decision, rng = Math.random) {
     riskLevel: Math.max(0, Math.min(100, Math.round((successThreshold + (success ? 0 : 0.2)) * 100))),
     sanctions: success ? undefined : 'La prensa ha pillado el pastel; posible sanción en el próximo comité.',
     narrative,
+    appliedToClub: true,
   };
 
   return { outcome, updatedClub };
