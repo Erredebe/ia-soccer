@@ -14,13 +14,45 @@
       </header>
 
       <section class="card game-card" id="planning-card">
+        <nav class="planning-nav" aria-label="Pasos de planificación">
+          <ol class="planning-steps">
+            <li class="planning-step">
+              <a class="planning-step__link" href="#club-overview">
+                <span class="step-icon" aria-hidden="true">1</span>
+                <span class="step-text">
+                  <span class="step-title">Revisa club y liga</span>
+                  <span class="step-subtitle">Confirma presupuesto, moral y clasificación.</span>
+                </span>
+              </a>
+            </li>
+            <li class="planning-step">
+              <a class="planning-step__link" href="#match-strategy">
+                <span class="step-icon" aria-hidden="true">2</span>
+                <span class="step-text">
+                  <span class="step-title">Ajusta táctica y decisiones</span>
+                  <span class="step-subtitle">Selecciona el plan de juego antes del pitido.</span>
+                </span>
+              </a>
+            </li>
+            <li class="planning-step">
+              <a class="planning-step__link" href="#lineup-setup">
+                <span class="step-icon" aria-hidden="true">3</span>
+                <span class="step-text">
+                  <span class="step-title">Cierra la alineación</span>
+                  <span class="step-subtitle">Ordena titulares, suplentes y reservas.</span>
+                </span>
+              </a>
+            </li>
+          </ol>
+        </nav>
         <div class="planning-grid">
           <div class="planning-side">
-            <div class="club-panel card-panel">
+            <div class="club-panel card-panel" id="club-overview">
               <div class="club-header">
                 <h2>Tu chiringuito futbolero</h2>
                 <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
               </div>
+              <p class="panel-subtitle">Controla recursos y estado del vestuario antes de decidir.</p>
               <dl class="club-stats" id="club-stats">
                 <div>
                   <dt>Club</dt>
@@ -72,81 +104,82 @@
             </div>
           </div>
 
-          <form class="game-form" id="game-form">
-          <h2>Planifica la jornada</h2>
-          <label class="field">
-            <span class="field-label">Canallada previa</span>
-            <select id="decision-select" name="decision">
-              <option value="">Mantenerse pulcro (sin travesuras)</option>
-            </select>
-          </label>
-
-          <div class="field-grid">
+          <form class="game-form" id="match-strategy">
+            <h2>Planifica la jornada</h2>
+            <p class="panel-subtitle">Define decisiones clave y el enfoque táctico del encuentro.</p>
             <label class="field">
-              <span class="field-label">Táctica</span>
-              <select id="tactic-select" name="tactic">
-                <option value="balanced">Equilibrada</option>
-                <option value="attacking">Ofensiva</option>
-                <option value="defensive">Defensiva</option>
+              <span class="field-label">Canallada previa</span>
+              <select id="decision-select" name="decision">
+                <option value="">Mantenerse pulcro (sin travesuras)</option>
               </select>
             </label>
-            <label class="field">
-              <span class="field-label">Alineación</span>
-              <select id="formation-select" name="formation">
-                <option value="4-4-2">4-4-2 Clásica</option>
-                <option value="4-3-3">4-3-3 Picante</option>
-                <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
-                <option value="3-5-2">3-5-2 Superpoblado</option>
-                <option value="5-3-2">5-3-2 Autobús Canalla</option>
-                <option value="4-1-4-1">4-1-4-1 Presión Alta</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-label">¿Jugamos en casa?</span>
-              <input type="checkbox" id="home-checkbox" name="home" />
-            </label>
-            <label class="field">
-              <span class="field-label">Fuerza rival</span>
-              <input
-                type="range"
-                id="opponent-strength"
-                name="opponentStrength"
-                min="40"
-                max="95"
-                step="1"
-              />
-              <output id="opponent-output" for="opponent-strength"></output>
-            </label>
-          </div>
 
-          <div class="lineup-panel">
-            <div class="lineup-panel__header">
-              <h3>Define tu convocatoria</h3>
-              <p>Escoge 11 titulares y hasta 5 suplentes para la batalla semanal.</p>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-label">Táctica</span>
+                <select id="tactic-select" name="tactic">
+                  <option value="balanced">Equilibrada</option>
+                  <option value="attacking">Ofensiva</option>
+                  <option value="defensive">Defensiva</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">Alineación</span>
+                <select id="formation-select" name="formation">
+                  <option value="4-4-2">4-4-2 Clásica</option>
+                  <option value="4-3-3">4-3-3 Picante</option>
+                  <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
+                  <option value="3-5-2">3-5-2 Superpoblado</option>
+                  <option value="5-3-2">5-3-2 Autobús Canalla</option>
+                  <option value="4-1-4-1">4-1-4-1 Presión Alta</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">¿Jugamos en casa?</span>
+                <input type="checkbox" id="home-checkbox" name="home" />
+              </label>
+              <label class="field">
+                <span class="field-label">Fuerza rival</span>
+                <input
+                  type="range"
+                  id="opponent-strength"
+                  name="opponentStrength"
+                  min="40"
+                  max="95"
+                  step="1"
+                />
+                <output id="opponent-output" for="opponent-strength"></output>
+              </label>
             </div>
-            <div class="lineup-panel__summary">
-              <span id="lineup-count" class="lineup-summary"></span>
-              <span id="subs-count" class="lineup-summary"></span>
-            </div>
-            <p id="lineup-error" class="form-error" hidden></p>
-            <div id="lineup-board" class="lineup-board">
-              <div class="lineup-column" data-role="starter">
-                <h4>Once titular</h4>
-                <div class="lineup-dropzone" data-role="starter"></div>
-              </div>
-              <div class="lineup-column" data-role="sub">
-                <h4>Banquillo</h4>
-                <div class="lineup-dropzone" data-role="sub"></div>
-              </div>
-              <div class="lineup-column" data-role="none">
-                <h4>Reservas</h4>
-                <div class="lineup-dropzone" data-role="none"></div>
-              </div>
-            </div>
-          </div>
 
-          <button type="submit" class="play-button">Jugar jornada</button>
-        </form>
+            <div class="lineup-panel" id="lineup-setup">
+              <div class="lineup-panel__header">
+                <h3>Define tu convocatoria</h3>
+                <p class="panel-subtitle">Organiza titulares, suplentes y reservas con equilibrio.</p>
+              </div>
+              <div class="lineup-panel__summary">
+                <span id="lineup-count" class="lineup-summary"></span>
+                <span id="subs-count" class="lineup-summary"></span>
+              </div>
+              <p id="lineup-error" class="form-error" hidden></p>
+              <div id="lineup-board" class="lineup-board">
+                <div class="lineup-column" data-role="starter">
+                  <h4>Once titular</h4>
+                  <div class="lineup-dropzone" data-role="starter"></div>
+                </div>
+                <div class="lineup-column" data-role="sub">
+                  <h4>Banquillo</h4>
+                  <div class="lineup-dropzone" data-role="sub"></div>
+                </div>
+                <div class="lineup-column" data-role="none">
+                  <h4>Reservas</h4>
+                  <div class="lineup-dropzone" data-role="none"></div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="play-button">Jugar jornada</button>
+          </form>
         </div>
       </section>
 
