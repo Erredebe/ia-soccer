@@ -24,6 +24,7 @@ const lineupDropzones = lineupBoard
   : [];
 const lineupCountEl = document.querySelector('#lineup-count');
 const subsCountEl = document.querySelector('#subs-count');
+const lineupAutosortButton = document.querySelector('#lineup-autosort');
 const lineupErrorEl = document.querySelector('#lineup-error');
 const planningCard = document.querySelector('#planning-card');
 const planNextButton = document.querySelector('#plan-next');
@@ -145,6 +146,36 @@ function updateSelectionCounts() {
     subsCountEl.textContent = `Suplentes: ${configState.substitutes.length} / ${SUBS_LIMIT}`;
     subsCountEl.classList.toggle('warning', configState.substitutes.length > SUBS_LIMIT);
   }
+}
+
+function autoSortLineup() {
+  hideLineupError();
+
+  const playersById = new Map(clubState.squad.map((player) => [player.id, player]));
+  const getSortData = (playerId) => {
+    const player = playersById.get(playerId);
+    if (!player) {
+      return { rank: Number.POSITIVE_INFINITY, name: '' };
+    }
+    return {
+      rank: POSITION_ORDER[player.position] ?? Number.POSITIVE_INFINITY,
+      name: player.name,
+    };
+  };
+
+  const sorter = (aId, bId) => {
+    const aData = getSortData(aId);
+    const bData = getSortData(bId);
+    if (aData.rank !== bData.rank) {
+      return aData.rank - bData.rank;
+    }
+    return aData.name.localeCompare(bData.name);
+  };
+
+  configState.startingLineup = [...configState.startingLineup].sort(sorter);
+  configState.substitutes = [...configState.substitutes].sort(sorter);
+
+  renderLineupBoard();
 }
 
 function getPlayerRole(playerId) {
@@ -608,6 +639,10 @@ function clearReport() {
     planningCard.hidden = false;
   }
   hideLineupError();
+}
+
+if (lineupAutosortButton) {
+  lineupAutosortButton.addEventListener('click', autoSortLineup);
 }
 
 function renderDecisionOutcome(decisionOutcome) {
