@@ -19,9 +19,7 @@ const opponentOutput = document.querySelector('#opponent-output');
 const form = document.querySelector('#game-form');
 const resetButton = document.querySelector('#reset-club');
 const lineupBoard = document.querySelector('#lineup-board');
-const lineupDropzones = lineupBoard
-  ? Array.from(lineupBoard.querySelectorAll('.lineup-dropzone'))
-  : [];
+const lineupTableBody = document.querySelector('#lineup-table-body');
 const lineupCountEl = document.querySelector('#lineup-count');
 const subsCountEl = document.querySelector('#subs-count');
 const lineupAutosortButton = document.querySelector('#lineup-autosort');
@@ -86,7 +84,6 @@ let clubState = createExampleClub();
 let leagueState = clubState.league;
 let transferMarketState = createExampleTransferMarket(clubState);
 let configState = buildInitialConfig(clubState);
-let draggedPlayerId = null;
 let transferMessageTimeout;
 let modalHandlersAttached = false;
 
@@ -368,135 +365,79 @@ function calculateWeeklyWageBill(squad) {
   return squad.reduce((acc, player) => acc + player.salary / 4, 0);
 }
 
-function markDropzoneState(zone) {
-  zone.classList.toggle('empty', zone.children.length === 0);
-}
-
-function createPlayerChip(player) {
-  const chip = document.createElement('article');
-  chip.className = `player-chip player-chip--${player.position}`;
-  chip.draggable = true;
-  chip.dataset.playerId = player.id;
-
-  const header = document.createElement('div');
-  header.className = 'player-chip__header';
-  const name = document.createElement('span');
-  name.className = 'player-chip__name';
-  name.textContent = player.name;
-  const position = document.createElement('span');
-  position.className = 'player-chip__position';
-  position.textContent = player.position;
-  header.append(name, position);
-
-  const details = document.createElement('div');
-  details.className = 'player-chip__details';
-  const morale = document.createElement('span');
-  morale.textContent = `Moral ${formatMorale(player.morale)}`;
-  const fitness = document.createElement('span');
-  fitness.textContent = `Forma ${player.fitness}/100`;
-  const age = document.createElement('span');
-  age.textContent = `${player.age} años`;
-  details.append(morale, fitness, age);
-
-  const value = document.createElement('div');
-  value.className = 'player-chip__value';
-  value.textContent = `Valor: ${numberFormatter.format(estimatePlayerValue(player))}`;
-
-  const actions = document.createElement('div');
-  actions.className = 'player-chip__actions';
-  const sellButton = document.createElement('button');
-  sellButton.type = 'button';
-  sellButton.className = 'player-chip__button';
-  sellButton.textContent = 'Vender';
-  sellButton.addEventListener('click', (event) => {
-    event.stopPropagation();
-    sellPlayer(player.id);
-  });
-  actions.append(sellButton);
-
-  chip.append(header, details, value, actions);
-  chip.addEventListener('dragstart', handleDragStart);
-  chip.addEventListener('dragend', handleDragEnd);
-
-  return chip;
-}
-
-function handleDragStart(event) {
-  const chip = event.currentTarget;
-  if (!(chip instanceof HTMLElement)) {
-    return;
+function clampStat(value) {
+  const numeric = typeof value === 'number' ? value : Number.parseFloat(String(value));
+  if (Number.isNaN(numeric)) {
+    return 0;
   }
-  draggedPlayerId = chip.dataset.playerId ?? null;
-  chip.classList.add('dragging');
-  if (event.dataTransfer && draggedPlayerId) {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', draggedPlayerId);
-  }
+  return Math.max(0, Math.min(100, Math.round(numeric)));
 }
 
-function handleDragEnd(event) {
-  const chip = event.currentTarget;
-  if (chip instanceof HTMLElement) {
-    chip.classList.remove('dragging');
-  }
-  draggedPlayerId = null;
-  lineupDropzones.forEach((zone) => zone.classList.remove('is-over'));
+function createStatCell(value) {
+  const cell = document.createElement('td');
+  cell.className = 'lineup-table__stat';
+  const meter = document.createElement('div');
+  meter.className = 'lineup-table__stat-meter';
+  const bar = document.createElement('div');
+  bar.className = 'lineup-table__stat-meter-bar';
+  const fill = document.createElement('div');
+  fill.className = 'lineup-table__stat-meter-fill';
+  fill.style.setProperty('--value', String(clampStat(value)));
+  bar.append(fill);
+  const label = document.createElement('span');
+  label.className = 'lineup-table__stat-value';
+  label.textContent = String(clampStat(value));
+  meter.append(bar, label);
+  cell.append(meter);
+  return cell;
 }
 
-function handleDragOver(event) {
-  event.preventDefault();
-  const zone = event.currentTarget;
-  if (zone instanceof HTMLElement) {
-    zone.classList.add('is-over');
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
+function createMetaSpan(text) {
+  const span = document.createElement('span');
+  span.textContent = text;
+  return span;
+}
+
+function createRoleControl(player) {
+  const cell = document.createElement('td');
+  const control = document.createElement('div');
+  control.className = 'lineup-role-control';
+  const currentRole = getPlayerRole(player.id);
+  const roles = [
+    { key: 'starter', label: 'Titular' },
+    { key: 'sub', label: 'Banquillo' },
+    { key: 'none', label: 'Reserva' },
+  ];
+
+  roles.forEach(({ key, label }) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'lineup-role-button';
+    button.textContent = label;
+    button.dataset.role = key;
+    if (currentRole === key) {
+      button.classList.add('is-active');
     }
-  }
+    button.addEventListener('click', () => {
+      handleRoleSelection(player.id, key);
+    });
+    control.append(button);
+  });
+
+  cell.append(control);
+  return cell;
 }
 
-function handleDragLeave(event) {
-  const zone = event.currentTarget;
-  if (zone instanceof HTMLElement) {
-    zone.classList.remove('is-over');
-  }
-}
-
-function handleDrop(event) {
-  event.preventDefault();
-  const zone = event.currentTarget;
-  if (!(zone instanceof HTMLElement)) {
-    return;
-  }
-  zone.classList.remove('is-over');
-  const role = zone.dataset.role ?? 'none';
-  const playerId = event.dataTransfer?.getData('text/plain') || draggedPlayerId;
+function handleRoleSelection(playerId, role) {
   if (!playerId) {
     return;
   }
+
   const previousRole = getPlayerRole(playerId);
-  const dropTarget = event.target instanceof HTMLElement ? event.target.closest('.player-chip') : null;
-  const dropTargetId = dropTarget?.dataset.playerId ?? null;
-  const startersIndex = configState.startingLineup.indexOf(playerId);
-  const subsIndex = configState.substitutes.indexOf(playerId);
-  const previousIndex = previousRole === 'starter' ? startersIndex : previousRole === 'sub' ? subsIndex : -1;
-
-  const getTargetIndex = () => {
-    if (role === 'starter') {
-      if (dropTargetId) {
-        return configState.startingLineup.indexOf(dropTargetId);
-      }
-      return configState.startingLineup.length;
-    }
-    if (role === 'sub') {
-      if (dropTargetId) {
-        return configState.substitutes.indexOf(dropTargetId);
-      }
-      return configState.substitutes.length;
-    }
-    return -1;
-  };
-
-  const targetIndex = getTargetIndex();
+  if (role === previousRole) {
+    hideLineupError();
+    return;
+  }
 
   const getCollectionForRole = (targetRole) => {
     if (targetRole === 'starter') {
@@ -513,19 +454,8 @@ function handleDrop(event) {
 
   let noticeMessage = '';
 
-  const findDisplacedCandidate = () => {
-    if (!targetCollection || targetCollection.length === 0) {
-      return null;
-    }
-    if (dropTargetId && targetCollection.includes(dropTargetId) && dropTargetId !== playerId) {
-      return dropTargetId;
-    }
-    const oldestId = targetCollection.find((id) => id !== playerId);
-    return oldestId ?? null;
-  };
-
   if (role !== previousRole && targetCollection && targetCollection.length >= targetLimit) {
-    const candidateId = findDisplacedCandidate();
+    const candidateId = targetCollection.find((id) => id !== playerId);
     if (!candidateId) {
       if (role === 'starter') {
         showLineupError('Solo caben 11 titulares. Haz hueco antes de sumar otro.');
@@ -536,7 +466,12 @@ function handleDrop(event) {
     }
 
     const fallbackRole = previousRole;
-    const fallbackIndex = fallbackRole === 'starter' ? previousIndex : fallbackRole === 'sub' ? previousIndex : -1;
+    const fallbackIndex =
+      fallbackRole === 'starter'
+        ? configState.startingLineup.length
+        : fallbackRole === 'sub'
+          ? configState.substitutes.length
+          : -1;
     const displacedPlayer = findPlayerById(candidateId);
 
     applyRoleChange(candidateId, fallbackRole, { preferredIndex: fallbackIndex });
@@ -550,14 +485,14 @@ function handleDrop(event) {
             : 'lista de reservas';
       noticeMessage = `${displacedPlayer.name} se movió a la ${fallbackLabel}.`;
     }
-  } else if (role !== previousRole && targetCollection && targetCollection.length > targetLimit) {
-    if (role === 'starter') {
-      showLineupError('Solo caben 11 titulares. Haz hueco antes de sumar otro.');
-    } else if (role === 'sub') {
-      showLineupError('El banquillo está lleno: máximo 5 suplentes.');
-    }
-    return;
   }
+
+  const targetIndex =
+    role === 'starter'
+      ? configState.startingLineup.length
+      : role === 'sub'
+        ? configState.substitutes.length
+        : -1;
 
   applyRoleChange(playerId, role, { preferredIndex: targetIndex });
 
@@ -571,18 +506,19 @@ function handleDrop(event) {
 }
 
 function renderLineupBoard() {
-  if (!lineupBoard) {
+  if (!lineupBoard || !lineupTableBody) {
     return;
   }
 
   ensureLineupCompleteness();
   hideLineupError();
 
-  lineupDropzones.forEach((zone) => {
-    zone.innerHTML = '';
-  });
-
   const players = [...clubState.squad].sort((a, b) => {
+    const roleRank = { starter: 0, sub: 1, none: 2 };
+    const roleDiff = roleRank[getPlayerRole(a.id)] - roleRank[getPlayerRole(b.id)];
+    if (roleDiff !== 0) {
+      return roleDiff;
+    }
     const positionDiff = (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99);
     if (positionDiff !== 0) {
       return positionDiff;
@@ -590,16 +526,61 @@ function renderLineupBoard() {
     return a.name.localeCompare(b.name);
   });
 
-  players.forEach((player) => {
-    const role = getPlayerRole(player.id);
-    const roleKey = role === 'starter' ? 'starter' : role === 'sub' ? 'sub' : 'none';
-    const target = lineupBoard.querySelector(`.lineup-dropzone[data-role='${roleKey}']`);
-    if (target instanceof HTMLElement) {
-      target.append(createPlayerChip(player));
-    }
-  });
+  lineupTableBody.innerHTML = '';
 
-  lineupDropzones.forEach(markDropzoneState);
+  players.forEach((player) => {
+    const row = document.createElement('tr');
+    row.dataset.playerId = player.id;
+    row.dataset.role = getPlayerRole(player.id);
+
+    const indexCell = document.createElement('th');
+    indexCell.scope = 'row';
+    indexCell.textContent = String(lineupTableBody.children.length + 1);
+
+    const playerCell = document.createElement('td');
+    playerCell.className = 'lineup-table__player';
+    const name = document.createElement('span');
+    name.className = 'lineup-table__player-name';
+    name.textContent = player.name;
+    const meta = document.createElement('div');
+    meta.className = 'lineup-table__player-meta';
+    meta.append(
+      createMetaSpan(player.position),
+      createMetaSpan(`${player.age} años`),
+      createMetaSpan(`Valor ${numberFormatter.format(estimatePlayerValue(player))}`)
+    );
+    playerCell.append(name, meta);
+
+    const statValues = [
+      player.fitness,
+      player.attributes.pace,
+      player.attributes.stamina,
+      player.attributes.shooting,
+      player.attributes.defending,
+      player.attributes.passing,
+      player.attributes.dribbling,
+      player.attributes.leadership,
+    ];
+
+    const cells = statValues.map((value) => createStatCell(value));
+    const moraleCell = createStatCell(player.morale);
+
+    const roleCell = createRoleControl(player);
+
+    const actionsCell = document.createElement('td');
+    actionsCell.className = 'lineup-table__actions';
+    const sellButton = document.createElement('button');
+    sellButton.type = 'button';
+    sellButton.className = 'lineup-sell-button';
+    sellButton.textContent = 'Vender';
+    sellButton.addEventListener('click', () => {
+      sellPlayer(player.id);
+    });
+    actionsCell.append(sellButton);
+
+    row.append(indexCell, playerCell, ...cells, moraleCell, roleCell, actionsCell);
+    lineupTableBody.append(row);
+  });
   updateSelectionCounts();
 }
 
@@ -993,15 +974,6 @@ if (planNextButton) {
   });
 }
 
-function attachDropzoneHandlers() {
-  lineupDropzones.forEach((zone) => {
-    zone.addEventListener('dragover', handleDragOver);
-    zone.addEventListener('dragenter', handleDragOver);
-    zone.addEventListener('dragleave', handleDragLeave);
-    zone.addEventListener('drop', handleDrop);
-  });
-}
-
 function init() {
   attachModalHandlers();
   populateDecisions();
@@ -1010,7 +982,6 @@ function init() {
   renderLeagueTable();
   renderTransferMarket();
   updateOpponentOutput();
-  attachDropzoneHandlers();
   switchToPlanningView();
 }
 
