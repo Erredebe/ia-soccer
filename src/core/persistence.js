@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Persistencia local para partidas guardadas en el navegador.
  * @module core/persistence
@@ -14,12 +15,18 @@ import { createEmptySeasonLog, createSeasonStats } from './data.js';
 export const SAVE_VERSION = 2;
 export const SAVE_KEY = 'ia-soccer-manager-state';
 
-/** @param {unknown} value */
+/**
+ * Comprueba si el valor recibido es un objeto no nulo.
+ * @param {unknown} value
+ */
 function isObject(value) {
   return typeof value === 'object' && value !== null;
 }
 
-/** @param {import('../types.js').Player} player */
+/**
+ * Asegura que un jugador tiene disponibilidad y registro de temporada coherentes.
+ * @param {import('../types.js').Player} player
+ */
 function normalisePlayer(player) {
   const availability = {
     injuryMatches: player.availability?.injuryMatches ?? 0,
@@ -37,6 +44,7 @@ function normalisePlayer(player) {
 }
 
 /**
+ * Normaliza un club reconstruyendo plantilla y estadísticas con valores por defecto.
  * @param {ClubState} club
  */
 function normaliseClub(club) {
@@ -52,6 +60,7 @@ function normaliseClub(club) {
 }
 
 /**
+ * Clona una liga asegurando que la tabla es una copia independiente.
  * @param {LeagueState} league
  */
 function normaliseLeague(league) {
@@ -62,6 +71,7 @@ function normaliseLeague(league) {
 }
 
 /**
+ * Prepara un blob serializable limpiando semillas y referencias inconsistentes.
  * @param {SavedGameBlob} blob
  */
 function normaliseBlob(blob) {
@@ -83,7 +93,8 @@ function normaliseBlob(blob) {
 }
 
 /**
- * @param {unknown} maybeBlob
+ * Intenta migrar una partida guardada antigua al formato actual.
+ * @param {unknown} maybeBlob Datos procedentes del almacenamiento.
  * @returns {SavedGameBlob | null}
  */
 export function migrateSave(maybeBlob) {
@@ -106,6 +117,7 @@ export function migrateSave(maybeBlob) {
 }
 
 /**
+ * Serializa el estado del juego listo para persistir.
  * @param {{ club: ClubState; league: LeagueState; config: MatchConfig; transferMarket: TransferTarget[] }} state
  */
 export function serializeState(state) {
@@ -120,6 +132,9 @@ export function serializeState(state) {
   return payload;
 }
 
+/**
+ * Obtiene una instancia de `localStorage` disponible en entorno navegador o tests.
+ */
 function getDefaultStorage() {
   if (typeof window !== 'undefined' && window.localStorage) {
     return window.localStorage;
@@ -131,6 +146,7 @@ function getDefaultStorage() {
 }
 
 /**
+ * Persiste el blob proporcionado en la clave estándar del simulador.
  * @param {SavedGameBlob} payload
  * @param {Storage} storage
  */

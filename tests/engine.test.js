@@ -1,3 +1,4 @@
+// @ts-check
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -5,6 +6,10 @@ import { simulateMatch, playMatchDay } from '../src/core/engine.js';
 import { createDefaultMatchConfig, createDefaultLineup, createExampleClub } from '../src/core/data.js';
 import { resolveCanallaDecision } from '../src/core/reputation.js';
 
+/**
+ * Devuelve un generador que recorre una secuencia fija de números.
+ * @param {number[]} sequence
+ */
 function createDeterministicRng(sequence) {
   let index = 0;
   return () => {
@@ -14,6 +19,11 @@ function createDeterministicRng(sequence) {
   };
 }
 
+/**
+ * Generador pseudoaleatorio que consume una secuencia y luego usa un valor por defecto.
+ * @param {number[]} sequence Valores prefijados.
+ * @param {number} [fallback]
+ */
 function createSequenceRng(sequence, fallback = 0.95) {
   let index = 0;
   return () => {

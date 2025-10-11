@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Motor de simulación de partidos para el chiringuito canalla.
  * Implementación en JavaScript puro con tipados vía JSDoc.
@@ -20,6 +21,7 @@ import { createEmptySeasonLog, createSeasonStats } from './data.js';
 /** @typedef {import('../types.js').MatchAdjustment} MatchAdjustment */
 
 /**
+ * Definición del tipo `MatchSimulationOptions`.
  * @typedef {Object} MatchSimulationOptions
  * @property {() => number=} rng
  * @property {CanallaDecision=} decision
@@ -38,7 +40,8 @@ const DEFAULT_INSTRUCTIONS = {
 };
 
 /**
- * @param {number | string} seed
+ * Convierte cualquier tipo de semilla en un entero sin signo reproducible.
+ * @param {number | string} seed Semilla inicial numérica o textual.
  */
 function hashSeed(seed) {
   if (typeof seed === 'number' && Number.isFinite(seed)) {
@@ -55,8 +58,8 @@ function hashSeed(seed) {
 }
 
 /**
- * Generador determinista Mulberry32.
- * @param {number | string} seed
+ * Crea un generador Mulberry32 determinista a partir de una semilla amigable.
+ * @param {number | string} seed Semilla que define la secuencia pseudoaleatoria.
  */
 function createSeededRng(seed) {
   let t = hashSeed(seed) + 0x6d2b79f5;
@@ -69,33 +72,39 @@ function createSeededRng(seed) {
   };
 }
 
-/** @param {Player} player */
+/**
+ * Determina si un futbolista actúa como guardameta.
+ * @param {Player} player Jugador a evaluar.
+ */
 function isGoalkeeper(player) {
   return player.position === 'GK';
 }
 
 /**
- * @param {Record<string, number>} record
- * @param {string} key
- * @param {number} value
+ * Incrementa de forma segura un contador numérico en un registro arbitrario.
+ * @param {Record<string, number>} record Diccionario donde acumular.
+ * @param {string} key Clave del contador a modificar.
+ * @param {number} value Incremento que se desea sumar.
  */
 function accumulate(record, key, value) {
   record[key] = (record[key] ?? 0) + value;
 }
 
 /**
+ * Acota un valor numérico dentro de un intervalo específico.
  * @template T extends number
- * @param {T} value
- * @param {T} min
- * @param {T} max
+ * @param {T} value Valor original.
+ * @param {T} min Límite inferior permitido.
+ * @param {T} max Límite superior permitido.
  */
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
 /**
- * @param {Player[]} players
- * @param {keyof Player['attributes']} key
+ * Calcula la media de un atributo de todos los jugadores recibidos.
+ * @param {Player[]} players Plantilla sobre la que operar.
+ * @param {keyof Player['attributes']} key Atributo que se desea promediar.
  */
 function averageAttribute(players, key) {
   if (players.length === 0) {
@@ -105,7 +114,10 @@ function averageAttribute(players, key) {
   return total / players.length;
 }
 
-/** @param {Player[]} players */
+/**
+ * Calcula la moral media del grupo indicado.
+ * @param {Player[]} players Plantilla sobre la que medir el ánimo.
+ */
 function averageMorale(players) {
   if (players.length === 0) {
     return 0;
@@ -114,7 +126,10 @@ function averageMorale(players) {
   return total / players.length;
 }
 
-/** @param {MatchConfig['tactic']} tactic */
+/**
+ * Transforma la táctica seleccionada en un modificador numérico de rendimiento.
+ * @param {MatchConfig['tactic']} tactic Estilo táctico del club.
+ */
 function tacticModifier(tactic) {
   switch (tactic) {
     case 'defensive':
@@ -129,7 +144,8 @@ function tacticModifier(tactic) {
 }
 
 /**
- * @param {string} formation
+ * Devuelve el perfil ofensivo/defensivo asociado a una formación.
+ * @param {string} formation Cadena con la disposición táctica (4-4-2, 3-5-2...).
  */
 function formationProfile(formation) {
   switch (formation) {
@@ -150,9 +166,10 @@ function formationProfile(formation) {
 }
 
 /**
- * @param {Player[]} players
- * @param {MatchConfig} config
- * @param {number} [moraleBoost]
+ * Calcula una puntuación de fuerza global del club para ponderar la simulación.
+ * @param {Player[]} players Jugadores involucrados en el partido.
+ * @param {MatchConfig} config Configuración táctica seleccionada.
+ * @param {number} [moraleBoost] Bonificación temporal de moral.
  */
 function calculateClubStrength(players, config, moraleBoost = 0) {
   const shape = formationProfile(config.formation ?? '4-4-2');
@@ -171,9 +188,10 @@ function calculateClubStrength(players, config, moraleBoost = 0) {
 }
 
 /**
- * @param {MatchConfig} config
- * @param {ClubState} club
- * @returns {string[]}
+ * Construye las primeras líneas de la crónica del encuentro.
+ * @param {MatchConfig} config Configuración del partido.
+ * @param {ClubState} club Club protagonista.
+ * @returns {string[]} Mensajes introductorios para la narrativa.
  */
 function narrativeIntro(config, club) {
   const place = config.home ? 'en el templo propio' : 'visitando campo ajeno';
@@ -183,9 +201,10 @@ function narrativeIntro(config, club) {
 }
 
 /**
- * @param {PlayerContribution[]} contributions
- * @param {() => number} rng
- * @returns {PlayerContribution | undefined}
+ * Escoge al jugador del partido entre las mejores actuaciones.
+ * @param {PlayerContribution[]} contributions Calificaciones individuales registradas.
+ * @param {() => number} rng Generador aleatorio que desempata entre candidatos.
+ * @returns {PlayerContribution | undefined} MVP seleccionado si existe.
  */
 function pickManOfTheMatch(contributions, rng) {
   if (contributions.length === 0) {
@@ -198,8 +217,9 @@ function pickManOfTheMatch(contributions, rng) {
 }
 
 /**
- * @param {ClubState} club
- * @param {MatchConfig} config
+ * Obtiene las plantillas iniciales y suplentes a partir de la configuración.
+ * @param {ClubState} club Club que disputa el encuentro.
+ * @param {MatchConfig} config Configuración táctica y de alineación.
  */
 function getMatchSquads(club, config) {
   const map = new Map(club.squad.map((player) => [player.id, player]));
@@ -218,15 +238,17 @@ function getMatchSquads(club, config) {
 }
 
 /**
- * @param {TacticalInstructions | undefined} instructions
- * @returns {Required<TacticalInstructions>}
+ * Fusiona las instrucciones recibidas con los valores por defecto del motor.
+ * @param {TacticalInstructions | undefined} instructions Indicaciones originales.
+ * @returns {Required<TacticalInstructions>} Instrucciones completas y normalizadas.
  */
 function mergeInstructions(instructions) {
   return { ...DEFAULT_INSTRUCTIONS, ...(instructions ?? {}) };
 }
 
 /**
- * @param {Required<TacticalInstructions>} instructions
+ * Traduce unas instrucciones tácticas en modificadores numéricos para la simulación.
+ * @param {Required<TacticalInstructions>} instructions Ordenes tácticas finalizadas.
  */
 function instructionProfile(instructions) {
   const pressing = instructions.pressing ?? 'medium';
@@ -293,6 +315,7 @@ function instructionProfile(instructions) {
 }
 
 /**
+ * Crea un objeto de estadísticas partido vacío listo para ir rellenando cifras.
  * @returns {import('../types.js').MatchStatistics}
  */
 function createEmptyStatistics() {
@@ -309,9 +332,10 @@ function createEmptyStatistics() {
 }
 
 /**
- * @param {Map<string, PlayerContribution>} contributions
- * @param {string} playerId
- * @param {number} [base]
+ * Garantiza que exista una contribución registrada para un jugador concreto.
+ * @param {Map<string, PlayerContribution>} contributions Tabla de contribuciones acumuladas.
+ * @param {string} playerId Identificador del jugador buscado.
+ * @param {number} [base] Nota inicial opcional.
  */
 function ensureContribution(contributions, playerId, base = 6) {
   if (!contributions.has(playerId)) {
@@ -333,9 +357,10 @@ function ensureContribution(contributions, playerId, base = 6) {
 }
 
 /**
- * @param {Map<string, PlayerContribution>} contributions
- * @param {Player[]} players
- * @param {number} minutes
+ * Suma minutos jugados a toda una lista de jugadores a la vez.
+ * @param {Map<string, PlayerContribution>} contributions Tabla de actuaciones.
+ * @param {Player[]} players Participantes afectados.
+ * @param {number} minutes Minutos a añadir.
  */
 function addMinutesPlayed(contributions, players, minutes) {
   for (const player of players) {
@@ -345,9 +370,10 @@ function addMinutesPlayed(contributions, players, minutes) {
 }
 
 /**
- * @param {Player[]} players
- * @param {keyof Player['attributes']} attribute
- * @param {() => number} rng
+ * Selecciona un jugador ponderando por uno de sus atributos.
+ * @param {Player[]} players Candidatos disponibles.
+ * @param {keyof Player['attributes']} attribute Atributo utilizado como peso.
+ * @param {() => number} rng Generador aleatorio.
  */
 function selectPlayerWeighted(players, attribute, rng) {
   const total = players.reduce((sum, player) => sum + (player.attributes[attribute] || 1), 0);
@@ -366,15 +392,16 @@ function selectPlayerWeighted(players, attribute, rng) {
 }
 
 /**
- * @param {Player[]} lineup
- * @param {Player[]} bench
- * @param {Map<string, PlayerContribution>} contributions
- * @param {MatchEvent[]} events
- * @param {string[]} commentary
- * @param {number} minute
- * @param {string} reason
- * @param {string} outId
- * @param {string} inId
+ * Ejecuta un cambio de jugadores actualizando eventos, comentarios y actuaciones.
+ * @param {Player[]} lineup Once sobre el césped.
+ * @param {Player[]} bench Banquillo disponible.
+ * @param {Map<string, PlayerContribution>} contributions Tabla de actuaciones.
+ * @param {MatchEvent[]} events Registro de eventos del partido.
+ * @param {string[]} commentary Comentarios narrativos.
+ * @param {number} minute Minuto en el que sucede el cambio.
+ * @param {string} reason Motivo declarado de la sustitución.
+ * @param {string} outId Jugador que se retira.
+ * @param {string} inId Jugador que entra.
  */
 function performSubstitution(lineup, bench, contributions, events, commentary, minute, reason, outId, inId) {
   const outIndex = lineup.findIndex((player) => player.id === outId);
@@ -448,15 +475,16 @@ function handleGoalkeeperEmergency(lineup, bench, contributions, events, comment
 }
 
 /**
- * @param {MatchAdjustment} adjustment
- * @param {Player[]} lineup
- * @param {Player[]} bench
- * @param {Map<string, PlayerContribution>} contributions
- * @param {MatchEvent[]} events
- * @param {string[]} commentary
- * @param {number} minute
- * @param {() => number} rng
- * @param {{ tactic: string; formation: string; instructions: Required<TacticalInstructions>; substitutionsUsed: number }} state
+ * Aplica un ajuste táctico programado sobre el flujo del partido.
+ * @param {MatchAdjustment} adjustment Instrucciones que deben ejecutarse.
+ * @param {Player[]} lineup Once actual.
+ * @param {Player[]} bench Banquillo disponible.
+ * @param {Map<string, PlayerContribution>} contributions Registro de actuaciones.
+ * @param {MatchEvent[]} events Línea temporal de eventos.
+ * @param {string[]} commentary Frases narrativas acumuladas.
+ * @param {number} minute Minuto en el que se ejecuta la orden.
+ * @param {() => number} rng Generador aleatorio de apoyo.
+ * @param {{ tactic: string; formation: string; instructions: Required<TacticalInstructions>; substitutionsUsed: number }} state Estado táctico actual del club.
  */
 function applyAdjustment(
   adjustment,
@@ -523,10 +551,11 @@ function pickReplacement(lineup, bench, injured) {
 }
 
 /**
- * @param {ClubState} club
- * @param {MatchConfig} config
- * @param {MatchSimulationOptions} [options]
- * @returns {MatchResult}
+ * Ejecuta la simulación completa de un partido para el club proporcionado.
+ * @param {ClubState} club Información detallada del club canalla.
+ * @param {MatchConfig} config Configuración del partido y alineaciones.
+ * @param {MatchSimulationOptions} [options] Opciones adicionales como RNG o decisiones.
+ * @returns {MatchResult} Resultado del encuentro con estadísticas y narrativa.
  */
 export function simulateMatch(club, config, options = {}) {
   const seedValue = options.seed !== undefined ? hashSeed(options.seed) : undefined;
@@ -1040,10 +1069,11 @@ export function simulateMatch(club, config, options = {}) {
 }
 
 /**
- * @param {ClubState} club
- * @param {MatchConfig} config
- * @param {MatchSimulationOptions} [options]
- * @returns {MatchDayReport}
+ * Simula una jornada completa, incluyendo partido, impacto de decisiones y finanzas.
+ * @param {ClubState} club Estado actual del club.
+ * @param {MatchConfig} config Configuración del partido a disputar.
+ * @param {MatchSimulationOptions} [options] Parámetros extra como decisiones o semillas.
+ * @returns {MatchDayReport} Informe detallado tras la jornada.
  */
 export function playMatchDay(club, config, options = {}) {
   const decisionOutcomeInput = options.decisionOutcome;

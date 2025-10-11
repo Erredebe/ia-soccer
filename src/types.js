@@ -1,14 +1,22 @@
+// @ts-check
 /**
  * Tipos JSDoc para el simulador canallesco. Aunque son comentarios, sirven para editores
  * y para mantener la documentación viva sin depender de compilaciones TypeScript.
  * @module types
  */
 
-/** @typedef {string} PlayerId */
-
-/** @typedef {"GK" | "DEF" | "MID" | "FWD"} Position */
+/**
+ * Definición del tipo `PlayerId`.
+ * @typedef {string} PlayerId
+ */
 
 /**
+ * Definición del tipo `Position`.
+ * @typedef {"GK" | "DEF" | "MID" | "FWD"} Position
+ */
+
+/**
+ * Definición del tipo `PlayerAttributes`.
  * @typedef {Object} PlayerAttributes
  * @property {number} pace
  * @property {number} stamina
@@ -21,18 +29,22 @@
  */
 
 /**
+ * Definición del tipo `Contract`.
  * @typedef {Object} Contract
  * @property {number} salary
  * @property {number} duration
  * @property {number=} releaseClause
  */
 
-/** @typedef {Object} PlayerAvailability
+/**
+ * Definición del tipo `PlayerAvailability`.
+ * @typedef {Object} PlayerAvailability
  * @property {number} injuryMatches Restantes para volver tras lesión (0 si está disponible)
  * @property {number} suspensionMatches Partidos de sanción pendientes
  */
 
 /**
+ * Definición del tipo `PlayerSeasonLog`.
  * @typedef {Object} PlayerSeasonLog
  * @property {number} goals
  * @property {number} assists
@@ -45,6 +57,7 @@
  */
 
 /**
+ * Definición del tipo `Player`.
  * @typedef {Object} Player
  * @property {PlayerId} id
  * @property {string} name
@@ -60,12 +73,14 @@
  */
 
 /**
+ * Definición del tipo `ClubObjectives`.
  * @typedef {Object} ClubObjectives
  * @property {number=} minPosition
  * @property {boolean=} cupRun
  */
 
 /**
+ * Definición del tipo `LeagueStanding`.
  * @typedef {Object} LeagueStanding
  * @property {string} club
  * @property {number} played
@@ -78,6 +93,7 @@
  */
 
 /**
+ * Definición del tipo `LeagueState`.
  * @typedef {Object} LeagueState
  * @property {string} name
  * @property {number} matchDay
@@ -85,6 +101,7 @@
  */
 
 /**
+ * Definición del tipo `ClubSeasonStats`.
  * @typedef {Object} ClubSeasonStats
  * @property {number} matches
  * @property {number} wins
@@ -98,6 +115,7 @@
  */
 
 /**
+ * Definición del tipo `TransferTarget`.
  * @typedef {Object} TransferTarget
  * @property {string} id
  * @property {Player} player
@@ -105,15 +123,28 @@
  * @property {string} origin
  */
 
-/** @typedef {"quick" | "text"} MatchViewMode */
-
-/** @typedef {"low" | "medium" | "high"} PressingLevel */
-
-/** @typedef {"slow" | "balanced" | "fast"} TempoLevel */
-
-/** @typedef {"narrow" | "balanced" | "wide"} WidthLevel */
+/**
+ * Definición del tipo `MatchViewMode`.
+ * @typedef {"quick" | "text"} MatchViewMode
+ */
 
 /**
+ * Definición del tipo `PressingLevel`.
+ * @typedef {"low" | "medium" | "high"} PressingLevel
+ */
+
+/**
+ * Definición del tipo `TempoLevel`.
+ * @typedef {"slow" | "balanced" | "fast"} TempoLevel
+ */
+
+/**
+ * Definición del tipo `WidthLevel`.
+ * @typedef {"narrow" | "balanced" | "wide"} WidthLevel
+ */
+
+/**
+ * Definición del tipo `TacticalInstructions`.
  * @typedef {Object} TacticalInstructions
  * @property {PressingLevel=} pressing
  * @property {TempoLevel=} tempo
@@ -123,6 +154,7 @@
  */
 
 /**
+ * Definición del tipo `MatchSubstitution`.
  * @typedef {Object} MatchSubstitution
  * @property {PlayerId} out
  * @property {PlayerId} in
@@ -130,6 +162,7 @@
  */
 
 /**
+ * Definición del tipo `MatchAdjustment`.
  * @typedef {Object} MatchAdjustment
  * @property {number=} minute
  * @property {"defensive" | "balanced" | "attacking" | string=} tactic
@@ -139,6 +172,7 @@
  */
 
 /**
+ * Definición del tipo `MatchConfig`.
  * @typedef {Object} MatchConfig
  * @property {boolean} home
  * @property {number} opponentStrength
@@ -154,6 +188,7 @@
  */
 
 /**
+ * Definición del tipo `MatchEvent`.
  * @typedef {Object} MatchEvent
  * @property {number} minute
  * @property {string} type
@@ -165,6 +200,7 @@
  */
 
 /**
+ * Definición del tipo `PlayerContribution`.
  * @typedef {Object} PlayerContribution
  * @property {PlayerId} playerId
  * @property {number} rating
@@ -180,6 +216,7 @@
  */
 
 /**
+ * Definición del tipo `MatchStatistics`.
  * @typedef {Object} MatchStatistics
  * @property {{ for: number; against: number }} possession
  * @property {{ for: number; against: number; onTargetFor: number; onTargetAgainst: number }} shots
@@ -192,6 +229,7 @@
  */
 
 /**
+ * Definición del tipo `MatchResult`.
  * @typedef {Object} MatchResult
  * @property {number} goalsFor
  * @property {number} goalsAgainst
@@ -205,15 +243,20 @@
  * @property {number=} seed
  */
 
-/** @typedef {"sobornoArbitro" | "filtrarRumor" | "fiestaIlegal" | "presionarFederacion"} CanallaDecisionType */
+/**
+ * Definición del tipo `CanallaDecisionType`.
+ * @typedef {"sobornoArbitro" | "filtrarRumor" | "fiestaIlegal" | "presionarFederacion"} CanallaDecisionType
+ */
 
 /**
+ * Definición del tipo `CanallaDecision`.
  * @typedef {Object} CanallaDecision
  * @property {CanallaDecisionType} type
  * @property {"baja" | "media" | "alta"} intensity
  */
 
 /**
+ * Definición del tipo `DecisionOutcome`.
  * @typedef {Object} DecisionOutcome
  * @property {boolean} success
  * @property {number} reputationChange
@@ -226,6 +269,7 @@
  */
 
 /**
+ * Definición del tipo `SponsorContract`.
  * @typedef {Object} SponsorContract
  * @property {string} name
  * @property {number} value
@@ -234,6 +278,7 @@
  */
 
 /**
+ * Definición del tipo `TVDeal`.
  * @typedef {Object} TVDeal
  * @property {string} name
  * @property {number} perMatch
@@ -242,6 +287,7 @@
  */
 
 /**
+ * Definición del tipo `MerchandisingPlan`.
  * @typedef {Object} MerchandisingPlan
  * @property {string} brand
  * @property {number} base
@@ -250,6 +296,7 @@
  */
 
 /**
+ * Definición del tipo `InfrastructureState`.
  * @typedef {Object} InfrastructureState
  * @property {number} stadiumLevel
  * @property {number} academyLevel
@@ -258,6 +305,7 @@
  */
 
 /**
+ * Definición del tipo `OperatingExpenses`.
  * @typedef {Object} OperatingExpenses
  * @property {number} maintenance
  * @property {number} staff
@@ -266,6 +314,7 @@
  */
 
 /**
+ * Definición del tipo `MatchdayFinancials`.
  * @typedef {Object} MatchdayFinancials
  * @property {number} income
  * @property {number} expenses
@@ -278,6 +327,7 @@
  */
 
 /**
+ * Definición del tipo `ClubState`.
  * @typedef {Object} ClubState
  * @property {string} name
  * @property {number} budget
@@ -297,6 +347,7 @@
  */
 
 /**
+ * Definición del tipo `MatchDayReport`.
  * @typedef {Object} MatchDayReport
  * @property {MatchResult} match
  * @property {DecisionOutcome=} decisionOutcome
@@ -306,6 +357,7 @@
  */
 
 /**
+ * Definición del tipo `SavedGameBlob`.
  * @typedef {Object} SavedGameBlob
  * @property {number} version
  * @property {number} timestamp
@@ -316,6 +368,7 @@
  */
 
 /**
+ * Definición del tipo `TransferOffer`.
  * @typedef {Object} TransferOffer
  * @property {number} amount
  * @property {string} fromClub

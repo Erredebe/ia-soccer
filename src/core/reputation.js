@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Resolución de decisiones canallas, efectos en reputación y moral.
  * @module core/reputation
@@ -8,13 +9,14 @@
 /** @typedef {import('../types.js').DecisionOutcome} DecisionOutcome */
 
 /**
+ * Definición del tipo `DecisionResolution` utilizado en los informes canallas.
  * @typedef {Object} DecisionResolution
  * @property {DecisionOutcome} outcome
  * @property {ClubState} updatedClub
  */
 
 /**
- * @typedef {Object} DecisionParameters
+ * Definición del tipo `DecisionParameters` con los modificadores internos.
  * @property {number} baseSuccess
  * @property {number} reputationSuccess
  * @property {number} reputationFailure
@@ -72,9 +74,10 @@ const INTENSITY_MODIFIER = {
 };
 
 /**
- * @param {ClubState} club
- * @param {CanallaDecision} decision
- * @param {() => number} [rng]
+ * Resuelve una decisión canalla aplicando cambios en reputación, moral y finanzas.
+ * @param {ClubState} club Estado actual del club.
+ * @param {CanallaDecision} decision Travesura elegida.
+ * @param {() => number} [rng] Generador aleatorio opcional.
  * @returns {DecisionResolution}
  */
 export function resolveCanallaDecision(club, decision, rng = Math.random) {
@@ -114,6 +117,7 @@ export function resolveCanallaDecision(club, decision, rng = Math.random) {
 }
 
 /**
+ * Genera la narración asociada a una decisión canalla exitosa.
  * @param {CanallaDecision} decision
  * @returns {string}
  */
@@ -133,6 +137,7 @@ function generarNarrativaExito(decision) {
 }
 
 /**
+ * Describe el desastre mediático cuando la canallada sale mal.
  * @param {CanallaDecision} decision
  * @returns {string}
  */

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Datos de ejemplo y utilidades para poblar el simulador.
  * @module core/data
@@ -161,17 +162,26 @@ const MARKET_BLUEPRINTS = [
   },
 ];
 
-/** @returns {TacticalInstructions} */
+/**
+ * Devuelve las instrucciones tácticas por defecto de la IA canalla.
+ * @returns {TacticalInstructions}
+ */
 export function createDefaultInstructions() {
   return { ...DEFAULT_INSTRUCTIONS };
 }
 
-/** @returns {import('../types.js').PlayerAvailability} */
+/**
+ * Genera un objeto de disponibilidad sin lesiones ni sanciones.
+ * @returns {import('../types.js').PlayerAvailability}
+ */
 function createDefaultAvailability() {
   return { injuryMatches: 0, suspensionMatches: 0 };
 }
 
-/** @returns {import('../types.js').PlayerSeasonLog} */
+/**
+ * Crea un registro estadístico vacío para iniciar la temporada de un jugador.
+ * @returns {import('../types.js').PlayerSeasonLog}
+ */
 export function createEmptySeasonLog() {
   return {
     goals: 0,
@@ -185,7 +195,10 @@ export function createEmptySeasonLog() {
   };
 }
 
-/** @returns {import('../types.js').ClubSeasonStats} */
+/**
+ * Prepara un acumulador de estadísticas de club sin datos previos.
+ * @returns {import('../types.js').ClubSeasonStats}
+ */
 export function createSeasonStats() {
   return {
     matches: 0,
@@ -201,7 +214,8 @@ export function createSeasonStats() {
 }
 
 /**
- * @param {import('../types.js').Player} player
+ * Comprueba si un jugador está disponible para ser convocado.
+ * @param {import('../types.js').Player} player Jugador a revisar.
  */
 export function isPlayerAvailable(player) {
   const availability = player.availability ?? createDefaultAvailability();
@@ -209,7 +223,8 @@ export function isPlayerAvailable(player) {
 }
 
 /**
- * @param {import('../types.js').Player} player
+ * Reinicia la moral, forma y sanciones de un jugador al comenzar una nueva temporada.
+ * @param {import('../types.js').Player} player Perfil original del futbolista.
  */
 export function resetPlayerForNewSeason(player) {
   const baseAvailability = player.availability ?? createDefaultAvailability();
@@ -222,7 +237,10 @@ export function resetPlayerForNewSeason(player) {
   };
 }
 
-/** @returns {SponsorContract[]} */
+/**
+ * Genera un conjunto de contratos de patrocinio ficticios equilibrados.
+ * @returns {SponsorContract[]}
+ */
 function createExampleSponsors() {
   return [
     { name: 'Vermut Torero', value: 250000, frequency: 'annual', lastPaidMatchDay: -40 },
@@ -231,26 +249,42 @@ function createExampleSponsors() {
   ];
 }
 
-/** @returns {TVDeal} */
+/**
+ * Crea un acuerdo televisivo base para los clubes ejemplo.
+ * @returns {TVDeal}
+ */
 function createExampleTvDeal() {
   return { name: 'Liga Retro TV', perMatch: 28000, bonusWin: 12000, bonusDraw: 6000 };
 }
 
-/** @returns {MerchandisingPlan} */
+/**
+ * Define un plan de merchandising genérico para el club inicial.
+ * @returns {MerchandisingPlan}
+ */
 function createExampleMerchandising() {
   return { brand: 'Mercadillo Vintage', base: 18000, bonusWin: 4000, bonusStarPlayer: 2500 };
 }
 
-/** @returns {InfrastructureState} */
+/**
+ * Especifica el estado de infraestructuras al arrancar una partida.
+ * @returns {InfrastructureState}
+ */
 function createExampleInfrastructure() {
   return { stadiumLevel: 2, academyLevel: 1, medicalLevel: 1, trainingLevel: 2 };
 }
 
-/** @returns {OperatingExpenses} */
+/**
+ * Establece los gastos operativos mensuales estimados del club base.
+ * @returns {OperatingExpenses}
+ */
 function createExampleOperatingExpenses() {
   return { maintenance: 42000, staff: 28000, academy: 16000, medical: 12000 };
 }
 
+/**
+ * Crea un registro vacío de clasificación para un club concreto.
+ * @param {string} club Nombre del club.
+ */
 function createLeagueStanding(club) {
   return {
     club,
@@ -265,9 +299,10 @@ function createLeagueStanding(club) {
 }
 
 /**
- * @param {LeagueStanding} standing
- * @param {number} goalsFor
- * @param {number} goalsAgainst
+ * Actualiza un registro de clasificación con el resultado de un partido.
+ * @param {LeagueStanding} standing Entrada de la tabla a modificar.
+ * @param {number} goalsFor Goles a favor.
+ * @param {number} goalsAgainst Goles en contra.
  */
 function applyResult(standing, goalsFor, goalsAgainst) {
   standing.played += 1;
@@ -285,7 +320,8 @@ function applyResult(standing, goalsFor, goalsAgainst) {
 }
 
 /**
- * @param {LeagueStanding[]} table
+ * Ordena la tabla de clasificación aplicando criterios de puntos y diferencia de goles.
+ * @param {LeagueStanding[]} table Clasificación sin ordenar.
  */
 function sortStandings(table) {
   return [...table].sort((a, b) => {
@@ -326,7 +362,8 @@ export function estimatePlayerValue(player) {
 }
 
 /**
- * @param {string} clubName
+ * Construye una liga ficticia con rivales pintorescos y la tabla inicializada.
+ * @param {string} clubName Nombre del club controlado por el jugador.
  * @returns {LeagueState}
  */
 export function createExampleLeague(clubName) {
@@ -342,10 +379,11 @@ export function createExampleLeague(clubName) {
 }
 
 /**
- * @param {LeagueState} league
- * @param {string} clubName
- * @param {MatchResult} match
- * @param {() => number} [rng]
+ * Actualiza la clasificación liguera tras disputar una jornada completa.
+ * @param {LeagueState} league Estado previo de la liga.
+ * @param {string} clubName Nombre de nuestro club para localizarlo en la tabla.
+ * @param {MatchResult} match Resultado obtenido por el jugador.
+ * @param {() => number} [rng] Generador aleatorio opcional.
  * @returns {LeagueState}
  */
 export function updateLeagueTableAfterMatch(league, clubName, match, rng = Math.random) {
@@ -380,7 +418,8 @@ export function updateLeagueTableAfterMatch(league, clubName, match, rng = Math.
 }
 
 /**
- * @param {ClubState} club
+ * Genera una lista de objetivos de mercado compatibles con la plantilla actual.
+ * @param {ClubState} club Club que busca refuerzos.
  * @returns {TransferTarget[]}
  */
 export function createExampleTransferMarket(club) {
@@ -396,7 +435,8 @@ export function createExampleTransferMarket(club) {
 }
 
 /**
- * @param {Partial<Player> & Pick<Player, 'id' | 'name' | 'position'>} partial
+ * Completa la información necesaria para instanciar un jugador del simulador.
+ * @param {Partial<Player> & Pick<Player, 'id' | 'name' | 'position'>} partial Datos mínimos y opcionales.
  * @returns {Player}
  */
 function createPlayer(partial) {
@@ -433,7 +473,10 @@ function createPlayer(partial) {
   };
 }
 
-/** @returns {ClubState} */
+/**
+ * Construye un club de ejemplo con plantilla, finanzas y contexto narrativo.
+ * @returns {ClubState}
+ */
 export function createExampleClub() {
   /** @type {Player[]} */
   const squad = [
@@ -734,7 +777,10 @@ export function createExampleClub() {
   };
 }
 
-/** @returns {MatchConfig} */
+/**
+ * Configura un partido estándar con parámetros equilibrados.
+ * @returns {MatchConfig}
+ */
 export function createDefaultMatchConfig() {
   return {
     home: true,
@@ -757,7 +803,7 @@ export function createDefaultMatchConfig() {
 
 /**
  * Genera una alineación básica tomando los primeros jugadores disponibles.
- * @param {ClubState} club
+ * @param {ClubState} club Club del que se extraen los jugadores.
  */
 export function createDefaultLineup(club) {
   const eligible = club.squad.filter((player) => isPlayerAvailable(player));
@@ -770,7 +816,10 @@ export function createDefaultLineup(club) {
   return { starters, substitutes };
 }
 
-/** @returns {CanallaDecision[]} */
+/**
+ * Devuelve la lista de travesuras canallas disponibles en la demo.
+ * @returns {CanallaDecision[]}
+ */
 export function listCanallaDecisions() {
   return [
     { type: 'sobornoArbitro', intensity: 'alta' },
