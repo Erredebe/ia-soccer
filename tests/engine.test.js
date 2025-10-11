@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { simulateMatch, playMatchDay } from '../src/core/engine.js';
 import { createDefaultMatchConfig, createExampleClub } from '../src/core/data.js';
+import { resolveCanallaDecision } from '../src/core/reputation.js';
 
 function createDeterministicRng(sequence) {
   let index = 0;
@@ -61,4 +62,39 @@ test('playMatchDay incluye balance financiero ampliado', () => {
   assert.ok(Object.keys(report.finances?.incomeBreakdown ?? {}).length > 0);
   assert.ok(report.finances?.notes.length > 0);
   assert.notDeepEqual(report.updatedClub.sponsors, club.sponsors, 'los patrocinadores deben actualizarse tras el pago');
+});
+
+test('playMatchDay no duplica el impacto de una decisión resuelta', () => {
+  const baseClub = createExampleClub();
+  const decision = { type: 'sobornoArbitro', intensity: 'alta' };
+  const resolution = resolveCanallaDecision(baseClub, decision, () => 0.1);
+  const clubAfterDecision = resolution.updatedClub;
+  const configA = createDefaultMatchConfig();
+  configA.startingLineup = clubAfterDecision.squad.slice(0, 11).map((player) => player.id);
+  configA.substitutes = clubAfterDecision.squad.slice(11, 16).map((player) => player.id);
+  const rngSequence = [0.41, 0.68, 0.54, 0.33, 0.72, 0.27, 0.85, 0.19, 0.62, 0.48, 0.91, 0.15];
+
+  const reportWithOutcome = playMatchDay(clubAfterDecision, configA, {
+    rng: createDeterministicRng(rngSequence),
+    decision,
+    decisionOutcome: resolution.outcome,
+  });
+
+  const configB = createDefaultMatchConfig();
+  configB.startingLineup = [...configA.startingLineup];
+  configB.substitutes = [...configA.substitutes];
+  const reportWithoutOutcome = playMatchDay(clubAfterDecision, configB, {
+    rng: createDeterministicRng(rngSequence),
+  });
+
+  assert.equal(
+    reportWithOutcome.updatedClub.reputation,
+    reportWithoutOutcome.updatedClub.reputation,
+    'la reputación no debe aplicarse dos veces'
+  );
+
+  const moraleWithOutcome = reportWithOutcome.updatedClub.squad.map((player) => player.morale);
+  const moraleWithoutOutcome = reportWithoutOutcome.updatedClub.squad.map((player) => player.morale);
+  assert.deepEqual(moraleWithOutcome, moraleWithoutOutcome, 'la moral por jugador debe coincidir');
+  assert.equal(reportWithOutcome.decisionOutcome?.appliedToClub, true, 'el resultado debe marcarse como aplicado');
 });

@@ -187,6 +187,7 @@
  * @property {number} riskLevel
  * @property {string=} sanctions
  * @property {string} narrative
+ * @property {boolean=} appliedToClub
  */
 
 /**
