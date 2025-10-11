@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { simulateMatch, playMatchDay } from '../src/core/engine.js';
-import { createDefaultMatchConfig, createExampleClub } from '../src/core/data.js';
+import { createDefaultMatchConfig, createDefaultLineup, createExampleClub } from '../src/core/data.js';
 import { resolveCanallaDecision } from '../src/core/reputation.js';
 
 function createDeterministicRng(sequence) {
@@ -11,6 +11,18 @@ function createDeterministicRng(sequence) {
     const value = sequence[index % sequence.length];
     index += 1;
     return value;
+  };
+}
+
+function createSequenceRng(sequence, fallback = 0.95) {
+  let index = 0;
+  return () => {
+    if (index < sequence.length) {
+      const value = sequence[index];
+      index += 1;
+      return value;
+    }
+    return fallback;
   };
 }
 
@@ -97,4 +109,99 @@ test('playMatchDay no duplica el impacto de una decisión resuelta', () => {
   const moraleWithoutOutcome = reportWithoutOutcome.updatedClub.squad.map((player) => player.morale);
   assert.deepEqual(moraleWithOutcome, moraleWithoutOutcome, 'la moral por jugador debe coincidir');
   assert.equal(reportWithOutcome.decisionOutcome?.appliedToClub, true, 'el resultado debe marcarse como aplicado');
+});
+
+test('simulateMatch gestiona doble amarilla y registra la expulsión', () => {
+  const club = createExampleClub();
+  const config = createDefaultMatchConfig();
+  config.startingLineup = club.squad.slice(0, 11).map((player) => player.id);
+  config.substitutes = club.squad.slice(11, 16).map((player) => player.id);
+  club.squad[0].attributes.defending = 95;
+  for (const player of club.squad.slice(1, 11)) {
+    player.attributes.defending = 1;
+  }
+  const sequence = [
+    0.9, 0.05, 0.0,
+    0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
+    0.9, 0.04, 0.0,
+    0.9, 0.9, 0.9,
+  ];
+  const rng = createSequenceRng(sequence, 0.95);
+  const result = simulateMatch(club, config, { rng });
+  const offenderId = config.startingLineup[0];
+  const offenderEvents = result.events.filter((event) => event.playerId === offenderId);
+  assert.ok(offenderEvents.some((event) => event.type === 'doble_amarilla'));
+  assert.ok(result.statistics.cards.redFor >= 1);
+});
+
+test('simulateMatch reemplaza al portero expulsado con suplente', () => {
+  const club = createExampleClub();
+  const config = createDefaultMatchConfig();
+  const starters = club.squad.slice(0, 11);
+  const bench = [club.squad[1], ...club.squad.slice(11, 16)];
+  starters.splice(1, 1, club.squad[11]);
+  config.startingLineup = starters.map((player) => player.id);
+  config.substitutes = bench.map((player) => player.id);
+  club.squad[0].attributes.defending = 95;
+  for (const player of starters.slice(1)) {
+    const squadPlayer = club.squad.find((p) => p.id === player.id);
+    if (squadPlayer) {
+      squadPlayer.attributes.defending = 1;
+    }
+  }
+  const rng = createSequenceRng([0.9, 0.01, 0.0, 0.9, 0.9, 0.9], 0.95);
+  const result = simulateMatch(club, config, { rng });
+  const benchKeeperId = config.substitutes.find((id) => {
+    const player = club.squad.find((p) => p.id === id);
+    return player?.position === 'GK';
+  });
+  const benchContribution = result.contributions.find((entry) => entry.playerId === benchKeeperId);
+  assert.ok(benchContribution && benchContribution.minutesPlayed > 0);
+  assert.ok(result.events.some((event) => event.type === 'expulsion'));
+});
+
+test('playMatchDay actualiza sanciones y estadísticas de temporada', () => {
+  const club = createExampleClub();
+  const config = createDefaultMatchConfig();
+  config.startingLineup = club.squad.slice(0, 11).map((player) => player.id);
+  config.substitutes = club.squad.slice(11, 16).map((player) => player.id);
+  club.squad[0].attributes.defending = 95;
+  for (const player of club.squad.slice(1, 11)) {
+    player.attributes.defending = 1;
+  }
+  const sequence = [
+    0.9, 0.05, 0.0,
+    0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9,
+    0.9, 0.04, 0.0,
+    0.9, 0.9, 0.9,
+  ];
+  const rng = createSequenceRng(sequence, 0.95);
+  const report = playMatchDay(club, config, { rng });
+  const disciplined = report.updatedClub.squad.find((player) => player.id === config.startingLineup[0]);
+  assert.ok((disciplined?.availability?.suspensionMatches ?? 0) >= 1);
+  assert.ok((report.updatedClub.seasonStats?.matches ?? 0) >= 1);
+});
+
+test('playMatchDay reproduce la misma crónica con semilla compartida', () => {
+  const seed = 'derbi-canalla';
+  const buildClubAndConfig = () => {
+    const club = createExampleClub();
+    const config = createDefaultMatchConfig();
+    const lineup = createDefaultLineup(club);
+    config.startingLineup = [...lineup.starters];
+    config.substitutes = [...lineup.substitutes];
+    return { club, config };
+  };
+
+  const { club: clubA, config: configA } = buildClubAndConfig();
+  const reportA = playMatchDay(clubA, configA, { seed });
+  const { club: clubB, config: configB } = buildClubAndConfig();
+  const reportB = playMatchDay(clubB, configB, { seed });
+
+  assert.equal(reportA.match.goalsFor, reportB.match.goalsFor);
+  assert.equal(reportA.match.goalsAgainst, reportB.match.goalsAgainst);
+  assert.deepEqual(reportA.match.events, reportB.match.events);
+  assert.deepEqual(reportA.match.narrative, reportB.match.narrative);
+  assert.equal(reportA.match.seed, reportB.match.seed);
+  assert.ok(Number.isFinite(reportA.match.seed));
 });

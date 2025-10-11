@@ -27,6 +27,23 @@
  * @property {number=} releaseClause
  */
 
+/** @typedef {Object} PlayerAvailability
+ * @property {number} injuryMatches Restantes para volver tras lesión (0 si está disponible)
+ * @property {number} suspensionMatches Partidos de sanción pendientes
+ */
+
+/**
+ * @typedef {Object} PlayerSeasonLog
+ * @property {number} goals
+ * @property {number} assists
+ * @property {number} yellowCards
+ * @property {number} redCards
+ * @property {number} matches
+ * @property {number} minutes
+ * @property {number} injuries
+ * @property {number} cleanSheets
+ */
+
 /**
  * @typedef {Object} Player
  * @property {PlayerId} id
@@ -38,6 +55,8 @@
  * @property {number} fitness
  * @property {number} salary
  * @property {Contract} contract
+ * @property {PlayerAvailability=} availability
+ * @property {PlayerSeasonLog=} seasonLog
  */
 
 /**
@@ -63,6 +82,19 @@
  * @property {string} name
  * @property {number} matchDay
  * @property {LeagueStanding[]} table
+ */
+
+/**
+ * @typedef {Object} ClubSeasonStats
+ * @property {number} matches
+ * @property {number} wins
+ * @property {number} draws
+ * @property {number} losses
+ * @property {number} goalsFor
+ * @property {number} goalsAgainst
+ * @property {number} possessionFor
+ * @property {number} unbeatenRun
+ * @property {number} bestUnbeatenRun
  */
 
 /**
@@ -118,6 +150,7 @@
  * @property {MatchAdjustment=} halftimeAdjustments
  * @property {MatchAdjustment[]=} inMatchAdjustments
  * @property {MatchViewMode=} viewMode
+ * @property {(number | string)=} seed
  */
 
 /**
@@ -128,6 +161,7 @@
  * @property {PlayerId=} playerId
  * @property {PlayerId=} relatedPlayerId
  * @property {string=} severity
+ * @property {number=} cardCount
  */
 
 /**
@@ -168,6 +202,7 @@
  * @property {MatchStatistics} statistics
  * @property {string[]} commentary
  * @property {MatchViewMode} viewMode
+ * @property {number=} seed
  */
 
 /** @typedef {"sobornoArbitro" | "filtrarRumor" | "fiestaIlegal" | "presionarFederacion"} CanallaDecisionType */
@@ -258,6 +293,7 @@
  * @property {MerchandisingPlan=} merchandising
  * @property {InfrastructureState=} infrastructure
  * @property {OperatingExpenses=} operatingExpenses
+ * @property {ClubSeasonStats=} seasonStats
  */
 
 /**
@@ -267,6 +303,16 @@
  * @property {number} financesDelta
  * @property {MatchdayFinancials=} finances
  * @property {ClubState} updatedClub
+ */
+
+/**
+ * @typedef {Object} SavedGameBlob
+ * @property {number} version
+ * @property {number} timestamp
+ * @property {ClubState} club
+ * @property {LeagueState} league
+ * @property {MatchConfig} config
+ * @property {TransferTarget[]} transferMarket
  */
 
 /**

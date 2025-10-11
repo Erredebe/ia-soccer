@@ -5,6 +5,7 @@
  */
 
 import { calculateMatchdayFinances } from './economy.js';
+import { createEmptySeasonLog, createSeasonStats } from './data.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
 /** @typedef {import('../types.js').MatchConfig} MatchConfig */
@@ -23,6 +24,7 @@ import { calculateMatchdayFinances } from './economy.js';
  * @property {() => number=} rng
  * @property {CanallaDecision=} decision
  * @property {DecisionOutcome=} decisionOutcome
+ * @property {number | string=} seed
  */
 
 const MATCH_MINUTES = Array.from({ length: 18 }, (_, index) => (index + 1) * 5);
@@ -34,6 +36,52 @@ const DEFAULT_INSTRUCTIONS = {
   counterAttack: false,
   playThroughMiddle: true,
 };
+
+/**
+ * @param {number | string} seed
+ */
+function hashSeed(seed) {
+  if (typeof seed === 'number' && Number.isFinite(seed)) {
+    return seed >>> 0;
+  }
+  if (typeof seed === 'string') {
+    let hash = 0;
+    for (let index = 0; index < seed.length; index += 1) {
+      hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+    }
+    return hash >>> 0;
+  }
+  return Math.floor(Math.random() * 1_000_000_000) >>> 0;
+}
+
+/**
+ * Generador determinista Mulberry32.
+ * @param {number | string} seed
+ */
+function createSeededRng(seed) {
+  let t = hashSeed(seed) + 0x6d2b79f5;
+  return function seeded() {
+    t += 0x6d2b79f5;
+    let value = t;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** @param {Player} player */
+function isGoalkeeper(player) {
+  return player.position === 'GK';
+}
+
+/**
+ * @param {Record<string, number>} record
+ * @param {string} key
+ * @param {number} value
+ */
+function accumulate(record, key, value) {
+  record[key] = (record[key] ?? 0) + value;
+}
 
 /**
  * @template T extends number
@@ -354,6 +402,52 @@ function performSubstitution(lineup, bench, contributions, events, commentary, m
 }
 
 /**
+ * Gestiona la entrada del portero suplente tras una expulsión.
+ * @param {Player[]} lineup
+ * @param {Player[]} bench
+ * @param {Map<string, PlayerContribution>} contributions
+ * @param {MatchEvent[]} events
+ * @param {string[]} commentary
+ * @param {number} minute
+ */
+function handleGoalkeeperEmergency(lineup, bench, contributions, events, commentary, minute) {
+  const targetCount = lineup.length;
+  const benchIndex = bench.findIndex((player) => player.position === 'GK');
+  if (benchIndex === -1) {
+    commentary.push(`(${minute}') El banquillo no tenía guardameta: tocará improvisar bajo palos.`);
+    return;
+  }
+
+  const incoming = bench.splice(benchIndex, 1)[0];
+  ensureContribution(contributions, incoming.id, 5.8);
+
+  let sacrificed;
+  if (lineup.length > 0 && lineup.length >= targetCount) {
+    const fieldIndex = lineup.findIndex((player) => player.position !== 'GK');
+    const removalIndex = fieldIndex === -1 ? lineup.length - 1 : fieldIndex;
+    sacrificed = lineup.splice(removalIndex, 1)[0];
+  }
+
+  lineup.push(incoming);
+
+  events.push({
+    minute,
+    type: 'cambio',
+    description:
+      sacrificed
+        ? `Minuto ${minute}: ${incoming.name} entra para ocupar la portería; ${sacrificed.name} deja su sitio tras la roja.`
+        : `Minuto ${minute}: ${incoming.name} toma los guantes tras la expulsión del portero titular.`,
+    playerId: incoming.id,
+    relatedPlayerId: sacrificed?.id,
+  });
+  commentary.push(
+    sacrificed
+      ? `(${minute}') ${incoming.name} salta de urgencia a la meta mientras ${sacrificed?.name ?? 'un compañero'} paga el pato.`
+      : `(${minute}') ${incoming.name} salta de urgencia a la meta tras la roja.`
+  );
+}
+
+/**
  * @param {MatchAdjustment} adjustment
  * @param {Player[]} lineup
  * @param {Player[]} bench
@@ -435,7 +529,9 @@ function pickReplacement(lineup, bench, injured) {
  * @returns {MatchResult}
  */
 export function simulateMatch(club, config, options = {}) {
-  const rng = options.rng ?? Math.random;
+  const seedValue = options.seed !== undefined ? hashSeed(options.seed) : undefined;
+  const seededRng = options.seed !== undefined ? createSeededRng(options.seed) : undefined;
+  const rng = options.rng ?? seededRng ?? Math.random;
   const decisionOutcome = options.decisionOutcome;
   const decisionEffectsPending = Boolean(decisionOutcome) && decisionOutcome.appliedToClub !== true;
   const moraleBoost =
@@ -475,6 +571,8 @@ export function simulateMatch(club, config, options = {}) {
   const events = narrativeIntro(config, club).map((line) => ({ minute: 0, type: 'intro', description: line }));
 
   const contributions = new Map();
+  const yellowCards = new Map();
+  const redCards = new Set();
   for (const player of lineup) {
     ensureContribution(contributions, player.id, 6.2);
   }
@@ -614,35 +712,64 @@ export function simulateMatch(club, config, options = {}) {
     }
 
     const cardRoll = rng();
-    if (cardRoll < 0.12 + instructionsImpact.foulRisk) {
+    if (cardRoll < 0.12 + instructionsImpact.foulRisk && lineup.length > 0) {
       const offender = selectPlayerWeighted(lineup, 'defending', rng);
       if (offender) {
         statistics.fouls.for += 1;
         const contribution = ensureContribution(contributions, offender.id);
-        const redCard = cardRoll < 0.03;
-        if (redCard) {
-          statistics.cards.redFor += 1;
-          contribution.rating -= 1.5;
+        let expelled = false;
+        let doubleYellow = false;
+        if (cardRoll < 0.03) {
+          expelled = true;
+        } else {
+          const currentCount = (yellowCards.get(offender.id) ?? 0) + 1;
+          yellowCards.set(offender.id, currentCount);
+          statistics.cards.yellowFor += 1;
+          contribution.rating -= 0.4;
+          const description =
+            currentCount === 1
+              ? `Minuto ${minute}: ${offender.name} ve la amarilla por cortar una contra con alevosía.`
+              : `Minuto ${minute}: ${offender.name} recibe la segunda amarilla y está al borde de la expulsión.`;
           events.push({
             minute,
-            type: 'expulsion',
-            description: `Minuto ${minute}: ${offender.name} se va a las duchas antes de tiempo; roja directa.`,
+            type: 'tarjeta',
+            description,
             playerId: offender.id,
+            cardCount: currentCount,
           });
-          commentary.push(`(${minute}') ¡Expulsado ${offender.name}! El partido cambia de guion.`);
+          if (currentCount >= 2) {
+            statistics.cards.yellowFor += 1;
+            expelled = true;
+            doubleYellow = true;
+          }
+        }
+
+        if (expelled) {
+          statistics.cards.redFor += 1;
+          contribution.rating -= doubleYellow ? 1.1 : 1.5;
+          redCards.add(offender.id);
+          const description = doubleYellow
+            ? `Minuto ${minute}: ${offender.name} se marcha expulsado tras doble amarilla.`
+            : `Minuto ${minute}: ${offender.name} se va a las duchas antes de tiempo; roja directa.`;
+          events.push({
+            minute,
+            type: doubleYellow ? 'doble_amarilla' : 'expulsion',
+            description,
+            playerId: offender.id,
+            cardCount: doubleYellow ? yellowCards.get(offender.id) : undefined,
+          });
+          commentary.push(
+            doubleYellow
+              ? `(${minute}') ${offender.name} pierde la cabeza y ve la segunda amarilla.`
+              : `(${minute}') ¡Expulsado ${offender.name}! El partido cambia de guion.`
+          );
           const idx = lineup.findIndex((player) => player.id === offender.id);
           if (idx !== -1) {
             lineup.splice(idx, 1);
           }
-        } else {
-          statistics.cards.yellowFor += 1;
-          contribution.rating -= 0.4;
-          events.push({
-            minute,
-            type: 'tarjeta',
-            description: `Minuto ${minute}: ${offender.name} ve la amarilla por cortar una contra con alevosía.`,
-            playerId: offender.id,
-          });
+          if (isGoalkeeper(offender)) {
+            handleGoalkeeperEmergency(lineup, bench, contributions, events, commentary, minute);
+          }
         }
       }
     }
@@ -908,6 +1035,7 @@ export function simulateMatch(club, config, options = {}) {
     statistics,
     commentary,
     viewMode: config.viewMode ?? 'quick',
+    seed: seedValue,
   };
 }
 
@@ -929,14 +1057,75 @@ export function playMatchDay(club, config, options = {}) {
   const resultMorale = match.goalsFor > match.goalsAgainst ? 6 : match.goalsFor === match.goalsAgainst ? 1 : -6;
   const contributionMap = new Map(match.contributions.map((contribution) => [contribution.playerId, contribution]));
   const eventsByPlayer = new Map();
+  /** @type {Record<string, number>} */
+  const goalsByPlayer = {};
+  /** @type {Record<string, number>} */
+  const assistsByPlayer = {};
+  /** @type {Record<string, number>} */
+  const yellowCardsByPlayer = {};
+  /** @type {Record<string, number>} */
+  const redCardsByPlayer = {};
+  /** @type {Record<string, number>} */
+  const doubleYellowsByPlayer = {};
+  const injuryByPlayer = new Map();
+
   for (const event of match.events) {
-    if (!event.playerId) {
-      continue;
+    if (event.playerId) {
+      const list = eventsByPlayer.get(event.playerId) ?? [];
+      list.push(event);
+      eventsByPlayer.set(event.playerId, list);
     }
-    const list = eventsByPlayer.get(event.playerId) ?? [];
-    list.push(event);
-    eventsByPlayer.set(event.playerId, list);
+    switch (event.type) {
+      case 'gol':
+        if (event.playerId) {
+          accumulate(goalsByPlayer, event.playerId, 1);
+        }
+        if (event.relatedPlayerId) {
+          accumulate(assistsByPlayer, event.relatedPlayerId, 1);
+        }
+        break;
+      case 'tarjeta':
+        if (event.playerId) {
+          accumulate(yellowCardsByPlayer, event.playerId, 1);
+        }
+        break;
+      case 'doble_amarilla':
+        if (event.playerId) {
+          accumulate(redCardsByPlayer, event.playerId, 1);
+          accumulate(doubleYellowsByPlayer, event.playerId, 1);
+        }
+        break;
+      case 'expulsion':
+        if (event.playerId) {
+          accumulate(redCardsByPlayer, event.playerId, 1);
+        }
+        break;
+      case 'lesion':
+        if (event.playerId) {
+          injuryByPlayer.set(event.playerId, event.severity ?? 'leve');
+        }
+        break;
+      default:
+        break;
+    }
   }
+
+  const baseSeasonStats = club.seasonStats ? { ...club.seasonStats } : createSeasonStats();
+  baseSeasonStats.matches += 1;
+  baseSeasonStats.goalsFor += match.goalsFor;
+  baseSeasonStats.goalsAgainst += match.goalsAgainst;
+  baseSeasonStats.possessionFor += match.statistics.possession.for;
+  if (match.goalsFor > match.goalsAgainst) {
+    baseSeasonStats.wins += 1;
+    baseSeasonStats.unbeatenRun += 1;
+  } else if (match.goalsFor === match.goalsAgainst) {
+    baseSeasonStats.draws += 1;
+    baseSeasonStats.unbeatenRun += 1;
+  } else {
+    baseSeasonStats.losses += 1;
+    baseSeasonStats.unbeatenRun = 0;
+  }
+  baseSeasonStats.bestUnbeatenRun = Math.max(baseSeasonStats.bestUnbeatenRun, baseSeasonStats.unbeatenRun);
 
   const updatedSquad = club.squad.map((player) => {
     const contribution = contributionMap.get(player.id);
@@ -955,7 +1144,8 @@ export function playMatchDay(club, config, options = {}) {
       moraleShift += resultMorale * 0.3 - 1.2;
     }
 
-    if (eventsByPlayer.get(player.id)?.some((event) => event.type === 'expulsion')) {
+    const playerEvents = eventsByPlayer.get(player.id) ?? [];
+    if (playerEvents.some((event) => event.type === 'expulsion' || event.type === 'doble_amarilla')) {
       moraleShift -= 4;
     }
 
@@ -963,15 +1153,107 @@ export function playMatchDay(club, config, options = {}) {
     if (!played) {
       fitnessShift += 5;
     }
-    const injured = eventsByPlayer.get(player.id)?.some((event) => event.type === 'lesion');
+    const injured = playerEvents.some((event) => event.type === 'lesion');
     if (injured) {
       fitnessShift -= 30;
+    }
+
+    const availability = {
+      injuryMatches: player.availability?.injuryMatches ?? 0,
+      suspensionMatches: player.availability?.suspensionMatches ?? 0,
+    };
+
+    if (played) {
+      availability.injuryMatches = 0;
+      availability.suspensionMatches = 0;
+    } else {
+      if (availability.injuryMatches > 0) {
+        availability.injuryMatches = Math.max(0, availability.injuryMatches - 1);
+      }
+      if (availability.suspensionMatches > 0) {
+        availability.suspensionMatches = Math.max(0, availability.suspensionMatches - 1);
+      }
+    }
+
+    if (injured) {
+      const severity = injuryByPlayer.get(player.id) ?? 'leve';
+      const penalty = severity === 'grave' ? 3 : severity === 'media' ? 2 : 1;
+      availability.injuryMatches = Math.max(availability.injuryMatches, penalty);
+    }
+
+    const reds = redCardsByPlayer[player.id] ?? 0;
+    const doubles = doubleYellowsByPlayer[player.id] ?? 0;
+    if (reds > 0) {
+      const suspension = doubles > 0 ? 1 : Math.min(3, reds * 2);
+      availability.suspensionMatches = Math.max(availability.suspensionMatches, suspension);
+    }
+
+    const log = {
+      ...createEmptySeasonLog(),
+      ...(player.seasonLog ?? {}),
+    };
+
+    if (played) {
+      log.matches += 1;
+      log.minutes += minutes;
+      log.goals += contribution?.goals ?? 0;
+      log.assists += contribution?.assists ?? 0;
+      if (isGoalkeeper(player) && match.goalsAgainst === 0 && minutes >= 75) {
+        log.cleanSheets += 1;
+      }
+    }
+
+    const yellows = yellowCardsByPlayer[player.id] ?? 0;
+    const goals = goalsByPlayer[player.id] ?? 0;
+    const assists = assistsByPlayer[player.id] ?? 0;
+    if (goals > 0 && !played) {
+      log.goals += goals;
+    }
+    if (assists > 0 && !played) {
+      log.assists += assists;
+    }
+    log.yellowCards += yellows;
+    log.redCards += reds;
+    if (injured) {
+      log.injuries += 1;
+    }
+
+    const totalYellow = log.yellowCards;
+    if (yellows > 0 && totalYellow > 0 && totalYellow % 5 === 0) {
+      availability.suspensionMatches = Math.max(availability.suspensionMatches, 1);
+    }
+
+    let updatedAttributes = { ...player.attributes };
+    const rating = contribution?.rating ?? 6;
+    if (played && rating >= 7.8) {
+      updatedAttributes.passing = clamp(updatedAttributes.passing + 1, 30, 99);
+      if (player.position === 'FWD' || player.position === 'MID') {
+        updatedAttributes.shooting = clamp(updatedAttributes.shooting + 1, 30, 99);
+      }
+      if (player.position === 'DEF') {
+        updatedAttributes.defending = clamp(updatedAttributes.defending + 1, 30, 99);
+      }
+    } else if (played && rating <= 5.2) {
+      updatedAttributes.stamina = clamp(updatedAttributes.stamina - 1, 25, 99);
+      updatedAttributes.passing = clamp(updatedAttributes.passing - 1, 25, 99);
+    }
+
+    if (player.age <= 24 && played && rating >= 7.2) {
+      updatedAttributes.dribbling = clamp(updatedAttributes.dribbling + 1, 30, 99);
+    }
+
+    if (player.age >= 32 && played && minutes >= 70) {
+      updatedAttributes.pace = clamp(updatedAttributes.pace - 1, 20, 99);
+      updatedAttributes.stamina = clamp(updatedAttributes.stamina - 1, 20, 99);
     }
 
     return {
       ...player,
       morale: clamp(player.morale + moraleShift, -100, 100),
       fitness: clamp(player.fitness + fitnessShift, 0, 100),
+      availability,
+      seasonLog: log,
+      attributes: updatedAttributes,
     };
   });
 
@@ -981,6 +1263,7 @@ export function playMatchDay(club, config, options = {}) {
     reputation: clamp(club.reputation + reputationUpdate, -100, 100),
     squad: updatedSquad,
     sponsors: finances.updatedSponsors ?? club.sponsors,
+    seasonStats: baseSeasonStats,
   };
 
   if (decisionOutcome) {
