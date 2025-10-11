@@ -814,6 +814,24 @@ body.modal-open {
   color: #1f2937;
 }
 
+.lineup-table tbody tr.lineup-group-header {
+  background: rgba(30, 64, 175, 0.18);
+  color: #0f172a;
+}
+
+.lineup-table tbody tr.lineup-group-header:hover {
+  background: rgba(30, 64, 175, 0.18);
+}
+
+.lineup-table tbody tr.lineup-group-header th {
+  padding: 0.75rem 0.65rem;
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
 .lineup-table tbody tr {
   transition: background 0.2s ease;
 }
