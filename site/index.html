@@ -14,32 +14,65 @@
       </header>
 
       <section class="card game-card" id="planning-card">
-        <div class="club-panel">
-          <div class="club-header">
-            <h2>Tu chiringuito futbolero</h2>
-            <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
-          </div>
-          <dl class="club-stats" id="club-stats">
-            <div>
-              <dt>Club</dt>
-              <dd id="club-name"></dd>
+        <div class="planning-grid">
+          <div class="planning-side">
+            <div class="club-panel card-panel">
+              <div class="club-header">
+                <h2>Tu chiringuito futbolero</h2>
+                <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+              </div>
+              <dl class="club-stats" id="club-stats">
+                <div>
+                  <dt>Club</dt>
+                  <dd id="club-name"></dd>
+                </div>
+                <div>
+                  <dt>Presupuesto</dt>
+                  <dd id="club-budget"></dd>
+                </div>
+                <div>
+                  <dt>Reputación</dt>
+                  <dd id="club-reputation"></dd>
+                </div>
+                <div>
+                  <dt>Moral media</dt>
+                  <dd id="club-morale"></dd>
+                </div>
+              </dl>
             </div>
-            <div>
-              <dt>Presupuesto</dt>
-              <dd id="club-budget"></dd>
-            </div>
-            <div>
-              <dt>Reputación</dt>
-              <dd id="club-reputation"></dd>
-            </div>
-            <div>
-              <dt>Moral media</dt>
-              <dd id="club-morale"></dd>
-            </div>
-          </dl>
-        </div>
 
-        <form class="game-form" id="game-form">
+            <div class="league-panel card-panel">
+              <div class="league-panel__header">
+                <h2>Clasificación</h2>
+                <span id="league-matchday" class="league-badge"></span>
+              </div>
+              <table class="league-table">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Club</th>
+                    <th scope="col">J</th>
+                    <th scope="col">G</th>
+                    <th scope="col">E</th>
+                    <th scope="col">P</th>
+                    <th scope="col">GF</th>
+                    <th scope="col">GC</th>
+                    <th scope="col">Pts</th>
+                  </tr>
+                </thead>
+                <tbody id="league-table-body"></tbody>
+              </table>
+            </div>
+
+            <div class="transfer-panel card-panel">
+              <h2>Mercado canalla</h2>
+              <p>Fichajes de barrio, promesas callejeras y veteranos curtidos al estilo PC Fútbol.</p>
+              <p id="transfer-message" class="transfer-feedback" hidden></p>
+              <div id="transfer-list" class="transfer-list"></div>
+            </div>
+          </div>
+
+          <form class="game-form" id="game-form">
           <h2>Planifica la jornada</h2>
           <label class="field">
             <span class="field-label">Canallada previa</span>
@@ -96,11 +129,25 @@
               <span id="subs-count" class="lineup-summary"></span>
             </div>
             <p id="lineup-error" class="form-error" hidden></p>
-            <div id="squad-selector" class="squad-selector"></div>
+            <div id="lineup-board" class="lineup-board">
+              <div class="lineup-column" data-role="starter">
+                <h4>Once titular</h4>
+                <div class="lineup-dropzone" data-role="starter"></div>
+              </div>
+              <div class="lineup-column" data-role="sub">
+                <h4>Banquillo</h4>
+                <div class="lineup-dropzone" data-role="sub"></div>
+              </div>
+              <div class="lineup-column" data-role="none">
+                <h4>Reservas</h4>
+                <div class="lineup-dropzone" data-role="none"></div>
+              </div>
+            </div>
           </div>
 
           <button type="submit" class="play-button">Jugar jornada</button>
         </form>
+        </div>
       </section>
 
       <section class="card report-card" id="report-card" hidden>

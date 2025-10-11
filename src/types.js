@@ -47,6 +47,33 @@
  */
 
 /**
+ * @typedef {Object} LeagueStanding
+ * @property {string} club
+ * @property {number} played
+ * @property {number} wins
+ * @property {number} draws
+ * @property {number} losses
+ * @property {number} goalsFor
+ * @property {number} goalsAgainst
+ * @property {number} points
+ */
+
+/**
+ * @typedef {Object} LeagueState
+ * @property {string} name
+ * @property {number} matchDay
+ * @property {LeagueStanding[]} table
+ */
+
+/**
+ * @typedef {Object} TransferTarget
+ * @property {string} id
+ * @property {Player} player
+ * @property {number} price
+ * @property {string} origin
+ */
+
+/**
  * @typedef {Object} ClubState
  * @property {string} name
  * @property {number} budget
@@ -56,6 +83,7 @@
  * @property {number} season
  * @property {ClubObjectives} objectives
  * @property {number} weeklyWageBill
+ * @property {LeagueState} league
  */
 
 /**

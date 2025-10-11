@@ -67,6 +67,27 @@ body {
   gap: 2rem;
 }
 
+.planning-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, 2fr);
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: start;
+}
+
+.planning-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card-panel {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.06), rgba(148, 163, 184, 0.08));
+  border-radius: 18px;
+  padding: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
 .club-panel {
   display: flex;
   flex-direction: column;
@@ -125,6 +146,178 @@ body {
   font-weight: 600;
   font-size: 1.1rem;
   color: #0f172a;
+}
+
+.league-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.league-badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fde68a, #facc15);
+  color: #78350f;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  box-shadow: 0 6px 18px rgba(250, 204, 21, 0.45);
+}
+
+.league-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.league-table th,
+.league-table td {
+  padding: 0.45rem 0.55rem;
+  text-align: center;
+}
+
+.league-table thead th {
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334155;
+}
+
+.league-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.league-table tbody tr:nth-child(odd) {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.league-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.league-table tbody tr.is-user {
+  background: rgba(37, 99, 235, 0.18);
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.league-table td:first-child {
+  font-weight: 700;
+}
+
+.league-table td:nth-child(2) {
+  text-align: left;
+}
+
+.transfer-panel p {
+  margin: 0;
+}
+
+.transfer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.transfer-empty {
+  font-size: 0.9rem;
+  color: #475569;
+  font-style: italic;
+}
+
+
+.transfer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(14, 165, 233, 0.16));
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.2);
+}
+
+.transfer-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.transfer-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.transfer-card__title strong {
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.transfer-card__title span {
+  font-size: 0.85rem;
+  color: #1e3a8a;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.transfer-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+
+.transfer-card__value {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.transfer-feedback {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  font-weight: 600;
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.transfer-feedback.error {
+  background: rgba(248, 113, 113, 0.18);
+  color: #b91c1c;
+}
+
+.transfer-button {
+  align-self: flex-start;
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.4rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.38);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transfer-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.45);
+}
+
+.transfer-button:disabled {
+  cursor: not-allowed;
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.4), rgba(100, 116, 139, 0.4));
+  box-shadow: none;
 }
 
 .game-form {
@@ -219,40 +412,160 @@ body {
   color: #b91c1c;
 }
 
-.squad-selector {
+.lineup-board {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.lineup-column {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  min-height: 240px;
 }
 
-.squad-row {
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: minmax(200px, 1fr) minmax(140px, 180px);
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.2);
-}
-
-.squad-row strong {
-  display: block;
+.lineup-column h4 {
+  margin: 0;
   font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1e293b;
 }
 
-.squad-row span {
+.lineup-dropzone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  min-height: 180px;
+  transition: background 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lineup-dropzone.empty::after {
+  content: 'Arrastra jugadores aquí';
   font-size: 0.85rem;
   color: #64748b;
+  font-style: italic;
+  padding: 0.6rem;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border-radius: 10px;
+  text-align: center;
 }
 
-.squad-role {
+.lineup-dropzone.is-over {
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px dashed rgba(37, 99, 235, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.25);
+}
+
+.player-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  background: linear-gradient(125deg, rgba(59, 130, 246, 0.16), rgba(14, 165, 233, 0.12));
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.player-chip.dragging {
+  opacity: 0.7;
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.18);
+}
+
+.player-chip:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.player-chip__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-chip__name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.player-chip__position {
+  font-size: 0.8rem;
+  color: #1d4ed8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.player-chip__details {
+  font-size: 0.85rem;
+  color: #334155;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.player-chip__value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.player-chip__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.player-chip__button {
   appearance: none;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  border-radius: 10px;
-  padding: 0.55rem 0.75rem;
-  font-size: 0.95rem;
-  background: rgba(248, 250, 252, 0.95);
-  color: inherit;
+  border: 1px solid rgba(220, 38, 38, 0.45);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  background: rgba(248, 113, 113, 0.18);
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.player-chip__button:hover {
+  background: rgba(248, 113, 113, 0.28);
+  transform: translateY(-1px);
+}
+
+.player-chip--GK {
+  background: linear-gradient(125deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.12));
+  border-color: rgba(16, 185, 129, 0.38);
+}
+
+.player-chip--DEF {
+  background: linear-gradient(125deg, rgba(59, 130, 246, 0.18), rgba(29, 78, 216, 0.14));
+  border-color: rgba(29, 78, 216, 0.4);
+}
+
+.player-chip--MID {
+  background: linear-gradient(125deg, rgba(139, 92, 246, 0.18), rgba(14, 165, 233, 0.14));
+  border-color: rgba(139, 92, 246, 0.38);
+}
+
+.player-chip--FWD {
+  background: linear-gradient(125deg, rgba(251, 191, 36, 0.22), rgba(244, 114, 182, 0.18));
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.player-chip.dragging .player-chip__button {
+  pointer-events: none;
 }
 
 .play-button {
@@ -352,6 +665,20 @@ body {
   margin: 0;
 }
 
+@media (max-width: 960px) {
+  .planning-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planning-side {
+    order: 2;
+  }
+
+  .game-form {
+    order: 1;
+  }
+}
+
 @media (max-width: 640px) {
   .club-stats {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -373,6 +700,12 @@ body {
     border-color: rgba(148, 163, 184, 0.2);
   }
 
+  .card-panel {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(148, 163, 184, 0.28);
+    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18);
+  }
+
   .card p,
   .card li,
   .tagline {
@@ -392,6 +725,24 @@ body {
   .scoreline,
   .finances {
     color: #e2e8f0;
+  }
+
+  .league-table thead th {
+    background: rgba(15, 23, 42, 0.5);
+    color: #cbd5f5;
+  }
+
+  .league-table tbody tr:nth-child(odd) {
+    background: rgba(51, 65, 85, 0.35);
+  }
+
+  .league-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.28);
+  }
+
+  .league-table tbody tr.is-user {
+    background: rgba(59, 130, 246, 0.32);
+    color: #f8fafc;
   }
 
   .field select,
@@ -420,19 +771,74 @@ body {
     color: #fecaca;
   }
 
-  .squad-row {
-    background: rgba(15, 23, 42, 0.9);
-    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.15);
+  .lineup-column {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(148, 163, 184, 0.3);
   }
 
-  .squad-row span {
+  .lineup-dropzone.empty::after {
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.45);
+  }
+
+  .lineup-dropzone.is-over {
+    background: rgba(37, 99, 235, 0.25);
+    border-color: rgba(96, 165, 250, 0.6);
+  }
+
+  .player-chip {
+    background: linear-gradient(125deg, rgba(59, 130, 246, 0.25), rgba(56, 189, 248, 0.18));
+    border-color: rgba(96, 165, 250, 0.45);
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.45);
+  }
+
+  .player-chip__name,
+  .player-chip__details,
+  .player-chip__value {
+    color: #e2e8f0;
+  }
+
+  .player-chip__position {
+    color: #93c5fd;
+  }
+
+  .player-chip__button {
+    background: rgba(248, 113, 113, 0.25);
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #fecaca;
+  }
+
+  .player-chip__button:hover {
+    background: rgba(248, 113, 113, 0.35);
+  }
+
+  .transfer-card {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(147, 197, 253, 0.18));
+    border-color: rgba(59, 130, 246, 0.42);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.6);
+  }
+
+  .transfer-card__title strong,
+  .transfer-card__value {
+    color: #e2e8f0;
+  }
+
+  .transfer-card__meta {
     color: #cbd5f5;
   }
 
-  .squad-role {
-    background: rgba(15, 23, 42, 0.9);
-    border-color: rgba(148, 163, 184, 0.45);
-    color: #e2e8f0;
+  .transfer-feedback {
+    background: rgba(37, 99, 235, 0.24);
+    color: #bfdbfe;
+  }
+
+  .transfer-feedback.error {
+    background: rgba(248, 113, 113, 0.3);
+    color: #fecaca;
+  }
+
+  .transfer-button {
+    box-shadow: 0 12px 26px rgba(37, 99, 235, 0.45);
   }
 
   .form-error {
@@ -466,3 +872,4 @@ body {
     color: #94a3b8;
   }
 }
+

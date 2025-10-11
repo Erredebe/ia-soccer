@@ -3,7 +3,10 @@ import {
   createDefaultMatchConfig,
   createDefaultLineup,
   createExampleClub,
+  createExampleTransferMarket,
+  estimatePlayerValue,
   listCanallaDecisions,
+  updateLeagueTableAfterMatch,
 } from '../src/core/data.js';
 import { resolveCanallaDecision } from '../src/core/reputation.js';
 
@@ -15,7 +18,10 @@ const opponentStrength = document.querySelector('#opponent-strength');
 const opponentOutput = document.querySelector('#opponent-output');
 const form = document.querySelector('#game-form');
 const resetButton = document.querySelector('#reset-club');
-const squadSelector = document.querySelector('#squad-selector');
+const lineupBoard = document.querySelector('#lineup-board');
+const lineupDropzones = lineupBoard
+  ? Array.from(lineupBoard.querySelectorAll('.lineup-dropzone'))
+  : [];
 const lineupCountEl = document.querySelector('#lineup-count');
 const subsCountEl = document.querySelector('#subs-count');
 const lineupErrorEl = document.querySelector('#lineup-error');
@@ -26,6 +32,11 @@ const clubNameEl = document.querySelector('#club-name');
 const clubBudgetEl = document.querySelector('#club-budget');
 const clubReputationEl = document.querySelector('#club-reputation');
 const clubMoraleEl = document.querySelector('#club-morale');
+
+const leagueMatchdayEl = document.querySelector('#league-matchday');
+const leagueTableBody = document.querySelector('#league-table-body');
+const transferListEl = document.querySelector('#transfer-list');
+const transferMessageEl = document.querySelector('#transfer-message');
 
 const reportCard = document.querySelector('#report-card');
 const scorelineEl = document.querySelector('#scoreline');
@@ -68,10 +79,14 @@ function buildInitialConfig(club) {
 }
 
 let clubState = createExampleClub();
+let leagueState = clubState.league;
+let transferMarketState = createExampleTransferMarket(clubState);
 let configState = buildInitialConfig(clubState);
+let draggedPlayerId = null;
+let transferMessageTimeout;
 
 function populateDecisions() {
-  if (decisionSelect.dataset.populated === 'true') {
+  if (!decisionSelect || decisionSelect.dataset.populated === 'true') {
     return;
   }
 
@@ -178,72 +193,143 @@ function ensureLineupCompleteness() {
   }
 }
 
-function handleRoleChange(event) {
-  const select = event.target;
-  if (!(select instanceof HTMLSelectElement)) {
+function calculateWeeklyWageBill(squad) {
+  return squad.reduce((acc, player) => acc + player.salary / 4, 0);
+}
+
+function markDropzoneState(zone) {
+  zone.classList.toggle('empty', zone.children.length === 0);
+}
+
+function createPlayerChip(player) {
+  const chip = document.createElement('article');
+  chip.className = `player-chip player-chip--${player.position}`;
+  chip.draggable = true;
+  chip.dataset.playerId = player.id;
+
+  const header = document.createElement('div');
+  header.className = 'player-chip__header';
+  const name = document.createElement('span');
+  name.className = 'player-chip__name';
+  name.textContent = player.name;
+  const position = document.createElement('span');
+  position.className = 'player-chip__position';
+  position.textContent = player.position;
+  header.append(name, position);
+
+  const details = document.createElement('div');
+  details.className = 'player-chip__details';
+  const morale = document.createElement('span');
+  morale.textContent = `Moral ${formatMorale(player.morale)}`;
+  const fitness = document.createElement('span');
+  fitness.textContent = `Forma ${player.fitness}/100`;
+  const age = document.createElement('span');
+  age.textContent = `${player.age} años`;
+  details.append(morale, fitness, age);
+
+  const value = document.createElement('div');
+  value.className = 'player-chip__value';
+  value.textContent = `Valor: ${numberFormatter.format(estimatePlayerValue(player))}`;
+
+  const actions = document.createElement('div');
+  actions.className = 'player-chip__actions';
+  const sellButton = document.createElement('button');
+  sellButton.type = 'button';
+  sellButton.className = 'player-chip__button';
+  sellButton.textContent = 'Vender';
+  sellButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    sellPlayer(player.id);
+  });
+  actions.append(sellButton);
+
+  chip.append(header, details, value, actions);
+  chip.addEventListener('dragstart', handleDragStart);
+  chip.addEventListener('dragend', handleDragEnd);
+
+  return chip;
+}
+
+function handleDragStart(event) {
+  const chip = event.currentTarget;
+  if (!(chip instanceof HTMLElement)) {
     return;
   }
-  const playerId = select.dataset.playerId;
+  draggedPlayerId = chip.dataset.playerId ?? null;
+  chip.classList.add('dragging');
+  if (event.dataTransfer && draggedPlayerId) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggedPlayerId);
+  }
+}
+
+function handleDragEnd(event) {
+  const chip = event.currentTarget;
+  if (chip instanceof HTMLElement) {
+    chip.classList.remove('dragging');
+  }
+  draggedPlayerId = null;
+  lineupDropzones.forEach((zone) => zone.classList.remove('is-over'));
+}
+
+function handleDragOver(event) {
+  event.preventDefault();
+  const zone = event.currentTarget;
+  if (zone instanceof HTMLElement) {
+    zone.classList.add('is-over');
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+}
+
+function handleDragLeave(event) {
+  const zone = event.currentTarget;
+  if (zone instanceof HTMLElement) {
+    zone.classList.remove('is-over');
+  }
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  const zone = event.currentTarget;
+  if (!(zone instanceof HTMLElement)) {
+    return;
+  }
+  zone.classList.remove('is-over');
+  const role = zone.dataset.role ?? 'none';
+  const playerId = event.dataTransfer?.getData('text/plain') || draggedPlayerId;
   if (!playerId) {
     return;
   }
-
-  const nextRole = select.value;
   const previousRole = getPlayerRole(playerId);
 
-  if (nextRole === previousRole) {
-    return;
-  }
-
-  if (nextRole === 'starter' && configState.startingLineup.length >= STARTERS_LIMIT) {
+  if (role === 'starter' && previousRole !== 'starter' && configState.startingLineup.length >= STARTERS_LIMIT) {
     showLineupError('Solo caben 11 titulares. Haz hueco antes de sumar otro.');
-    select.value = previousRole;
     return;
   }
 
-  if (nextRole === 'sub' && configState.substitutes.length >= SUBS_LIMIT) {
+  if (role === 'sub' && previousRole !== 'sub' && configState.substitutes.length >= SUBS_LIMIT) {
     showLineupError('El banquillo está lleno: máximo 5 suplentes.');
-    select.value = previousRole;
     return;
   }
 
-  setPlayerRole(playerId, nextRole);
+  setPlayerRole(playerId, role);
   hideLineupError();
-  updateSelectionCounts();
+  renderLineupBoard();
 }
 
-function renderSquadSelectors() {
-  if (!squadSelector) {
+function renderLineupBoard() {
+  if (!lineupBoard) {
     return;
   }
-
-  const availableIds = new Set(clubState.squad.map((player) => player.id));
-
-  const uniqueStarters = [];
-  configState.startingLineup.forEach((id) => {
-    if (availableIds.has(id) && !uniqueStarters.includes(id) && uniqueStarters.length < STARTERS_LIMIT) {
-      uniqueStarters.push(id);
-    }
-  });
-  configState.startingLineup = uniqueStarters;
-
-  const uniqueSubs = [];
-  configState.substitutes.forEach((id) => {
-    if (
-      availableIds.has(id) &&
-      !uniqueStarters.includes(id) &&
-      !uniqueSubs.includes(id) &&
-      uniqueSubs.length < SUBS_LIMIT
-    ) {
-      uniqueSubs.push(id);
-    }
-  });
-  configState.substitutes = uniqueSubs;
 
   ensureLineupCompleteness();
   hideLineupError();
 
-  squadSelector.innerHTML = '';
+  lineupDropzones.forEach((zone) => {
+    zone.innerHTML = '';
+  });
 
   const players = [...clubState.squad].sort((a, b) => {
     const positionDiff = (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99);
@@ -254,40 +340,15 @@ function renderSquadSelectors() {
   });
 
   players.forEach((player) => {
-    const row = document.createElement('div');
-    row.className = 'squad-row';
-
-    const info = document.createElement('div');
-    const nameEl = document.createElement('strong');
-    nameEl.textContent = player.name;
-    const detailsEl = document.createElement('span');
-    detailsEl.textContent = `${player.position} · Moral ${formatMorale(player.morale)} · Forma ${player.fitness}/100`;
-    info.append(nameEl, detailsEl);
-
-    const select = document.createElement('select');
-    select.className = 'squad-role';
-    select.dataset.playerId = player.id;
-
-    const options = [
-      { value: 'none', label: 'Reservado' },
-      { value: 'starter', label: 'Titular' },
-      { value: 'sub', label: 'Suplente' },
-    ];
-
-    options.forEach((option) => {
-      const opt = document.createElement('option');
-      opt.value = option.value;
-      opt.textContent = option.label;
-      select.append(opt);
-    });
-
-    select.value = getPlayerRole(player.id);
-    select.addEventListener('change', handleRoleChange);
-
-    row.append(info, select);
-    squadSelector.append(row);
+    const role = getPlayerRole(player.id);
+    const roleKey = role === 'starter' ? 'starter' : role === 'sub' ? 'sub' : 'none';
+    const target = lineupBoard.querySelector(`.lineup-dropzone[data-role='${roleKey}']`);
+    if (target instanceof HTMLElement) {
+      target.append(createPlayerChip(player));
+    }
   });
 
+  lineupDropzones.forEach(markDropzoneState);
   updateSelectionCounts();
 }
 
@@ -298,7 +359,7 @@ function switchToPlanningView() {
   if (reportCard) {
     reportCard.hidden = true;
   }
-  renderSquadSelectors();
+  renderLineupBoard();
 }
 
 function switchToReportView() {
@@ -320,6 +381,213 @@ function updateClubSummary() {
 function updateOpponentOutput() {
   opponentOutput.value = opponentStrength.value;
   opponentOutput.textContent = opponentStrength.value;
+}
+
+function renderLeagueTable() {
+  if (!leagueTableBody || !leagueState) {
+    return;
+  }
+
+  leagueTableBody.innerHTML = '';
+  leagueState.table.forEach((standing, index) => {
+    const row = document.createElement('tr');
+    if (standing.club === clubState.name) {
+      row.classList.add('is-user');
+    }
+    const positionCell = document.createElement('td');
+    positionCell.textContent = String(index + 1);
+    const nameCell = document.createElement('td');
+    nameCell.textContent = standing.club;
+    const played = document.createElement('td');
+    played.textContent = String(standing.played);
+    const wins = document.createElement('td');
+    wins.textContent = String(standing.wins);
+    const draws = document.createElement('td');
+    draws.textContent = String(standing.draws);
+    const losses = document.createElement('td');
+    losses.textContent = String(standing.losses);
+    const goalsFor = document.createElement('td');
+    goalsFor.textContent = String(standing.goalsFor);
+    const goalsAgainst = document.createElement('td');
+    goalsAgainst.textContent = String(standing.goalsAgainst);
+    const points = document.createElement('td');
+    points.textContent = String(standing.points);
+
+    row.append(positionCell, nameCell, played, wins, draws, losses, goalsFor, goalsAgainst, points);
+    leagueTableBody.append(row);
+  });
+
+  if (leagueMatchdayEl) {
+    leagueMatchdayEl.textContent = leagueState.matchDay > 0 ? `Jornada ${leagueState.matchDay}` : 'Pretemporada';
+  }
+}
+
+function clearTransferMessage() {
+  if (!transferMessageEl) {
+    return;
+  }
+  transferMessageEl.hidden = true;
+  transferMessageEl.textContent = '';
+  transferMessageEl.classList.remove('error');
+}
+
+function showTransferMessage(message, type = 'info') {
+  if (!transferMessageEl) {
+    return;
+  }
+  transferMessageEl.textContent = message;
+  transferMessageEl.hidden = false;
+  transferMessageEl.classList.toggle('error', type === 'error');
+  if (transferMessageTimeout) {
+    window.clearTimeout(transferMessageTimeout);
+  }
+  transferMessageTimeout = window.setTimeout(() => {
+    clearTransferMessage();
+  }, 4000);
+}
+
+function renderTransferMarket() {
+  if (!transferListEl) {
+    return;
+  }
+
+  transferListEl.innerHTML = '';
+
+  if (transferMarketState.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'transfer-empty';
+    empty.textContent = 'El mercado está calmado... por ahora.';
+    transferListEl.append(empty);
+    return;
+  }
+
+  transferMarketState.forEach((target) => {
+    const card = document.createElement('article');
+    card.className = 'transfer-card';
+
+    const header = document.createElement('div');
+    header.className = 'transfer-card__header';
+
+    const title = document.createElement('div');
+    title.className = 'transfer-card__title';
+    const name = document.createElement('strong');
+    name.textContent = target.player.name;
+    const position = document.createElement('span');
+    position.textContent = `${target.player.position} · ${target.origin}`;
+    title.append(name, position);
+
+    const value = document.createElement('span');
+    value.className = 'transfer-card__value';
+    value.textContent = numberFormatter.format(target.price);
+
+    header.append(title, value);
+
+    const meta = document.createElement('div');
+    meta.className = 'transfer-card__meta';
+    const age = document.createElement('span');
+    age.textContent = `${target.player.age} años`;
+    const morale = document.createElement('span');
+    morale.textContent = `Moral ${formatMorale(target.player.morale)}`;
+    const salary = document.createElement('span');
+    salary.textContent = `Sueldo semanal ${numberFormatter.format(target.player.salary / 4)}`;
+    meta.append(age, morale, salary);
+
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'transfer-button';
+    action.textContent = `Fichar por ${numberFormatter.format(target.price)}`;
+    action.disabled = clubState.budget < target.price;
+    action.addEventListener('click', () => buyPlayer(target.id));
+
+    card.append(header, meta, action);
+    transferListEl.append(card);
+  });
+}
+
+function calculateSaleValue(player) {
+  return Math.round(estimatePlayerValue(player) * 0.75);
+}
+
+function buyPlayer(targetId) {
+  const index = transferMarketState.findIndex((target) => target.id === targetId);
+  if (index === -1) {
+    return;
+  }
+  const target = transferMarketState[index];
+  if (clubState.budget < target.price) {
+    showTransferMessage('No alcanza la caja para ese fichaje.', 'error');
+    return;
+  }
+
+  const newPlayer = {
+    ...target.player,
+    morale: target.player.morale + 10,
+    fitness: Math.min(100, target.player.fitness + 5),
+    salary: Math.max(target.player.salary, Math.round(target.price / 52)),
+  };
+
+  const updatedSquad = [...clubState.squad, newPlayer];
+  const updatedBudget = clubState.budget - target.price;
+
+  clubState = {
+    ...clubState,
+    budget: updatedBudget,
+    reputation: Math.min(100, clubState.reputation + 1),
+    squad: updatedSquad,
+    weeklyWageBill: calculateWeeklyWageBill(updatedSquad),
+  };
+
+  transferMarketState = [
+    ...transferMarketState.slice(0, index),
+    ...transferMarketState.slice(index + 1),
+  ];
+
+  ensureLineupCompleteness();
+  renderLineupBoard();
+  renderTransferMarket();
+  updateClubSummary();
+  showTransferMessage(`¡${newPlayer.name} se enfunda la camiseta por ${numberFormatter.format(target.price)}!`);
+}
+
+function sellPlayer(playerId) {
+  const player = clubState.squad.find((item) => item.id === playerId);
+  if (!player) {
+    return;
+  }
+  if (clubState.squad.length <= STARTERS_LIMIT + SUBS_LIMIT) {
+    showTransferMessage('No puedes quedarte sin banquillo competitivo.', 'error');
+    return;
+  }
+
+  const salePrice = calculateSaleValue(player);
+
+  setPlayerRole(playerId, 'none');
+
+  const remainingSquad = clubState.squad.filter((item) => item.id !== playerId);
+
+  clubState = {
+    ...clubState,
+    budget: clubState.budget + salePrice,
+    reputation: Math.max(-100, clubState.reputation - 1),
+    squad: remainingSquad,
+    weeklyWageBill: calculateWeeklyWageBill(remainingSquad),
+  };
+
+  transferMarketState = [
+    ...transferMarketState,
+    {
+      id: `rebotado-${player.id}-${Date.now()}`,
+      player: { ...player, morale: Math.max(player.morale, 35) },
+      price: Math.round(estimatePlayerValue(player) * 1.05),
+      origin: clubState.name,
+    },
+  ];
+
+  ensureLineupCompleteness();
+  renderLineupBoard();
+  renderTransferMarket();
+  updateClubSummary();
+  showTransferMessage(`${player.name} vendido por ${numberFormatter.format(salePrice)}.`);
 }
 
 function clearReport() {
@@ -413,6 +681,10 @@ form.addEventListener('submit', (event) => {
     showLineupError(`Necesitas ${STARTERS_LIMIT} titulares para saltar al campo.`);
     return;
   }
+  if (configState.substitutes.length > SUBS_LIMIT) {
+    showLineupError('Reduce el banquillo a 5 suplentes.');
+    return;
+  }
 
   const decisionIndex = decisionSelect.value;
   let decision;
@@ -435,8 +707,20 @@ form.addEventListener('submit', (event) => {
   };
 
   const report = playMatchDay(workingClub, configState, { decision, decisionOutcome });
-  clubState = report.updatedClub;
+  const updatedLeague = updateLeagueTableAfterMatch(leagueState ?? workingClub.league, workingClub.name, report.match);
+  leagueState = updatedLeague;
 
+  const refreshedWageBill = calculateWeeklyWageBill(report.updatedClub.squad);
+
+  clubState = {
+    ...report.updatedClub,
+    weeklyWageBill: refreshedWageBill,
+    league: updatedLeague,
+  };
+
+  renderLeagueTable();
+  renderTransferMarket();
+  renderLineupBoard();
   renderMatchReport(report, decisionOutcome);
   updateClubSummary();
   switchToReportView();
@@ -444,11 +728,17 @@ form.addEventListener('submit', (event) => {
 
 resetButton.addEventListener('click', () => {
   clubState = createExampleClub();
+  leagueState = clubState.league;
+  transferMarketState = createExampleTransferMarket(clubState);
   configState = buildInitialConfig(clubState);
   decisionSelect.value = '';
   updateFormDefaults();
   updateClubSummary();
+  renderLeagueTable();
+  renderTransferMarket();
+  renderLineupBoard();
   switchToPlanningView();
+  clearTransferMessage();
   clearReport();
 });
 
@@ -460,11 +750,23 @@ if (planNextButton) {
   });
 }
 
+function attachDropzoneHandlers() {
+  lineupDropzones.forEach((zone) => {
+    zone.addEventListener('dragover', handleDragOver);
+    zone.addEventListener('dragenter', handleDragOver);
+    zone.addEventListener('dragleave', handleDragLeave);
+    zone.addEventListener('drop', handleDrop);
+  });
+}
+
 function init() {
   populateDecisions();
   updateFormDefaults();
   updateClubSummary();
+  renderLeagueTable();
+  renderTransferMarket();
   updateOpponentOutput();
+  attachDropzoneHandlers();
   switchToPlanningView();
 }
 
