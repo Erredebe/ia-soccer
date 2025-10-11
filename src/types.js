@@ -73,17 +73,37 @@
  * @property {string} origin
  */
 
+/** @typedef {"quick" | "text"} MatchViewMode */
+
+/** @typedef {"low" | "medium" | "high"} PressingLevel */
+
+/** @typedef {"slow" | "balanced" | "fast"} TempoLevel */
+
+/** @typedef {"narrow" | "balanced" | "wide"} WidthLevel */
+
 /**
- * @typedef {Object} ClubState
- * @property {string} name
- * @property {number} budget
- * @property {number} stadiumCapacity
- * @property {number} reputation
- * @property {Player[]} squad
- * @property {number} season
- * @property {ClubObjectives} objectives
- * @property {number} weeklyWageBill
- * @property {LeagueState} league
+ * @typedef {Object} TacticalInstructions
+ * @property {PressingLevel=} pressing
+ * @property {TempoLevel=} tempo
+ * @property {WidthLevel=} width
+ * @property {boolean=} counterAttack
+ * @property {boolean=} playThroughMiddle
+ */
+
+/**
+ * @typedef {Object} MatchSubstitution
+ * @property {PlayerId} out
+ * @property {PlayerId} in
+ * @property {string=} reason
+ */
+
+/**
+ * @typedef {Object} MatchAdjustment
+ * @property {number=} minute
+ * @property {"defensive" | "balanced" | "attacking" | string=} tactic
+ * @property {string=} formation
+ * @property {TacticalInstructions=} instructions
+ * @property {MatchSubstitution[]=} substitutions
  */
 
 /**
@@ -94,6 +114,10 @@
  * @property {string} formation
  * @property {PlayerId[]} startingLineup
  * @property {PlayerId[]} substitutes
+ * @property {TacticalInstructions=} instructions
+ * @property {MatchAdjustment=} halftimeAdjustments
+ * @property {MatchAdjustment[]=} inMatchAdjustments
+ * @property {MatchViewMode=} viewMode
  */
 
 /**
@@ -101,6 +125,9 @@
  * @property {number} minute
  * @property {string} type
  * @property {string} description
+ * @property {PlayerId=} playerId
+ * @property {PlayerId=} relatedPlayerId
+ * @property {string=} severity
  */
 
 /**
@@ -109,6 +136,25 @@
  * @property {number} rating
  * @property {number=} goals
  * @property {number=} assists
+ * @property {number=} shots
+ * @property {number=} shotsOnTarget
+ * @property {number=} passesCompleted
+ * @property {number=} passesAttempted
+ * @property {number=} tackles
+ * @property {number=} saves
+ * @property {number=} minutesPlayed
+ */
+
+/**
+ * @typedef {Object} MatchStatistics
+ * @property {{ for: number; against: number }} possession
+ * @property {{ for: number; against: number; onTargetFor: number; onTargetAgainst: number }} shots
+ * @property {{ for: number; against: number }} expectedGoals
+ * @property {{ completedFor: number; attemptedFor: number; completedAgainst: number; attemptedAgainst: number }} passes
+ * @property {{ for: number; against: number }} fouls
+ * @property {{ yellowFor: number; yellowAgainst: number; redFor: number; redAgainst: number }} cards
+ * @property {{ for: number; against: number }} injuries
+ * @property {{ for: number; against: number }} saves
  */
 
 /**
@@ -119,6 +165,9 @@
  * @property {PlayerId=} manOfTheMatch
  * @property {string[]} narrative
  * @property {PlayerContribution[]} contributions
+ * @property {MatchStatistics} statistics
+ * @property {string[]} commentary
+ * @property {MatchViewMode} viewMode
  */
 
 /** @typedef {"sobornoArbitro" | "filtrarRumor" | "fiestaIlegal" | "presionarFederacion"} CanallaDecisionType */
@@ -141,10 +190,81 @@
  */
 
 /**
+ * @typedef {Object} SponsorContract
+ * @property {string} name
+ * @property {number} value
+ * @property {"match" | "monthly" | "annual"} frequency
+ * @property {number=} lastPaidMatchDay
+ */
+
+/**
+ * @typedef {Object} TVDeal
+ * @property {string} name
+ * @property {number} perMatch
+ * @property {number} bonusWin
+ * @property {number} bonusDraw
+ */
+
+/**
+ * @typedef {Object} MerchandisingPlan
+ * @property {string} brand
+ * @property {number} base
+ * @property {number} bonusWin
+ * @property {number} bonusStarPlayer
+ */
+
+/**
+ * @typedef {Object} InfrastructureState
+ * @property {number} stadiumLevel
+ * @property {number} academyLevel
+ * @property {number} medicalLevel
+ * @property {number} trainingLevel
+ */
+
+/**
+ * @typedef {Object} OperatingExpenses
+ * @property {number} maintenance
+ * @property {number} staff
+ * @property {number} academy
+ * @property {number} medical
+ */
+
+/**
+ * @typedef {Object} MatchdayFinancials
+ * @property {number} income
+ * @property {number} expenses
+ * @property {number} net
+ * @property {Record<string, number>} incomeBreakdown
+ * @property {Record<string, number>} expenseBreakdown
+ * @property {string[]} notes
+ * @property {number=} attendance
+ * @property {SponsorContract[]=} updatedSponsors
+ */
+
+/**
+ * @typedef {Object} ClubState
+ * @property {string} name
+ * @property {number} budget
+ * @property {number} stadiumCapacity
+ * @property {number} reputation
+ * @property {Player[]} squad
+ * @property {number} season
+ * @property {ClubObjectives} objectives
+ * @property {number} weeklyWageBill
+ * @property {LeagueState} league
+ * @property {SponsorContract[]=} sponsors
+ * @property {TVDeal=} tvDeal
+ * @property {MerchandisingPlan=} merchandising
+ * @property {InfrastructureState=} infrastructure
+ * @property {OperatingExpenses=} operatingExpenses
+ */
+
+/**
  * @typedef {Object} MatchDayReport
  * @property {MatchResult} match
  * @property {DecisionOutcome=} decisionOutcome
  * @property {number} financesDelta
+ * @property {MatchdayFinancials=} finances
  * @property {ClubState} updatedClub
  */
 

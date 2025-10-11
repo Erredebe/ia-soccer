@@ -11,6 +11,12 @@
 /** @typedef {import('../types.js').LeagueStanding} LeagueStanding */
 /** @typedef {import('../types.js').TransferTarget} TransferTarget */
 /** @typedef {import('../types.js').MatchResult} MatchResult */
+/** @typedef {import('../types.js').TacticalInstructions} TacticalInstructions */
+/** @typedef {import('../types.js').SponsorContract} SponsorContract */
+/** @typedef {import('../types.js').TVDeal} TVDeal */
+/** @typedef {import('../types.js').MerchandisingPlan} MerchandisingPlan */
+/** @typedef {import('../types.js').InfrastructureState} InfrastructureState */
+/** @typedef {import('../types.js').OperatingExpenses} OperatingExpenses */
 
 const LEAGUE_RIVALS = [
   'Club Verbena del Sur',
@@ -25,6 +31,15 @@ const LEAGUE_RIVALS = [
   'Peña Rockanrolera',
   'Furias del Barrio',
 ];
+
+/** @type {TacticalInstructions} */
+const DEFAULT_INSTRUCTIONS = Object.freeze({
+  pressing: 'medium',
+  tempo: 'balanced',
+  width: 'balanced',
+  counterAttack: false,
+  playThroughMiddle: true,
+});
 
 const MARKET_BLUEPRINTS = [
   {
@@ -143,6 +158,40 @@ const MARKET_BLUEPRINTS = [
     multiplier: 1.22,
   },
 ];
+
+/** @returns {TacticalInstructions} */
+export function createDefaultInstructions() {
+  return { ...DEFAULT_INSTRUCTIONS };
+}
+
+/** @returns {SponsorContract[]} */
+function createExampleSponsors() {
+  return [
+    { name: 'Vermut Torero', value: 250000, frequency: 'annual', lastPaidMatchDay: -40 },
+    { name: 'Autoescuelas López', value: 60000, frequency: 'monthly', lastPaidMatchDay: -4 },
+    { name: 'Bar Manolo', value: 15000, frequency: 'match', lastPaidMatchDay: -1 },
+  ];
+}
+
+/** @returns {TVDeal} */
+function createExampleTvDeal() {
+  return { name: 'Liga Retro TV', perMatch: 28000, bonusWin: 12000, bonusDraw: 6000 };
+}
+
+/** @returns {MerchandisingPlan} */
+function createExampleMerchandising() {
+  return { brand: 'Mercadillo Vintage', base: 18000, bonusWin: 4000, bonusStarPlayer: 2500 };
+}
+
+/** @returns {InfrastructureState} */
+function createExampleInfrastructure() {
+  return { stadiumLevel: 2, academyLevel: 1, medicalLevel: 1, trainingLevel: 2 };
+}
+
+/** @returns {OperatingExpenses} */
+function createExampleOperatingExpenses() {
+  return { maintenance: 42000, staff: 28000, academy: 16000, medical: 12000 };
+}
 
 function createLeagueStanding(club) {
   return {
@@ -611,6 +660,11 @@ export function createExampleClub() {
     },
     weeklyWageBill: squad.reduce((acc, player) => acc + player.salary / 4, 0),
     league: createExampleLeague(name),
+    sponsors: createExampleSponsors(),
+    tvDeal: createExampleTvDeal(),
+    merchandising: createExampleMerchandising(),
+    infrastructure: createExampleInfrastructure(),
+    operatingExpenses: createExampleOperatingExpenses(),
   };
 }
 
@@ -623,6 +677,14 @@ export function createDefaultMatchConfig() {
     formation: '4-4-2',
     startingLineup: [],
     substitutes: [],
+    instructions: createDefaultInstructions(),
+    halftimeAdjustments: {
+      tactic: 'balanced',
+      instructions: createDefaultInstructions(),
+      substitutions: [],
+    },
+    inMatchAdjustments: [],
+    viewMode: 'text',
   };
 }
 

@@ -10,6 +10,7 @@ import { stdin as input, stdout as output } from 'node:process';
 import { playMatchDay } from '../core/engine.js';
 import {
   createDefaultMatchConfig,
+  createDefaultInstructions,
   createDefaultLineup,
   createExampleClub,
   listCanallaDecisions,
@@ -68,6 +69,7 @@ async function runDemo() {
   }
 
   const matchConfig = createDefaultMatchConfig();
+  matchConfig.instructions = createDefaultInstructions();
   const defaultLineup = createDefaultLineup(club);
   matchConfig.startingLineup = defaultLineup.starters;
   matchConfig.substitutes = defaultLineup.substitutes;
@@ -78,12 +80,52 @@ async function runDemo() {
   console.log('\nEventos destacados:');
   report.match.events.forEach((event) => console.log(`- [${event.minute}'] ${event.description}`));
 
+  if (report.match.viewMode === 'text' && report.match.commentary.length > 0) {
+    console.log('\nMinuto a minuto estilo transistor:');
+    report.match.commentary.forEach((line) => console.log(`• ${line}`));
+  }
+
+  const stats = report.match.statistics;
+  console.log('\n>>> Estadísticas avanzadas <<<');
+  console.log(
+    `Posesión: ${stats.possession.for}% vs ${stats.possession.against}% | xG: ${stats.expectedGoals.for.toFixed(
+      2
+    )} - ${stats.expectedGoals.against.toFixed(2)}`
+  );
+  console.log(
+    `Tiros (a puerta): ${stats.shots.for} (${stats.shots.onTargetFor}) - ${stats.shots.against} (${stats.shots.onTargetAgainst})`
+  );
+  console.log(
+    `Pases completados: ${stats.passes.completedFor}/${stats.passes.attemptedFor} | Rival ${stats.passes.completedAgainst}/${stats.passes.attemptedAgainst}`
+  );
+  console.log(
+    `Faltas: ${stats.fouls.for} (A ${stats.cards.yellowFor}, R ${stats.cards.redFor}) - Rival ${stats.fouls.against} (A ${stats.cards.yellowAgainst}, R ${stats.cards.redAgainst})`
+  );
+  console.log(`Paradas: ${stats.saves.for} propias, ${stats.saves.against} rival.`);
+
   if (report.decisionOutcome) {
     console.log('\nImpacto de la decisión canalla en el partido:');
     console.log(`Éxito: ${report.decisionOutcome.success ? 'sí' : 'no'}`);
     console.log(`Reputación +/-: ${report.decisionOutcome.reputationChange}`);
     console.log(`Moral +/-: ${report.decisionOutcome.moraleChange}`);
     console.log(`Caja +/-: ${report.decisionOutcome.financesChange.toLocaleString()}€`);
+  }
+
+  if (report.finances) {
+    console.log('\n>>> Balance económico de la jornada <<<');
+    console.log(`Ingresos: ${report.finances.income.toLocaleString()}€`);
+    Object.entries(report.finances.incomeBreakdown).forEach(([label, value]) => {
+      console.log(`  - ${label}: ${value.toLocaleString()}€`);
+    });
+    console.log(`Gastos: ${report.finances.expenses.toLocaleString()}€`);
+    Object.entries(report.finances.expenseBreakdown).forEach(([label, value]) => {
+      console.log(`  - ${label}: ${value.toLocaleString()}€`);
+    });
+    console.log(`Balance neto: ${report.finances.net.toLocaleString()}€`);
+    if (report.finances.attendance) {
+      console.log(`Asistencia estimada: ${report.finances.attendance.toLocaleString()} aficionados.`);
+    }
+    report.finances.notes.forEach((note) => console.log(`  * ${note}`));
   }
 
   console.log('\nEstado del club tras la jornada:');
