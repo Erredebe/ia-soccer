@@ -14,6 +14,9 @@ import {
   DEFAULT_CLUB_NAME,
   DEFAULT_STADIUM_NAME,
   DEFAULT_CLUB_CITY,
+  DEFAULT_PRIMARY_COLOR,
+  DEFAULT_SECONDARY_COLOR,
+  DEFAULT_CLUB_LOGO,
   isPlayerAvailable,
   resetPlayerForNewSeason,
 } from '../src/core/data.js';
@@ -64,6 +67,7 @@ const clubBudgetEl = document.querySelector('#club-budget');
 const clubReputationEl = document.querySelector('#club-reputation');
 const clubMoraleEl = document.querySelector('#club-morale');
 const clubLogoEl = document.querySelector('#club-logo');
+const clubCardEl = document.querySelector('.club-card');
 
 const leagueMatchdayEl = document.querySelector('#league-matchday');
 const leagueTableBody = document.querySelector('#league-table-body');
@@ -113,6 +117,9 @@ const clubIdentityForm = document.querySelector('#club-identity-form');
 const clubNameInput = document.querySelector('#club-name-input');
 const clubCityInput = document.querySelector('#club-city-input');
 const clubStadiumInput = document.querySelector('#club-stadium-input');
+const clubPrimaryColorInput = document.querySelector('#club-primary-color');
+const clubSecondaryColorInput = document.querySelector('#club-secondary-color');
+const clubLogoInput = document.querySelector('#club-logo-input');
 
 const resultsControlButton = document.querySelector('[data-panel-action="results"]');
 const calendarList = document.querySelector('#calendar-list');
@@ -192,8 +199,6 @@ const percentageFormatter = new Intl.NumberFormat('es-ES', {
   maximumFractionDigits: 0,
 });
 
-const DEFAULT_CLUB_LOGO = 'assets/club-crest.svg';
-
 function syncSidebarState() {
   if (!sidebarToggleButton || !sidebarPanel || !sidebarCollapseQuery) {
     return;
@@ -224,6 +229,7 @@ const STARTERS_LIMIT = 11;
 const SUBS_LIMIT = 5;
 const POSITION_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
 const SAVE_NOTICE_DURATION = 4000;
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 function restartAnimation(element, className) {
   if (!element) {
@@ -250,6 +256,29 @@ function describeAvailability(player) {
   return '';
 }
 
+function normaliseColorValue(value, fallback) {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  return HEX_COLOR_PATTERN.test(trimmed) ? trimmed.toLowerCase() : fallback;
+}
+
+function getReadableTextColor(hexColor) {
+  if (!HEX_COLOR_PATTERN.test(hexColor)) {
+    return '#ffffff';
+  }
+  const toLinear = (component) => {
+    const normalized = component / 255;
+    return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+  };
+  const r = parseInt(hexColor.slice(1, 3), 16);
+  const g = parseInt(hexColor.slice(3, 5), 16);
+  const b = parseInt(hexColor.slice(5, 7), 16);
+  const luminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return luminance > 0.55 ? '#111827' : '#ffffff';
+}
+
 function resolveClubLogoUrl(club) {
   if (!club || typeof club.logoUrl !== 'string') {
     return DEFAULT_CLUB_LOGO;
@@ -270,14 +299,38 @@ function updateClubLogoDisplay() {
   clubLogoEl.alt = `Escudo de ${clubState.name}`;
 }
 
+function applyClubThemeColors() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const primary = normaliseColorValue(clubState?.primaryColor, DEFAULT_PRIMARY_COLOR);
+  const secondary = normaliseColorValue(clubState?.secondaryColor, DEFAULT_SECONDARY_COLOR);
+  const onPrimary = getReadableTextColor(primary);
+  const onSecondary = getReadableTextColor(secondary);
+  const root = document.documentElement;
+  const targets = [root, clubCardEl].filter(Boolean);
+  for (const element of targets) {
+    element.style.setProperty('--club-theme-primary', primary);
+    element.style.setProperty('--club-theme-secondary', secondary);
+    element.style.setProperty('--club-theme-on-primary', onPrimary);
+    element.style.setProperty('--club-theme-on-secondary', onSecondary);
+  }
+}
+
 function normaliseIdentity(partial) {
   const rawName = typeof partial?.name === 'string' ? partial.name.trim() : '';
   const rawStadium = typeof partial?.stadiumName === 'string' ? partial.stadiumName.trim() : '';
   const rawCity = typeof partial?.city === 'string' ? partial.city.trim() : '';
+  const primaryColor = normaliseColorValue(partial?.primaryColor, DEFAULT_PRIMARY_COLOR);
+  const secondaryColor = normaliseColorValue(partial?.secondaryColor, DEFAULT_SECONDARY_COLOR);
+  const rawLogo = typeof partial?.logoUrl === 'string' ? partial.logoUrl.trim() : '';
   return {
     name: rawName.length > 0 ? rawName : DEFAULT_CLUB_NAME,
     stadiumName: rawStadium.length > 0 ? rawStadium : DEFAULT_STADIUM_NAME,
     city: rawCity.length > 0 ? rawCity : DEFAULT_CLUB_CITY,
+    primaryColor,
+    secondaryColor,
+    logoUrl: rawLogo.length > 0 ? rawLogo : DEFAULT_CLUB_LOGO,
   };
 }
 
@@ -286,6 +339,9 @@ function extractClubIdentity(club) {
     name: club?.name,
     stadiumName: club?.stadiumName,
     city: club?.city,
+    primaryColor: club?.primaryColor,
+    secondaryColor: club?.secondaryColor,
+    logoUrl: club?.logoUrl,
   });
 }
 
@@ -331,6 +387,60 @@ function prefillClubIdentityForm() {
   if (clubStadiumInput) {
     clubStadiumInput.value = identity.stadiumName;
   }
+  if (clubPrimaryColorInput) {
+    clubPrimaryColorInput.value = identity.primaryColor;
+  }
+  if (clubSecondaryColorInput) {
+    clubSecondaryColorInput.value = identity.secondaryColor;
+  }
+  if (clubLogoInput) {
+    clubLogoInput.value = '';
+  }
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('La imagen seleccionada no es válida.'));
+      }
+    });
+    reader.addEventListener('error', () => {
+      reject(reader.error ?? new Error('No se pudo leer la imagen del escudo.'));
+    });
+    reader.readAsDataURL(file);
+  });
+}
+
+async function getLogoFromForm() {
+  if (!clubLogoInput || !clubLogoInput.files || clubLogoInput.files.length === 0) {
+    return clubIdentity.logoUrl ?? clubState.logoUrl ?? DEFAULT_CLUB_LOGO;
+  }
+  const file = clubLogoInput.files[0];
+  if (!file || file.size === 0 || typeof FileReader === 'undefined') {
+    return clubIdentity.logoUrl ?? clubState.logoUrl ?? DEFAULT_CLUB_LOGO;
+  }
+  try {
+    return await readFileAsDataUrl(file);
+  } catch (error) {
+    console.warn('No se pudo procesar el nuevo escudo del club:', error);
+    return clubIdentity.logoUrl ?? clubState.logoUrl ?? DEFAULT_CLUB_LOGO;
+  }
+}
+
+async function collectIdentityFromForm() {
+  const logoUrl = await getLogoFromForm();
+  return normaliseIdentity({
+    name: clubNameInput?.value,
+    city: clubCityInput?.value,
+    stadiumName: clubStadiumInput?.value,
+    primaryColor: clubPrimaryColorInput?.value,
+    secondaryColor: clubSecondaryColorInput?.value,
+    logoUrl,
+  });
 }
 
 function rebuildClubState(identity) {
@@ -1259,6 +1369,7 @@ function updateClubSummary() {
   clubBudgetEl.textContent = numberFormatter.format(clubState.budget);
   clubReputationEl.textContent = `${clubState.reputation}`;
   clubMoraleEl.textContent = formatMorale(averageMorale(clubState));
+  applyClubThemeColors();
   updateClubLogoDisplay();
   refreshControlPanel();
 }
@@ -2129,17 +2240,16 @@ if (configureClubButton && clubIdentityModal) {
 }
 
 if (clubIdentityForm) {
-  clubIdentityForm.addEventListener('submit', (event) => {
+  clubIdentityForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const identity = normaliseIdentity({
-      name: clubNameInput?.value,
-      city: clubCityInput?.value,
-      stadiumName: clubStadiumInput?.value,
-    });
+    const identity = await collectIdentityFromForm();
     clearSavedGame();
     clearSaveMessage();
     clearLoadNotice();
     rebuildClubState(identity);
+    if (clubLogoInput) {
+      clubLogoInput.value = '';
+    }
     if (clubIdentityModal) {
       closeModal(clubIdentityModal);
     }

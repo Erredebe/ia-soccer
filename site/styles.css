@@ -5,6 +5,10 @@
   background: radial-gradient(circle at top, #ffffff, #f0f4ff 40%, #d5e3ff 80%);
   background-attachment: fixed;
   color: #111827;
+  --club-theme-primary: #1d4ed8;
+  --club-theme-secondary: #bfdbfe;
+  --club-theme-on-primary: #ffffff;
+  --club-theme-on-secondary: #0f172a;
 }
 
 * {
@@ -388,9 +392,14 @@ body {
 }
 
 .club-card {
+  --club-primary-color: var(--club-theme-primary);
+  --club-secondary-color: var(--club-theme-secondary);
+  --club-on-primary-color: var(--club-theme-on-primary);
+  --club-on-secondary-color: var(--club-theme-on-secondary);
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+  border: 2px solid var(--club-secondary-color);
 }
 
 .club-card__header {
@@ -419,7 +428,8 @@ body {
   height: clamp(56px, 8vw, 72px);
   border-radius: 16px;
   padding: 0.35rem;
-  background: linear-gradient(135deg, rgba(148, 197, 255, 0.35), rgba(59, 130, 246, 0.15));
+  background: var(--club-secondary-color);
+  border: 2px solid var(--club-primary-color);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
   object-fit: contain;
 }
@@ -455,10 +465,11 @@ body {
   justify-content: center;
   padding: 0.45rem 1.1rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.88), rgba(14, 165, 233, 0.78));
-  color: white;
+  background: var(--club-primary-color);
+  border: 1px solid var(--club-secondary-color);
+  color: var(--club-on-primary-color);
   font-weight: 600;
-  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
 }
 
 .match-card__body {
@@ -536,11 +547,11 @@ body {
 .club-action {
   appearance: none;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  border: 1px solid var(--club-primary-color);
   padding: 0.75rem 1.4rem;
   font-weight: 600;
-  background: rgba(241, 245, 249, 0.8);
-  color: #1e293b;
+  background: var(--club-secondary-color);
+  color: var(--club-on-secondary-color);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
@@ -548,27 +559,27 @@ body {
 .club-action:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
-  background: rgba(219, 234, 254, 0.9);
+  filter: brightness(1.05);
 }
 
 .club-action:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.6);
+  outline: 3px solid var(--club-primary-color);
   outline-offset: 2px;
 }
 
 .club-action--primary {
-  border-color: transparent;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.88), rgba(14, 165, 233, 0.78));
-  color: white;
-  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.35);
+  border-color: var(--club-primary-color);
+  background: var(--club-primary-color);
+  color: var(--club-on-primary-color);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
 }
 
 .club-action--primary:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 1), rgba(14, 165, 233, 0.9));
+  filter: brightness(1.05);
 }
 
 .club-action--primary:focus-visible {
-  outline: 3px solid rgba(14, 165, 233, 0.7);
+  outline: 3px solid var(--club-secondary-color);
   outline-offset: 2px;
 }
 
@@ -729,12 +740,13 @@ body.modal-open {
 .league-badge {
   padding: 0.35rem 0.85rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #fde68a, #facc15);
-  color: #78350f;
+  background: var(--club-secondary-color);
+  border: 1px solid var(--club-primary-color);
+  color: var(--club-on-secondary-color);
   font-weight: 700;
   font-size: 0.85rem;
   text-transform: uppercase;
-  box-shadow: 0 6px 18px rgba(250, 204, 21, 0.45);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
 }
 
 .league-table {
@@ -934,6 +946,15 @@ body.modal-open {
   background: rgba(255, 255, 255, 0.9);
   color: inherit;
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.field input[type='color'] {
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  border-radius: 12px;
+  padding: 0.35rem;
+  height: 2.75rem;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
 }
 
 .field input[type='checkbox'] {
@@ -1491,8 +1512,9 @@ body.modal-open {
   gap: 0.5rem;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.9), rgba(250, 204, 21, 0.8));
-  color: #92400e;
+  background: var(--club-primary-color);
+  border: 1px solid var(--club-secondary-color);
+  color: var(--club-on-primary-color);
   font-weight: 700;
 }
 

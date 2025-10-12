@@ -335,6 +335,8 @@
  * @property {number} budget
  * @property {number} stadiumCapacity
  * @property {number} reputation
+ * @property {string} primaryColor
+ * @property {string} secondaryColor
  * @property {string=} logoUrl
  * @property {Player[]} squad
  * @property {number} season

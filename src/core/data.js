@@ -23,6 +23,9 @@ export const TOTAL_MATCHDAYS = 22;
 export const DEFAULT_CLUB_NAME = 'Atlético Bar Callejero';
 export const DEFAULT_STADIUM_NAME = 'Campo del Callejón';
 export const DEFAULT_CLUB_CITY = 'Lavapiés';
+export const DEFAULT_PRIMARY_COLOR = '#1d4ed8';
+export const DEFAULT_SECONDARY_COLOR = '#bfdbfe';
+export const DEFAULT_CLUB_LOGO = 'assets/club-crest.svg';
 
 const LEAGUE_RIVALS = [
   'Club Verbena del Sur',
@@ -498,9 +501,17 @@ function createPlayer(partial) {
   };
 }
 
+function resolveClubColor(candidate, fallback) {
+  if (typeof candidate !== 'string') {
+    return fallback;
+  }
+  const trimmed = candidate.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : fallback;
+}
+
 /**
  * Construye un club de ejemplo con plantilla, finanzas y contexto narrativo.
- * @param {{ name?: string; stadiumName?: string; city?: string }} [options]
+ * @param {{ name?: string; stadiumName?: string; city?: string; primaryColor?: string; secondaryColor?: string; logoUrl?: string }} [options]
  * @returns {ClubState}
  */
 export function createExampleClub(options = {}) {
@@ -783,6 +794,12 @@ export function createExampleClub(options = {}) {
   const name = options.name?.trim() || DEFAULT_CLUB_NAME;
   const stadiumName = options.stadiumName?.trim() || DEFAULT_STADIUM_NAME;
   const city = options.city?.trim() || DEFAULT_CLUB_CITY;
+  const primaryColor = resolveClubColor(options.primaryColor, DEFAULT_PRIMARY_COLOR);
+  const secondaryColor = resolveClubColor(options.secondaryColor, DEFAULT_SECONDARY_COLOR);
+  const logoUrl =
+    typeof options.logoUrl === 'string' && options.logoUrl.trim().length > 0
+      ? options.logoUrl.trim()
+      : DEFAULT_CLUB_LOGO;
   return {
     name,
     stadiumName,
@@ -790,7 +807,9 @@ export function createExampleClub(options = {}) {
     budget: 1200000,
     stadiumCapacity: 23000,
     reputation: 5,
-    logoUrl: 'assets/club-crest.svg',
+    primaryColor,
+    secondaryColor,
+    logoUrl,
     squad,
     season: 1,
     objectives: {
