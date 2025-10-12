@@ -4,7 +4,13 @@
  * @module core/persistence
  */
 
-import { createEmptySeasonLog, createSeasonStats } from './data.js';
+import {
+  createEmptySeasonLog,
+  createSeasonStats,
+  DEFAULT_CLUB_CITY,
+  DEFAULT_CLUB_NAME,
+  DEFAULT_STADIUM_NAME,
+} from './data.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
 /** @typedef {import('../types.js').LeagueState} LeagueState */
@@ -52,8 +58,17 @@ function normaliseClub(club) {
     ...createSeasonStats(),
     ...(club.seasonStats ?? {}),
   };
+  const name = typeof club.name === 'string' && club.name.trim().length > 0 ? club.name : DEFAULT_CLUB_NAME;
+  const stadiumName =
+    typeof club.stadiumName === 'string' && club.stadiumName.trim().length > 0
+      ? club.stadiumName
+      : DEFAULT_STADIUM_NAME;
+  const city = typeof club.city === 'string' && club.city.trim().length > 0 ? club.city : DEFAULT_CLUB_CITY;
   return {
     ...club,
+    name,
+    stadiumName,
+    city,
     squad: Array.isArray(club.squad) ? club.squad.map((player) => normalisePlayer(player)) : [],
     seasonStats,
   };

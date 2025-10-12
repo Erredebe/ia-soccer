@@ -11,6 +11,9 @@ import {
   listCanallaDecisions,
   updateLeagueTableAfterMatch,
   TOTAL_MATCHDAYS,
+  DEFAULT_CLUB_NAME,
+  DEFAULT_STADIUM_NAME,
+  DEFAULT_CLUB_CITY,
   isPlayerAvailable,
   resetPlayerForNewSeason,
 } from '../src/core/data.js';
@@ -55,6 +58,8 @@ const matchLineupStatusEl = document.querySelector('#match-lineup-status');
 const matchSeedEl = document.querySelector('#match-seed');
 
 const clubNameEl = document.querySelector('#club-name');
+const clubCityEl = document.querySelector('#club-city');
+const clubStadiumEl = document.querySelector('#club-stadium');
 const clubBudgetEl = document.querySelector('#club-budget');
 const clubReputationEl = document.querySelector('#club-reputation');
 const clubMoraleEl = document.querySelector('#club-morale');
@@ -102,6 +107,12 @@ const seasonTopAssistsList = document.querySelector('#season-top-assists');
 const seasonAveragePossessionEl = document.querySelector('#season-average-possession');
 const seasonStreakEl = document.querySelector('#season-streak');
 const newSeasonButton = document.querySelector('#new-season');
+const configureClubButton = document.querySelector('#configure-club');
+const clubIdentityModal = document.querySelector('#modal-club-identity');
+const clubIdentityForm = document.querySelector('#club-identity-form');
+const clubNameInput = document.querySelector('#club-name-input');
+const clubCityInput = document.querySelector('#club-city-input');
+const clubStadiumInput = document.querySelector('#club-stadium-input');
 
 const resultsControlButton = document.querySelector('[data-panel-action="results"]');
 const calendarList = document.querySelector('#calendar-list');
@@ -259,6 +270,33 @@ function updateClubLogoDisplay() {
   clubLogoEl.alt = `Escudo de ${clubState.name}`;
 }
 
+function normaliseIdentity(partial) {
+  const rawName = typeof partial?.name === 'string' ? partial.name.trim() : '';
+  const rawStadium = typeof partial?.stadiumName === 'string' ? partial.stadiumName.trim() : '';
+  const rawCity = typeof partial?.city === 'string' ? partial.city.trim() : '';
+  return {
+    name: rawName.length > 0 ? rawName : DEFAULT_CLUB_NAME,
+    stadiumName: rawStadium.length > 0 ? rawStadium : DEFAULT_STADIUM_NAME,
+    city: rawCity.length > 0 ? rawCity : DEFAULT_CLUB_CITY,
+  };
+}
+
+function extractClubIdentity(club) {
+  return normaliseIdentity({
+    name: club?.name,
+    stadiumName: club?.stadiumName,
+    city: club?.city,
+  });
+}
+
+function getHomeVenueLabel() {
+  if (!clubState) {
+    return DEFAULT_STADIUM_NAME;
+  }
+  const identity = extractClubIdentity(clubState);
+  return identity.stadiumName;
+}
+
 function buildInitialConfig(club) {
   const baseConfig = createDefaultMatchConfig();
   const instructions = { ...createDefaultInstructions(), ...(baseConfig.instructions ?? {}) };
@@ -279,6 +317,44 @@ function computeOpponentRotation(league, clubName) {
   return league.table.filter((entry) => entry.club !== clubName).map((entry) => entry.club);
 }
 
+function prefillClubIdentityForm() {
+  if (!clubIdentityForm) {
+    return;
+  }
+  const identity = extractClubIdentity(clubState);
+  if (clubNameInput) {
+    clubNameInput.value = identity.name;
+  }
+  if (clubCityInput) {
+    clubCityInput.value = identity.city;
+  }
+  if (clubStadiumInput) {
+    clubStadiumInput.value = identity.stadiumName;
+  }
+}
+
+function rebuildClubState(identity) {
+  const resolvedIdentity = normaliseIdentity(identity ?? clubIdentity);
+  clubIdentity = resolvedIdentity;
+  const freshClub = createExampleClub(resolvedIdentity);
+  clubState = { ...freshClub, ...resolvedIdentity };
+  leagueState = freshClub.league;
+  transferMarketState = createExampleTransferMarket(freshClub);
+  configState = buildInitialConfig(freshClub);
+  opponentRotation = computeOpponentRotation(leagueState, freshClub.name);
+  decisionSelect.value = '';
+  updateFormDefaults();
+  updateClubSummary();
+  renderLeagueTable();
+  renderTransferMarket();
+  renderLineupBoard();
+  updateMatchSummary();
+  switchToPlanningView();
+  clearTransferMessage();
+  clearReport();
+  return resolvedIdentity;
+}
+
 let clubState = createExampleClub();
 let leagueState = clubState.league;
 let transferMarketState = createExampleTransferMarket(clubState);
@@ -289,6 +365,7 @@ let opponentRotation = computeOpponentRotation(leagueState, clubState.name);
 let saveMessageTimeout;
 let loadNoticeTimeout;
 let hasLatestReport = false;
+let clubIdentity = extractClubIdentity(clubState);
 
 function updateBodyModalState() {
   const hasOpenModal = document.querySelector('.modal.is-open') !== null;
@@ -538,7 +615,7 @@ function renderOpponentModal() {
   const strengthValue = Number.parseInt(opponentStrength.value, 10) || configState.opponentStrength;
   opponentModalStrengthEl.textContent = `${strengthValue} (${describeOpponentStrength(strengthValue)})`;
 
-  opponentModalLocationEl.textContent = homeCheckbox.checked ? 'Tu estadio' : 'Fuera de casa';
+  opponentModalLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
 
   let comment = 'Aún no hay informes detallados del rival.';
   if (opponent && leagueState) {
@@ -672,7 +749,8 @@ function renderStadiumModal() {
   stadiumMedicalEl.textContent = `Nivel ${infrastructure.medicalLevel ?? 0}`;
   stadiumAcademyEl.textContent = `Nivel ${infrastructure.academyLevel ?? 0}`;
 
-  stadiumNoteEl.textContent = 'Invierte en grada y servicios para atraer más taquilla y mantener feliz a la afición.';
+  const identity = extractClubIdentity(clubState);
+  stadiumNoteEl.textContent = `${identity.stadiumName} vibra en ${identity.city}. Invierte en grada y servicios para atraer más taquilla y mantener feliz a la afición.`;
 }
 
 function refreshControlPanel() {
@@ -1166,7 +1244,18 @@ function switchToReportView() {
 }
 
 function updateClubSummary() {
-  clubNameEl.textContent = clubState.name;
+  const identity = extractClubIdentity(clubState);
+  clubIdentity = identity;
+  clubState = { ...clubState, ...identity };
+  if (clubNameEl) {
+    clubNameEl.textContent = identity.name;
+  }
+  if (clubCityEl) {
+    clubCityEl.textContent = identity.city;
+  }
+  if (clubStadiumEl) {
+    clubStadiumEl.textContent = identity.stadiumName;
+  }
   clubBudgetEl.textContent = numberFormatter.format(clubState.budget);
   clubReputationEl.textContent = `${clubState.reputation}`;
   clubMoraleEl.textContent = formatMorale(averageMorale(clubState));
@@ -1233,7 +1322,7 @@ function updateMatchSummary() {
     matchOpponentStrengthEl.textContent = `${strengthValue}/100`;
   }
   if (matchLocationEl) {
-    matchLocationEl.textContent = homeCheckbox.checked ? 'Tu estadio' : 'Fuera de casa';
+    matchLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
   }
   refreshControlPanel();
 }
@@ -1892,7 +1981,7 @@ function persistState(reason = 'auto') {
 function startNewSeason() {
   const nextSeason = clubState.season + 1;
   const refreshedSquad = clubState.squad.map((player) => resetPlayerForNewSeason(player));
-  const newLeague = createExampleLeague(clubState.name);
+  const newLeague = createExampleLeague(clubState.name, { city: clubState.city });
   opponentRotation = computeOpponentRotation(newLeague, clubState.name);
 
   clubState = {
@@ -1918,8 +2007,11 @@ function startNewSeason() {
 }
 
 function applyLoadedState(saved) {
+  const identity = extractClubIdentity(saved.club);
+  clubIdentity = identity;
   clubState = {
     ...saved.club,
+    ...identity,
     logoUrl: resolveClubLogoUrl(saved.club),
     weeklyWageBill: calculateWeeklyWageBill(saved.club.squad),
   };
@@ -2015,20 +2107,8 @@ resetButton.addEventListener('click', () => {
   clearSavedGame();
   clearSaveMessage();
   clearLoadNotice();
-  clubState = createExampleClub();
-  leagueState = clubState.league;
-  opponentRotation = computeOpponentRotation(leagueState, clubState.name);
-  transferMarketState = createExampleTransferMarket(clubState);
-  configState = buildInitialConfig(clubState);
-  decisionSelect.value = '';
-  updateFormDefaults();
-  updateClubSummary();
-  renderLeagueTable();
-  renderTransferMarket();
-  renderLineupBoard();
-  switchToPlanningView();
-  clearTransferMessage();
-  clearReport();
+  const identity = extractClubIdentity(clubState);
+  rebuildClubState(identity);
   showLoadNotice('Club reiniciado. Guardado anterior eliminado.');
 });
 
@@ -2038,6 +2118,33 @@ if (seedInput) {
   seedInput.addEventListener('input', () => {
     const value = seedInput.value.trim();
     configState = { ...configState, seed: value };
+  });
+}
+
+if (configureClubButton && clubIdentityModal) {
+  configureClubButton.addEventListener('click', () => {
+    prefillClubIdentityForm();
+    openModal(clubIdentityModal);
+  });
+}
+
+if (clubIdentityForm) {
+  clubIdentityForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const identity = normaliseIdentity({
+      name: clubNameInput?.value,
+      city: clubCityInput?.value,
+      stadiumName: clubStadiumInput?.value,
+    });
+    clearSavedGame();
+    clearSaveMessage();
+    clearLoadNotice();
+    rebuildClubState(identity);
+    if (clubIdentityModal) {
+      closeModal(clubIdentityModal);
+    }
+    showLoadNotice('Identidad del club actualizada. Se ha preparado una nueva partida.');
+    persistState('silent');
   });
 }
 
@@ -2091,6 +2198,10 @@ function init() {
   renderTransferMarket();
   updateOpponentOutput();
   switchToPlanningView();
+  if (!saved && clubIdentityModal) {
+    prefillClubIdentityForm();
+    openModal(clubIdentityModal);
+  }
 }
 
 if (document.readyState === 'loading') {

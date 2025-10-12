@@ -155,12 +155,23 @@
                 <p class="club-card__tagline">Gestiona el vestuario y decide el rumbo de cada jornada.</p>
               </div>
             </div>
-            <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+            <div class="club-card__actions">
+              <button id="configure-club" type="button" class="reset-button">Configurar club</button>
+              <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+            </div>
           </header>
           <dl class="club-stats" id="club-stats">
             <div>
               <dt>Club</dt>
               <dd id="club-name"></dd>
+            </div>
+            <div>
+              <dt>Ciudad</dt>
+              <dd id="club-city"></dd>
+            </div>
+            <div>
+              <dt>Estadio</dt>
+              <dd id="club-stadium"></dd>
             </div>
             <div>
               <dt>Presupuesto</dt>
@@ -298,6 +309,70 @@
           </section>
         </section>
   
+        <div class="modal" id="modal-club-identity" aria-hidden="true">
+          <div
+            class="modal__content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="club-identity-title"
+          >
+            <button
+              type="button"
+              class="modal__close"
+              data-modal-close
+              aria-label="Cerrar configuración del club"
+            >
+              ×
+            </button>
+            <form class="game-form" id="club-identity-form">
+              <div>
+                <h2 id="club-identity-title">Configura la identidad del club</h2>
+                <p>
+                  Personaliza el nombre, la ciudad y el estadio antes de lanzarte a la temporada. Al
+                  guardar los cambios se reiniciará el progreso actual para aplicar la nueva
+                  identidad.
+                </p>
+              </div>
+              <div class="field-grid">
+                <label class="field">
+                  <span class="field-label">Nombre del club</span>
+                  <input
+                    type="text"
+                    id="club-name-input"
+                    name="clubName"
+                    maxlength="60"
+                    autocomplete="organization"
+                  />
+                </label>
+                <label class="field">
+                  <span class="field-label">Ciudad</span>
+                  <input
+                    type="text"
+                    id="club-city-input"
+                    name="clubCity"
+                    maxlength="60"
+                    autocomplete="address-level2"
+                  />
+                </label>
+                <label class="field">
+                  <span class="field-label">Estadio</span>
+                  <input
+                    type="text"
+                    id="club-stadium-input"
+                    name="clubStadium"
+                    maxlength="60"
+                    autocomplete="off"
+                  />
+                </label>
+              </div>
+              <div class="match-form__actions">
+                <button type="submit" class="play-button">Guardar identidad</button>
+                <button type="button" class="club-action" data-modal-close>Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <div class="modal" id="modal-lineup" aria-hidden="true">
           <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="lineup-title">
             <button type="button" class="modal__close" data-modal-close aria-label="Cerrar gestión de alineación">×</button>
