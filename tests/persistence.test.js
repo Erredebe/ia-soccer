@@ -31,6 +31,8 @@ test('serializeState normaliza disponibilidad y estadísticas', () => {
   assert.equal(payload.club.primaryColor, club.primaryColor);
   assert.equal(payload.club.secondaryColor, club.secondaryColor);
   assert.equal(payload.club.logoUrl, club.logoUrl);
+  assert.ok(Array.isArray(payload.club.staff?.roster), 'El staff debe serializarse con su plantilla');
+  assert.ok(Array.isArray(payload.club.staff?.available), 'El staff debe conservar candidatos disponibles');
   assert.equal(Array.isArray(payload.league.rivals), true);
   const defaultRivalCount = DEFAULT_LEAGUE_SIZE - 1;
   assert.equal(payload.league.size, DEFAULT_LEAGUE_SIZE);
@@ -64,6 +66,8 @@ test('migrateSave rellena valores faltantes en partidas antiguas', () => {
   assert.equal(migrated?.club.primaryColor, club.primaryColor);
   assert.equal(migrated?.club.secondaryColor, club.secondaryColor);
   assert.equal(migrated?.club.logoUrl, club.logoUrl);
+  assert.ok(Array.isArray(migrated?.club.staff?.roster));
+  assert.ok(Array.isArray(migrated?.club.staff?.available));
   assert.equal(Array.isArray(migrated?.league.rivals), true);
   const defaultRivalCount = DEFAULT_LEAGUE_SIZE - 1;
   assert.equal(migrated?.league.size, DEFAULT_LEAGUE_SIZE);

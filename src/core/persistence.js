@@ -20,9 +20,11 @@ import {
   resolveLeagueDifficulty,
   createExampleCup,
   createExampleInfrastructure,
+  createExampleStaffState,
   calculateOperatingExpensesForInfrastructure,
   calculateStadiumCapacity,
   clampInfrastructureLevel,
+  normaliseStaffState,
 } from './data.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -33,7 +35,7 @@ import {
 /** @typedef {import('../types.js').MatchHistoryEntry} MatchHistoryEntry */
 /** @typedef {import('../types.js').MatchDayReport} MatchDayReport */
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SAVE_KEY = 'ia-soccer-manager-state';
 
 /**
@@ -163,6 +165,7 @@ function normaliseClub(club) {
   const infrastructure = normaliseInfrastructure(club.infrastructure);
   const stadiumCapacity = normaliseStadiumCapacity(club.stadiumCapacity, infrastructure);
   const operatingExpenses = normaliseOperatingExpenses(club.operatingExpenses, infrastructure);
+  const staffState = normaliseStaffState(club.staff ?? createExampleStaffState());
   return {
     ...club,
     name,
@@ -174,6 +177,7 @@ function normaliseClub(club) {
     stadiumCapacity,
     infrastructure,
     operatingExpenses,
+    staff: staffState,
     squad: Array.isArray(club.squad) ? club.squad.map((player) => normalisePlayer(player)) : [],
     seasonStats,
     cup,

@@ -430,6 +430,66 @@
  */
 
 /**
+ * Roles disponibles dentro del cuerpo técnico y personal del club.
+ * @typedef {"coach" | "scout" | "analyst" | "physio" | "motivator" | "pressOfficer"} StaffRole
+ */
+
+/**
+ * Objetivos que puede impactar un empleado durante la temporada.
+ * @typedef {"budget" | "reputation" | "morale"} StaffEffectTarget
+ */
+
+/**
+ * Frecuencia de aplicación de un efecto de personal.
+ * @typedef {"match" | "weekly"} StaffEffectFrequency
+ */
+
+/**
+ * Efecto periódico que aporta un miembro del personal.
+ * @typedef {Object} StaffEffect
+ * @property {StaffEffectTarget} target
+ * @property {number} value
+ * @property {StaffEffectFrequency} frequency
+ * @property {string} narrative
+ */
+
+/**
+ * Definición genérica de un empleado del club.
+ * @typedef {Object} StaffMember
+ * @property {string} id
+ * @property {StaffRole} role
+ * @property {string} name
+ * @property {string} description
+ * @property {number} salary
+ * @property {number} hiringCost
+ * @property {number=} dismissalCost
+ * @property {StaffEffect[]} effects
+ */
+
+/** @typedef {StaffMember & { role: "scout" }} Scout */
+/** @typedef {StaffMember & { role: "coach" }} Coach */
+/** @typedef {StaffMember & { role: "physio" }} Physio */
+/** @typedef {StaffMember & { role: "analyst" }} Analyst */
+/** @typedef {StaffMember & { role: "motivator" }} Motivator */
+/** @typedef {StaffMember & { role: "pressOfficer" }} PressOfficer */
+
+/**
+ * Estado agregado del cuerpo técnico del club.
+ * @typedef {Object} ClubStaffState
+ * @property {string[]} roster
+ * @property {string[]} available
+ */
+
+/**
+ * Impacto combinado aplicado por el personal en una jornada.
+ * @typedef {Object} StaffImpact
+ * @property {number} budget
+ * @property {number} reputation
+ * @property {number} morale
+ * @property {string[]} narratives
+ */
+
+/**
  * Definición del tipo `MatchdayFinancials`.
  * @typedef {Object} MatchdayFinancials
  * @property {number} income
@@ -440,6 +500,7 @@
  * @property {string[]} notes
  * @property {number=} attendance
  * @property {SponsorContract[]=} updatedSponsors
+ * @property {StaffImpact=} staffImpact
  */
 
 /**
@@ -464,6 +525,7 @@
  * @property {MerchandisingPlan=} merchandising
  * @property {InfrastructureState=} infrastructure
  * @property {OperatingExpenses=} operatingExpenses
+ * @property {ClubStaffState=} staff
  * @property {ClubSeasonStats=} seasonStats
  * @property {CupState=} cup
  * @property {CanallaStatus=} canallaStatus

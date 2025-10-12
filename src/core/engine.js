@@ -1098,9 +1098,12 @@ export function playMatchDay(club, config, options = {}) {
   const decisionOutcome = decisionOutcomeInput ? { ...decisionOutcomeInput } : undefined;
   const match = simulateMatch(club, config, { ...options, decisionOutcome });
   const finances = calculateMatchdayFinances(club, match);
+  const staffImpact = finances.staffImpact ?? { budget: 0, reputation: 0, morale: 0, narratives: [] };
   const decisionEffectsPending = Boolean(decisionOutcome) && decisionOutcome.appliedToClub !== true;
-  const reputationUpdate = decisionEffectsPending ? decisionOutcome?.reputationChange ?? 0 : 0;
-  const moraleUpdate = decisionEffectsPending ? decisionOutcome?.moraleChange ?? 0 : 0;
+  let reputationUpdate = decisionEffectsPending ? decisionOutcome?.reputationChange ?? 0 : 0;
+  let moraleUpdate = decisionEffectsPending ? decisionOutcome?.moraleChange ?? 0 : 0;
+  reputationUpdate += staffImpact.reputation ?? 0;
+  moraleUpdate += staffImpact.morale ?? 0;
 
   const resultMorale = match.goalsFor > match.goalsAgainst ? 6 : match.goalsFor === match.goalsAgainst ? 1 : -6;
   const contributionMap = new Map(match.contributions.map((contribution) => [contribution.playerId, contribution]));
@@ -1313,6 +1316,10 @@ export function playMatchDay(club, config, options = {}) {
     sponsors: finances.updatedSponsors ?? club.sponsors,
     seasonStats: baseSeasonStats,
   };
+
+  if (staffImpact.narratives.length > 0) {
+    match.narrative = [...match.narrative, ...staffImpact.narratives];
+  }
 
   if (decisionOutcome) {
     decisionOutcome.appliedToClub = true;
