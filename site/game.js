@@ -3,6 +3,7 @@ import {
   createDefaultMatchConfig,
   createDefaultLineup,
   createExampleClub,
+  createExampleCup,
   createExampleTransferMarket,
   createExampleLeague,
   createSeasonStats,
@@ -28,9 +29,14 @@ import {
   isPlayerAvailable,
   resetPlayerForNewSeason,
   generateRandomPlayerIdentity,
+  drawCupRound,
+  getCupFixture,
+  applyCupMatchResult,
 } from '../src/core/data.js';
-import { resolveCanallaDecision } from '../src/core/reputation.js';
+import { resolveCanallaDecision, resolveCupReputation } from '../src/core/reputation.js';
 import { clearSavedGame, loadSavedGame, saveGame, SAVE_VERSION } from '../src/core/persistence.js';
+import { resolveCupPrize } from '../src/core/economy.js';
+import { CUP_ROUND_DEFINITIONS } from '../src/core/types.js';
 
 const decisionSelect = document.querySelector('#decision-select');
 const tacticSelect = document.querySelector('#tactic-select');
@@ -81,6 +87,7 @@ const clubStadiumEl = document.querySelector('#club-stadium');
 const clubBudgetEl = document.querySelector('#club-budget');
 const clubReputationEl = document.querySelector('#club-reputation');
 const clubMoraleEl = document.querySelector('#club-morale');
+const clubCupStatusEl = document.querySelector('#club-cup-status');
 const clubLogoEl = document.querySelector('#club-logo');
 const clubCardEl = document.querySelector('.club-card');
 
@@ -177,6 +184,15 @@ const stadiumMedicalEl = document.querySelector('#stadium-medical');
 const stadiumAcademyEl = document.querySelector('#stadium-academy');
 const stadiumNoteEl = document.querySelector('#stadium-note');
 
+const cupModalEl = document.querySelector('#modal-cup');
+const cupModalStatusEl = document.querySelector('#cup-modal-status');
+const cupDrawButton = document.querySelector('#cup-draw-button');
+const cupPlanButton = document.querySelector('#cup-plan-button');
+const cupNextFixtureEl = document.querySelector('#cup-next-fixture');
+const cupBracketList = document.querySelector('#cup-bracket');
+const cupHistoryList = document.querySelector('#cup-history');
+const cupDrawNarrativeList = document.querySelector('#cup-draw-narrative');
+
 const leagueConfigModal = document.querySelector('#modal-league-config');
 const leagueConfigForm = document.querySelector('#league-config-form');
 const leagueSizeSelect = document.querySelector('#league-size-select');
@@ -185,6 +201,8 @@ const leagueCatalogEl = document.querySelector('#league-catalog');
 const leagueSelectionCountEl = document.querySelector('#league-selection-count');
 const leagueRandomButton = document.querySelector('#league-randomize');
 const leagueConfigErrorEl = document.querySelector('#league-config-error');
+
+const playMatchButton = document.querySelector('#play-match');
 
 const FOCUSABLE_SELECTOR =
   "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
@@ -857,6 +875,7 @@ function rebuildClubState(identity) {
   clubState = { ...freshClub, ...resolvedIdentity };
   clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
   leagueState = freshClub.league;
+  cupState = freshClub.cup;
   updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   transferMarketState = createExampleTransferMarket(freshClub);
   configState = buildInitialConfig(freshClub);
@@ -882,6 +901,7 @@ function rebuildClubState(identity) {
 let clubState = createExampleClub();
 clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
 let leagueState = clubState.league;
+let cupState = clubState.cup;
 updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
 let transferMarketState = createExampleTransferMarket(clubState);
 let configState = buildInitialConfig(clubState);
@@ -897,6 +917,11 @@ let reportHistoryFilterSeason = 'all';
 let activeReportTab = 'current';
 let clubIdentity = extractClubIdentity(clubState);
 let editingPlayerId = null;
+
+if (!cupState) {
+  cupState = createExampleCup(clubState.name, { participants: leagueState?.rivals });
+  clubState = { ...clubState, cup: cupState };
+}
 
 function updateBodyModalState() {
   const hasOpenModal = document.querySelector('.modal.is-open') !== null;
@@ -1047,6 +1072,18 @@ function describeInstructionEntry(key, value) {
   return `${key}: ${String(value)}`;
 }
 
+function findCupDefinition(roundId) {
+  return CUP_ROUND_DEFINITIONS.find((entry) => entry.id === roundId);
+}
+
+function getCupRoundName(roundId) {
+  if (!roundId) {
+    return 'Ronda misteriosa';
+  }
+  const definition = findCupDefinition(roundId);
+  return definition ? definition.name : roundId;
+}
+
 function updateResultsButtonState() {
   if (!resultsControlButton) {
     return;
@@ -1054,6 +1091,166 @@ function updateResultsButtonState() {
   const hasReports = hasLatestReport || matchHistory.length > 0;
   resultsControlButton.disabled = !hasReports;
   resultsControlButton.setAttribute('aria-disabled', hasReports ? 'false' : 'true');
+}
+
+function determineNextEvent() {
+  if (!cupState) {
+    return { type: 'league' };
+  }
+  const currentRound = cupState.rounds?.[cupState.currentRoundIndex];
+  if (cupState.status === 'awaiting-draw' && currentRound) {
+    return { type: 'cup-draw', round: currentRound };
+  }
+  if (cupState.status === 'awaiting-match' && currentRound) {
+    const fixture = getCupFixture(cupState, clubState.name);
+    return { type: 'cup-match', round: currentRound, fixture };
+  }
+  return { type: 'league' };
+}
+
+function formatCupStatusText() {
+  if (!cupState) {
+    return 'Sin participación copera';
+  }
+  const currentRound = cupState.rounds?.[cupState.currentRoundIndex];
+  const roundName = currentRound ? getCupRoundName(currentRound.id) : 'Eliminatoria';
+  switch (cupState.status) {
+    case 'awaiting-draw':
+      return `Sorteo de ${roundName}`;
+    case 'awaiting-match': {
+      const fixture = getCupFixture(cupState, clubState.name);
+      if (fixture) {
+        const venue = fixture.home ? 'en casa' : 'a domicilio';
+        return `${roundName} · vs ${fixture.opponent} (${venue})`;
+      }
+      return `${roundName} pendiente`;
+    }
+    case 'eliminated': {
+      const last = cupState.history?.[cupState.history.length - 1];
+      const label = last?.roundName ?? roundName;
+      return `Eliminados en ${label}`;
+    }
+    case 'champions':
+      return '¡Campeones de copa!';
+    case 'idle':
+    default:
+      return 'Copa en preparación';
+  }
+}
+
+function updateCupSummary() {
+  const statusText = formatCupStatusText();
+  if (clubCupStatusEl) {
+    clubCupStatusEl.textContent = statusText;
+  }
+  if (cupModalStatusEl) {
+    cupModalStatusEl.textContent = statusText;
+  }
+}
+
+function renderCupModal() {
+  if (!cupState) {
+    return;
+  }
+  updateCupSummary();
+  if (cupDrawButton) {
+    cupDrawButton.disabled = cupState.status !== 'awaiting-draw';
+  }
+  if (cupNextFixtureEl) {
+    const event = determineNextEvent();
+    if (event.type === 'cup-match' && event.fixture) {
+      const roundName = getCupRoundName(event.round.id);
+      const venue = event.fixture.home ? 'en casa' : 'a domicilio';
+      cupNextFixtureEl.textContent = `${roundName}: ${clubState.name} vs ${event.fixture.opponent} (${venue})`;
+    } else if (event.type === 'cup-draw') {
+      const roundName = getCupRoundName(event.round.id);
+      cupNextFixtureEl.textContent = `Sorteo pendiente de ${roundName}.`;
+    } else {
+      const last = cupState.history?.[cupState.history.length - 1];
+      if (last) {
+        cupNextFixtureEl.textContent = `${last.roundName}: ${last.outcome === 'champion' ? 'Título conquistado' : 'Eliminados'}.`;
+      } else {
+        cupNextFixtureEl.textContent = 'Sin eliminatorias pendientes.';
+      }
+    }
+  }
+
+  if (cupBracketList) {
+    cupBracketList.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    cupState.rounds.forEach((round) => {
+      const item = document.createElement('li');
+      item.className = 'cup-bracket__round';
+      const title = document.createElement('h4');
+      title.textContent = round.name;
+      item.append(title);
+      const tieList = document.createElement('ul');
+      tieList.className = 'cup-bracket__ties';
+      round.ties.forEach((tie) => {
+        const tieItem = document.createElement('li');
+        tieItem.className = 'cup-bracket__tie';
+        const home = tie.home ?? 'Pendiente';
+        const away = tie.away ?? 'Pendiente';
+        if (tie.includesClub) {
+          tieItem.classList.add('cup-bracket__tie--club');
+        }
+        if (tie.played && tie.homeGoals !== null && tie.awayGoals !== null) {
+          tieItem.textContent = `${home} ${tie.homeGoals}-${tie.awayGoals} ${away}`;
+        } else {
+          tieItem.textContent = `${home} vs ${away}`;
+        }
+        tieList.append(tieItem);
+      });
+      item.append(tieList);
+      fragment.append(item);
+    });
+    cupBracketList.append(fragment);
+  }
+
+  if (cupHistoryList) {
+    cupHistoryList.innerHTML = '';
+    if (cupState.history.length === 0) {
+      const empty = document.createElement('li');
+      empty.textContent = 'Sin hitos todavía.';
+      cupHistoryList.append(empty);
+    } else {
+      cupState.history.forEach((entry) => {
+        const historyItem = document.createElement('li');
+        historyItem.textContent = `${entry.roundName}: ${entry.narrative[0] ?? entry.outcome}`;
+        cupHistoryList.append(historyItem);
+      });
+    }
+  }
+
+  if (cupDrawNarrativeList) {
+    cupDrawNarrativeList.innerHTML = '';
+    const round = cupState.rounds?.[cupState.currentRoundIndex];
+    const drawLines = round?.drawNarrative ?? [];
+    if (drawLines.length === 0) {
+      const item = document.createElement('li');
+      item.textContent = 'Aún no se ha celebrado el sorteo.';
+      cupDrawNarrativeList.append(item);
+    } else {
+      drawLines.forEach((line) => {
+        const item = document.createElement('li');
+        item.textContent = line;
+        cupDrawNarrativeList.append(item);
+      });
+    }
+  }
+}
+
+function handleCupDraw() {
+  if (!cupState || cupState.status !== 'awaiting-draw') {
+    return;
+  }
+  const result = drawCupRound(cupState, clubState.name);
+  cupState = result.cup;
+  clubState = { ...clubState, cup: cupState };
+  renderCupModal();
+  updateMatchSummary();
+  updateCupSummary();
+  persistState('silent');
 }
 
 function renderCalendarModal() {
@@ -1155,9 +1352,20 @@ function renderOpponentModal() {
   const strengthValue = Number.parseInt(opponentStrength.value, 10) || configState.opponentStrength;
   opponentModalStrengthEl.textContent = `${strengthValue} (${describeOpponentStrength(strengthValue)})`;
 
-  opponentModalLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
+  const nextEvent = determineNextEvent();
+  if (nextEvent.type === 'cup-match' && nextEvent.fixture) {
+    opponentModalLocationEl.textContent = nextEvent.fixture.home ? getHomeVenueLabel() : 'Fuera de casa';
+  } else {
+    opponentModalLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
+  }
 
   let comment = 'Aún no hay informes detallados del rival.';
+  if (nextEvent.type === 'cup-draw') {
+    comment = 'Todo depende del sorteo: prepara los bombos y la corbata de la suerte.';
+  } else if (nextEvent.type === 'cup-match') {
+    const roundName = getCupRoundName(nextEvent.round.id);
+    comment = `Eliminatoria de ${roundName}. No hay margen de error.`;
+  }
   if (opponent && leagueState) {
     const position = leagueState.table.findIndex((entry) => entry.club === opponent.club);
     if (position !== -1) {
@@ -1301,6 +1509,7 @@ function refreshControlPanel() {
   renderFinancesModal();
   renderDecisionsModal();
   renderStadiumModal();
+  renderCupModal();
   updateResultsButtonState();
 }
 
@@ -2040,12 +2249,29 @@ function updateClubSummary() {
   clubBudgetEl.textContent = numberFormatter.format(clubState.budget);
   clubReputationEl.textContent = `${clubState.reputation}`;
   clubMoraleEl.textContent = formatMorale(averageMorale(clubState));
+  updateCupSummary();
   applyClubThemeColors();
   updateClubLogoDisplay();
   refreshControlPanel();
 }
 
 function getUpcomingOpponent() {
+  const event = determineNextEvent();
+  if (event.type === 'cup-match' && event.fixture) {
+    return {
+      club: event.fixture.opponent,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      points: 0,
+      competition: 'cup',
+      roundName: event.round.name,
+      home: event.fixture.home,
+    };
+  }
   if (!leagueState || !Array.isArray(leagueState.table)) {
     return null;
   }
@@ -2077,14 +2303,25 @@ function formatOpponentRecord(standing) {
   if (!standing) {
     return 'Sin registros disponibles';
   }
+  if (standing.competition === 'cup') {
+    const venue = standing.home ? 'Se juega en casa.' : 'Se juega fuera.';
+    return `Eliminatoria directa. ${venue}`;
+  }
   const { played, wins, draws, losses, goalsFor, goalsAgainst, points } = standing;
   return `PJ ${played} · G ${wins} · E ${draws} · P ${losses} · GF ${goalsFor} · GC ${goalsAgainst} · Pts ${points}`;
 }
 
 function updateMatchSummary() {
+  const event = determineNextEvent();
   const totalMatchdays = getTotalMatchdays();
   if (matchdayBadgeEl) {
-    if (leagueState && leagueState.matchDay >= totalMatchdays) {
+    if (event.type === 'cup-draw') {
+      const roundName = getCupRoundName(event.round.id);
+      matchdayBadgeEl.textContent = `Copa · Sorteo ${roundName}`;
+    } else if (event.type === 'cup-match') {
+      const roundName = getCupRoundName(event.round.id);
+      matchdayBadgeEl.textContent = `Copa · ${roundName}`;
+    } else if (leagueState && leagueState.matchDay >= totalMatchdays) {
       matchdayBadgeEl.textContent = `Temporada ${clubState.season} completada`;
     } else {
       const nextMatchday = leagueState ? leagueState.matchDay + 1 : 1;
@@ -2093,27 +2330,71 @@ function updateMatchSummary() {
   }
 
   const opponent = getUpcomingOpponent();
-
-  if (matchOpponentNameEl) {
-    matchOpponentNameEl.textContent = opponent?.club ?? 'Rival misterioso';
-  }
-  if (matchOpponentRecordEl) {
-    matchOpponentRecordEl.textContent = formatOpponentRecord(opponent);
-  }
-  const difficultyMultiplier = getDifficultyMultiplier();
-  if (configState.difficultyMultiplier !== difficultyMultiplier) {
-    configState = { ...configState, difficultyMultiplier };
-  }
-  if (matchOpponentStrengthEl) {
-    const baseStrength = opponentStrength instanceof HTMLInputElement
-      ? Number.parseInt(opponentStrength.value, 10)
-      : configState.opponentStrength;
-    const numericBase = Number.isFinite(baseStrength) ? baseStrength : configState.opponentStrength;
-    const adjustedStrength = Math.min(100, Math.round(numericBase * difficultyMultiplier));
-    matchOpponentStrengthEl.textContent = `${adjustedStrength}/100 · ${getDifficultyLabel()}`;
-  }
-  if (matchLocationEl) {
-    matchLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
+  if (event.type === 'cup-draw') {
+    if (matchOpponentNameEl) {
+      matchOpponentNameEl.textContent = 'Pendiente de sorteo';
+    }
+    if (matchOpponentRecordEl) {
+      matchOpponentRecordEl.textContent = 'El bombo aún no ha hablado.';
+    }
+    if (matchOpponentStrengthEl) {
+      matchOpponentStrengthEl.textContent = '—';
+    }
+    if (matchLocationEl) {
+      matchLocationEl.textContent = 'Sede de la federación';
+    }
+    if (playMatchButton) {
+      playMatchButton.disabled = true;
+      playMatchButton.textContent = 'Esperando sorteo';
+    }
+    if (homeCheckbox) {
+      homeCheckbox.checked = false;
+      homeCheckbox.disabled = true;
+    }
+  } else {
+    if (matchOpponentNameEl) {
+      matchOpponentNameEl.textContent = opponent?.club ?? 'Rival misterioso';
+    }
+    if (matchOpponentRecordEl) {
+      matchOpponentRecordEl.textContent = formatOpponentRecord(opponent);
+    }
+    const difficultyMultiplier = getDifficultyMultiplier();
+    if (configState.difficultyMultiplier !== difficultyMultiplier) {
+      configState = { ...configState, difficultyMultiplier };
+    }
+    if (matchOpponentStrengthEl) {
+      const baseStrength = opponentStrength instanceof HTMLInputElement
+        ? Number.parseInt(opponentStrength.value, 10)
+        : configState.opponentStrength;
+      const numericBase = Number.isFinite(baseStrength) ? baseStrength : configState.opponentStrength;
+      const adjustedStrength = Math.min(100, Math.round(numericBase * difficultyMultiplier));
+      matchOpponentStrengthEl.textContent = `${adjustedStrength}/100 · ${getDifficultyLabel()}`;
+    }
+    if (event.type === 'cup-match' && event.fixture) {
+      if (homeCheckbox) {
+        homeCheckbox.checked = event.fixture.home;
+        homeCheckbox.disabled = true;
+      }
+      configState = { ...configState, home: event.fixture.home };
+      if (matchLocationEl) {
+        matchLocationEl.textContent = event.fixture.home ? getHomeVenueLabel() : 'Fuera de casa';
+      }
+      if (playMatchButton) {
+        playMatchButton.disabled = false;
+        playMatchButton.textContent = 'Jugar eliminatoria';
+      }
+    } else {
+      if (homeCheckbox) {
+        homeCheckbox.disabled = false;
+      }
+      if (matchLocationEl) {
+        matchLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
+      }
+      if (playMatchButton) {
+        playMatchButton.disabled = false;
+        playMatchButton.textContent = 'Jugar jornada';
+      }
+    }
   }
   refreshControlPanel();
 }
@@ -2710,6 +2991,9 @@ function renderReportHistoryList() {
       button.setAttribute('aria-current', 'true');
     }
 
+    const competition = entry?.competition === 'cup' ? 'cup' : entry?.metadata?.competition === 'cup' ? 'cup' : 'league';
+    button.dataset.competition = competition;
+
     const opponentLabel = entry.opponent || 'Rival misterioso';
     const clubName = entry.report?.updatedClub?.name ?? clubState.name;
     const goalsFor = entry.report?.match?.goalsFor ?? 0;
@@ -2717,7 +3001,12 @@ function renderReportHistoryList() {
 
     const title = document.createElement('span');
     title.className = 'report-history__title';
-    title.textContent = `Jornada ${entry.matchday} · vs ${opponentLabel}`;
+    const cupRoundLabel =
+      competition === 'cup'
+        ? entry.cupRoundName ?? entry.metadata?.cupRoundName ?? 'Eliminatoria'
+        : null;
+    const titlePrefix = competition === 'cup' ? `Copa · ${cupRoundLabel}` : `Jornada ${entry.matchday}`;
+    title.textContent = `${titlePrefix} · vs ${opponentLabel}`;
 
     const score = document.createElement('span');
     score.className = 'report-history__score';
@@ -2725,7 +3014,10 @@ function renderReportHistoryList() {
 
     const meta = document.createElement('span');
     meta.className = 'report-history__meta';
-    meta.textContent = `Temporada ${entry.season} · Guardado: ${historyDateFormatter.format(new Date(entry.timestamp))}`;
+    const competitionLabel = competition === 'cup' ? 'Copa' : 'Liga';
+    meta.textContent = `Temporada ${entry.season} · ${competitionLabel} · Guardado: ${historyDateFormatter.format(
+      new Date(entry.timestamp)
+    )}`;
 
     button.append(title, score, meta);
     button.addEventListener('click', () => {
@@ -2743,7 +3035,15 @@ function renderReportHistory() {
   updateResultsButtonState();
 }
 
-function addReportToHistory(report, decisionOutcome, opponentName, metadata, season, matchday) {
+function addReportToHistory(
+  report,
+  decisionOutcome,
+  opponentName,
+  metadata,
+  season,
+  matchday,
+  extra = {}
+) {
   const cleanOpponent = typeof opponentName === 'string' && opponentName.trim().length > 0
     ? opponentName.trim()
     : 'Rival misterioso';
@@ -2758,6 +3058,15 @@ function addReportToHistory(report, decisionOutcome, opponentName, metadata, sea
   const matchdayNumber = typeof matchday === 'number' && Number.isFinite(matchday)
     ? Math.max(1, Math.trunc(matchday))
     : fallbackMatchday;
+  const competition = extra && extra.competition === 'cup' ? 'cup' : 'league';
+  const cupRoundId =
+    competition === 'cup' && typeof extra?.cupRoundId === 'string' && extra.cupRoundId.length > 0
+      ? extra.cupRoundId
+      : undefined;
+  const cupRoundName =
+    competition === 'cup' && typeof extra?.cupRoundName === 'string' && extra.cupRoundName.length > 0
+      ? extra.cupRoundName
+      : undefined;
   const timestamp = Date.now();
   const entry = {
     id: `history-${seasonNumber}-${matchdayNumber}-${timestamp}`,
@@ -2768,6 +3077,9 @@ function addReportToHistory(report, decisionOutcome, opponentName, metadata, sea
     decisionOutcome: decisionOutcome ? cloneData(decisionOutcome) : undefined,
     metadata: metadata ? cloneData(metadata) : {},
     timestamp,
+    competition,
+    cupRoundId: cupRoundId ?? null,
+    cupRoundName: cupRoundName ?? null,
   };
   matchHistory = [
     entry,
@@ -2992,6 +3304,7 @@ function renderSeasonSummary() {
 }
 
 function persistState(reason = 'auto') {
+  clubState = { ...clubState, cup: cupState };
   const payload = saveGame(
     {
       club: clubState,
@@ -3020,6 +3333,7 @@ function startNewSeason() {
     leagueSize: leagueSettings.leagueSize,
     difficulty: leagueSettings.difficulty,
   });
+  const newCup = createExampleCup(clubState.name, { participants: newLeague.rivals });
   opponentRotation = computeOpponentRotation(newLeague, clubState.name);
   const previousStats = normaliseSeasonStats(clubState.seasonStats);
   const preservedHistory = cloneData(previousStats.history ?? createSeasonStats().history);
@@ -3030,11 +3344,13 @@ function startNewSeason() {
     ...clubState,
     season: nextSeason,
     league: newLeague,
+    cup: newCup,
     squad: refreshedSquad,
     seasonStats: nextSeasonStats,
     weeklyWageBill: calculateWeeklyWageBill(refreshedSquad),
   };
   leagueState = newLeague;
+  cupState = newCup;
   updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   transferMarketState = createExampleTransferMarket(clubState);
   configState = buildInitialConfig(clubState);
@@ -3082,6 +3398,7 @@ function applyLoadedState(saved) {
   updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   clubState = { ...clubState, league: leagueState };
   clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
+  cupState = clubState.cup;
   transferMarketState = saved.transferMarket.length
     ? saved.transferMarket
     : createExampleTransferMarket(clubState);
@@ -3103,12 +3420,27 @@ function applyLoadedState(saved) {
   opponentRotation = computeOpponentRotation(leagueState, clubState.name);
   ensureLineupCompleteness();
   matchHistory = Array.isArray(saved.history)
-    ? saved.history.map((entry) => ({
-        ...entry,
-        report: cloneData(entry.report),
-        decisionOutcome: entry.decisionOutcome ? cloneData(entry.decisionOutcome) : undefined,
-        metadata: entry.metadata ? cloneData(entry.metadata) : {},
-      }))
+    ? saved.history.map((entry) => {
+        const metadata = entry.metadata ? cloneData(entry.metadata) : {};
+        const competition = entry?.competition === 'cup' || metadata?.competition === 'cup' ? 'cup' : 'league';
+        const storedRoundId =
+          competition === 'cup'
+            ? entry?.cupRoundId ?? (typeof metadata?.cupRoundId === 'string' ? metadata.cupRoundId : null)
+            : null;
+        const storedRoundName =
+          competition === 'cup'
+            ? entry?.cupRoundName ?? (typeof metadata?.cupRoundName === 'string' ? metadata.cupRoundName : null)
+            : null;
+        return {
+          ...entry,
+          competition,
+          cupRoundId: storedRoundId,
+          cupRoundName: storedRoundName,
+          report: cloneData(entry.report),
+          decisionOutcome: entry.decisionOutcome ? cloneData(entry.decisionOutcome) : undefined,
+          metadata,
+        };
+      })
     : [];
   currentHistoryEntryId = matchHistory[0]?.id ?? null;
   reportHistoryFilterSeason = 'all';
@@ -3130,6 +3462,13 @@ form.addEventListener('submit', (event) => {
     return;
   }
 
+  const nextEvent = determineNextEvent();
+  if (nextEvent.type === 'cup-draw') {
+    showLineupError('Primero celebra el sorteo de copa para conocer al rival.');
+    return;
+  }
+  const isCupMatch = nextEvent.type === 'cup-match';
+
   const opponentStanding = getUpcomingOpponent();
   const opponentName = opponentStanding?.club ?? 'Rival misterioso';
 
@@ -3148,7 +3487,9 @@ form.addEventListener('submit', (event) => {
   const seedValue = seedInput ? seedInput.value.trim() : '';
   configState = {
     ...configState,
-    home: homeCheckbox.checked,
+    home: isCupMatch && nextEvent.type === 'cup-match' && nextEvent.fixture
+      ? nextEvent.fixture.home
+      : homeCheckbox.checked,
     opponentStrength: Number.parseInt(opponentStrength.value, 10),
     tactic: tacticSelect.value,
     formation: formationSelect.value,
@@ -3162,31 +3503,91 @@ form.addEventListener('submit', (event) => {
   }
 
   const report = playMatchDay(workingClub, configState, simulationOptions);
-  const updatedLeague = updateLeagueTableAfterMatch(leagueState ?? workingClub.league, workingClub.name, report.match);
-  updateSeasonHistoricalMetrics(report, opponentName, updatedLeague);
-  leagueState = updatedLeague;
-  updateLeagueSettingsFromState(updatedLeague);
+  report.match.competition = isCupMatch ? 'cup' : 'league';
+  report.match.cupRoundId = isCupMatch && nextEvent.type === 'cup-match' ? nextEvent.round.id : report.match.cupRoundId;
+  report.competition = report.match.competition;
+
+  let updatedLeague = leagueState ?? workingClub.league;
+  if (!isCupMatch) {
+    updatedLeague = updateLeagueTableAfterMatch(updatedLeague, workingClub.name, report.match);
+    updateSeasonHistoricalMetrics(report, opponentName, updatedLeague);
+    leagueState = updatedLeague;
+    updateLeagueSettingsFromState(updatedLeague);
+  }
 
   const refreshedWageBill = calculateWeeklyWageBill(report.updatedClub.squad);
+
+  if (isCupMatch && nextEvent.type === 'cup-match') {
+    const progress = applyCupMatchResult(cupState, clubState.name, report.match);
+    cupState = progress.cup;
+    const prizeInfo = resolveCupPrize(progress.historyEntry.roundId, progress.historyEntry.outcome);
+    const reputationInfo = resolveCupReputation(progress.historyEntry.roundId, progress.historyEntry.outcome);
+    const currentPrize = report.finances?.incomeBreakdown?.premios ?? 0;
+    const deltaPrize = prizeInfo.prize - currentPrize;
+    if (report.finances) {
+      report.finances.incomeBreakdown = { ...(report.finances.incomeBreakdown ?? {}), premios: prizeInfo.prize };
+      report.finances.income += deltaPrize;
+      report.finances.net += deltaPrize;
+      report.finances.notes = [...(report.finances.notes ?? []), ...prizeInfo.notes];
+    }
+    report.financesDelta += deltaPrize;
+    report.updatedClub.budget += deltaPrize;
+    report.updatedClub.reputation = Math.max(
+      -100,
+      Math.min(100, report.updatedClub.reputation + reputationInfo.reputation)
+    );
+    report.match.narrative = [...report.match.narrative, ...progress.historyEntry.narrative, reputationInfo.narrative];
+    report.cupProgress = progress;
+  }
 
   clubState = {
     ...report.updatedClub,
     logoUrl: resolveClubLogoUrl(report.updatedClub),
     weeklyWageBill: refreshedWageBill,
     league: updatedLeague,
+    cup: cupState ?? report.updatedClub.cup,
   };
+  leagueState = updatedLeague;
 
   renderLeagueTable();
   renderTransferMarket();
   renderLineupBoard();
   updateMatchSummary();
+  renderCupModal();
+  const competition = report.match?.competition === 'cup' ? 'cup' : 'league';
+  const cupProgress = report.cupProgress;
+  const cupRoundId =
+    competition === 'cup'
+      ? cupProgress?.historyEntry.roundId ?? report.match?.cupRoundId ??
+        (isCupMatch && nextEvent.type === 'cup-match' ? nextEvent.round.id : undefined)
+      : undefined;
+  const cupRoundName =
+    competition === 'cup'
+      ? cupProgress?.historyEntry.roundName ??
+        (isCupMatch && nextEvent.type === 'cup-match' ? nextEvent.round.name : undefined)
+      : undefined;
+  const historyMetadata = {
+    seedInputValue: seedValue,
+    competition,
+  };
+  if (cupRoundId) {
+    historyMetadata.cupRoundId = cupRoundId;
+  }
+  if (cupRoundName) {
+    historyMetadata.cupRoundName = cupRoundName;
+  }
   const historyEntry = addReportToHistory(
     report,
     decisionOutcome,
     opponentName,
-    { seedInputValue: seedValue },
+    historyMetadata,
     clubState.season,
-    updatedLeague.matchDay
+    competition === 'cup' ? (leagueState?.matchDay ?? 0) : updatedLeague.matchDay,
+    {
+      competition,
+      cupRoundId,
+      cupRoundName,
+    }
   );
   switchReportTab('current');
   renderMatchReport(historyEntry.report, historyEntry.decisionOutcome, historyEntry.opponent, historyEntry.metadata ?? {});
@@ -3295,6 +3696,21 @@ if (leagueConfigForm && leagueConfigModal) {
     hideLeagueConfigError();
     applyLeagueConfiguration(selected);
     closeModal(leagueConfigModal);
+  });
+}
+
+if (cupDrawButton) {
+  cupDrawButton.addEventListener('click', () => {
+    handleCupDraw();
+  });
+}
+
+if (cupPlanButton) {
+  cupPlanButton.addEventListener('click', () => {
+    if (cupModalEl) {
+      closeModal(cupModalEl);
+    }
+    switchToPlanningView();
   });
 }
 

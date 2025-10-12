@@ -4,9 +4,12 @@
  * @module core/reputation
  */
 
+import { CUP_ROUND_DEFINITIONS } from './types.js';
+
 /** @typedef {import('../types.js').CanallaDecision} CanallaDecision */
 /** @typedef {import('../types.js').ClubState} ClubState */
 /** @typedef {import('../types.js').DecisionOutcome} DecisionOutcome */
+/** @typedef {import('./types.js').CupRoundId} CupRoundId */
 
 /**
  * Definición del tipo `DecisionResolution` utilizado en los informes canallas.
@@ -72,6 +75,8 @@ const INTENSITY_MODIFIER = {
   media: 0,
   alta: 0.12,
 };
+
+const CUP_REPUTATION_MAP = new Map(CUP_ROUND_DEFINITIONS.map((definition) => [definition.id, definition]));
 
 /**
  * Resuelve una decisión canalla aplicando cambios en reputación, moral y finanzas.
@@ -154,4 +159,34 @@ function generarNarrativaDesastre(decision) {
     default:
       return 'Se nos fue de las manos y ahora hay que apagar fuegos con cubos pequeños.';
   }
+}
+
+/**
+ * Ajusta la reputación del club según el rendimiento en la copa.
+ * @param {CupRoundId} roundId
+ * @param {'victory' | 'eliminated' | 'champion'} [outcome]
+ * @returns {{ reputation: number; narrative: string }}
+ */
+export function resolveCupReputation(roundId, outcome = 'victory') {
+  const definition = CUP_REPUTATION_MAP.get(roundId);
+  if (!definition) {
+    const fallback = outcome === 'eliminated' ? -3 : 5;
+    const narrative =
+      outcome === 'eliminated'
+        ? 'El barrio suspira: caer en la copa deja dudas en la parroquia.'
+        : 'La hazaña copera corre por las tabernas y sube nuestra fama.';
+    return { reputation: fallback, narrative };
+  }
+  if (outcome === 'eliminated') {
+    const narrative = `El tropiezo en ${definition.name} amarga a la grada (${definition.reputationEliminated} de reputación).`;
+    return { reputation: definition.reputationEliminated, narrative };
+  }
+  let reputation = definition.reputationWin;
+  let narrative = `Superar ${definition.name} alimenta la leyenda del barrio (+${definition.reputationWin}).`;
+  if (outcome === 'champion') {
+    const bonus = 10;
+    reputation += bonus;
+    narrative = `Coronarse en ${definition.name} convierte al club en mito (+${reputation}).`;
+  }
+  return { reputation, narrative };
 }
