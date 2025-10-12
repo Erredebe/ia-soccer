@@ -25,6 +25,8 @@ import {
 /** @typedef {import('../types.js').MatchConfig} MatchConfig */
 /** @typedef {import('../types.js').SavedGameBlob} SavedGameBlob */
 /** @typedef {import('../types.js').TransferTarget} TransferTarget */
+/** @typedef {import('../types.js').MatchHistoryEntry} MatchHistoryEntry */
+/** @typedef {import('../types.js').MatchDayReport} MatchDayReport */
 
 export const SAVE_VERSION = 2;
 export const SAVE_KEY = 'ia-soccer-manager-state';
@@ -35,6 +37,22 @@ export const SAVE_KEY = 'ia-soccer-manager-state';
  */
 function isObject(value) {
   return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Clona estructuras serializables sin compartir referencias.
+ * @template T
+ * @param {T} value
+ * @returns {T}
+ */
+function cloneValue(value) {
+  if (value === undefined) {
+    return /** @type {T} */ (value);
+  }
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return /** @type {T} */ (JSON.parse(JSON.stringify(value)));
 }
 
 /**
@@ -160,6 +178,57 @@ function normaliseLeague(league) {
 }
 
 /**
+ * Normaliza una entrada del historial de crónicas para garantizar su integridad.
+ * @param {unknown} entry
+ * @returns {MatchHistoryEntry | null}
+ */
+function normaliseHistoryEntry(entry) {
+  if (!isObject(entry)) {
+    return null;
+  }
+
+  const candidate = /** @type {Partial<MatchHistoryEntry>} */ (entry);
+  const clonedReport = cloneValue(candidate.report);
+  if (!isObject(clonedReport) || !isObject(/** @type {MatchDayReport} */ (clonedReport).updatedClub)) {
+    return null;
+  }
+
+  const idCandidate = typeof candidate.id === 'string' && candidate.id.trim().length > 0
+    ? candidate.id.trim()
+    : `history-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const seasonCandidate = Number.isFinite(candidate.season) ? Math.trunc(/** @type {number} */ (candidate.season)) : 1;
+  const matchdayCandidate =
+    Number.isFinite(candidate.matchday) ? Math.trunc(/** @type {number} */ (candidate.matchday)) : 1;
+  const opponent =
+    typeof candidate.opponent === 'string' && candidate.opponent.trim().length > 0
+      ? candidate.opponent.trim()
+      : 'Rival misterioso';
+  const timestamp =
+    typeof candidate.timestamp === 'number' && Number.isFinite(candidate.timestamp)
+      ? candidate.timestamp
+      : Date.now();
+
+  const report = /** @type {MatchDayReport} */ (clonedReport);
+  report.updatedClub = normaliseClub(/** @type {ClubState} */ (report.updatedClub));
+
+  const decisionOutcome = isObject(candidate.decisionOutcome)
+    ? cloneValue(candidate.decisionOutcome)
+    : undefined;
+  const metadata = isObject(candidate.metadata) ? cloneValue(candidate.metadata) : {};
+
+  return {
+    id: idCandidate,
+    season: Math.max(1, seasonCandidate),
+    matchday: Math.max(1, matchdayCandidate),
+    opponent,
+    report,
+    decisionOutcome,
+    metadata,
+    timestamp,
+  };
+}
+
+/**
  * Prepara un blob serializable limpiando semillas y referencias inconsistentes.
  * @param {SavedGameBlob} blob
  */
@@ -181,6 +250,13 @@ function normaliseBlob(blob) {
   if (typeof config.difficultyMultiplier !== 'number' || !Number.isFinite(config.difficultyMultiplier)) {
     config.difficultyMultiplier = league.difficultyMultiplier ?? resolveLeagueDifficulty(league.difficulty).multiplier;
   }
+  const history = Array.isArray(blob.history)
+    ? blob.history
+        .map((entry) => normaliseHistoryEntry(entry))
+        .filter((entry) => entry !== null)
+        .map((entry) => /** @type {MatchHistoryEntry} */ (entry))
+    : [];
+  history.sort((a, b) => b.timestamp - a.timestamp);
   return {
     version: SAVE_VERSION,
     timestamp: typeof blob.timestamp === 'number' ? blob.timestamp : Date.now(),
@@ -188,6 +264,7 @@ function normaliseBlob(blob) {
     league,
     config,
     transferMarket: Array.isArray(blob.transferMarket) ? blob.transferMarket.map((target) => ({ ...target })) : [],
+    history,
   };
 }
 
@@ -211,13 +288,14 @@ export function migrateSave(maybeBlob) {
     league: blob.league,
     config: blob.config,
     transferMarket: blob.transferMarket ?? [],
+    history: blob.history ?? [],
   });
   return normalised;
 }
 
 /**
  * Serializa el estado del juego listo para persistir.
- * @param {{ club: ClubState; league: LeagueState; config: MatchConfig; transferMarket: TransferTarget[] }} state
+ * @param {{ club: ClubState; league: LeagueState; config: MatchConfig; transferMarket: TransferTarget[]; history?: MatchHistoryEntry[] }} state
  */
 export function serializeState(state) {
   const payload = normaliseBlob({
@@ -227,6 +305,7 @@ export function serializeState(state) {
     league: state.league,
     config: state.config,
     transferMarket: state.transferMarket,
+    history: state.history ?? [],
   });
   return payload;
 }
@@ -255,7 +334,7 @@ function persistPayload(payload, storage) {
 
 /**
  * Guarda el estado actual en LocalStorage.
- * @param {{ club: ClubState; league: LeagueState; config: MatchConfig; transferMarket: TransferTarget[] }} state
+ * @param {{ club: ClubState; league: LeagueState; config: MatchConfig; transferMarket: TransferTarget[]; history?: MatchHistoryEntry[] }} state
  * @param {Storage=} storage
  */
 export function saveGame(state, storage = getDefaultStorage()) {

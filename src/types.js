@@ -370,6 +370,19 @@
  */
 
 /**
+ * Definición del tipo `MatchHistoryEntry`.
+ * @typedef {Object} MatchHistoryEntry
+ * @property {string} id
+ * @property {number} season
+ * @property {number} matchday
+ * @property {string} opponent
+ * @property {MatchDayReport} report
+ * @property {DecisionOutcome=} decisionOutcome
+ * @property {{ seedInputValue?: string }=} metadata
+ * @property {number} timestamp
+ */
+
+/**
  * Definición del tipo `SavedGameBlob`.
  * @typedef {Object} SavedGameBlob
  * @property {number} version
@@ -378,6 +391,7 @@
  * @property {LeagueState} league
  * @property {MatchConfig} config
  * @property {TransferTarget[]} transferMarket
+ * @property {MatchHistoryEntry[]=} history
  */
 
 /**
