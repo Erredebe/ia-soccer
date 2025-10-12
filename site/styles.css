@@ -9,6 +9,16 @@
   --club-theme-secondary: #bfdbfe;
   --club-theme-on-primary: #ffffff;
   --club-theme-on-secondary: #0f172a;
+  --timeline-goal-for: #16a34a;
+  --timeline-goal-against: #dc2626;
+  --timeline-penalty-for: #f59e0b;
+  --timeline-penalty-against: #fb7185;
+  --timeline-card-yellow: #facc15;
+  --timeline-card-red: #ef4444;
+  --timeline-injury: #f87171;
+  --timeline-substitution: #38bdf8;
+  --timeline-defensive: #60a5fa;
+  --timeline-chance: #a855f7;
 }
 
 * {
@@ -2118,46 +2128,262 @@ body.modal-open {
   margin-top: 0.35rem;
 }
 
-.event-item {
-  margin: 0.4rem 0;
-  padding: 0.4rem 0.6rem;
+
+.match-timeline {
+  position: relative;
+  margin: 0;
+  padding-left: 2.6rem;
+  list-style: none;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.match-timeline::before {
+  content: '';
+  position: absolute;
+  left: 1.2rem;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 3px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(15, 23, 42, 0.18),
+    rgba(15, 23, 42, 0.18) 6px,
+    rgba(15, 23, 42, 0.05) 6px,
+    rgba(15, 23, 42, 0.05) 12px
+  );
+  border-radius: 6px;
+}
+
+.timeline-event {
+  --timeline-accent: rgba(148, 163, 184, 0.25);
+  --timeline-icon-color: #2563eb;
+  --timeline-badge-bg: rgba(148, 163, 184, 0.25);
+  --timeline-border-color: rgba(148, 163, 184, 0.42);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(226, 232, 240, 0.88));
+  border-radius: 16px;
+  border: 1px solid var(--timeline-border-color);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.45s ease, background 0.45s ease;
+}
+
+.timeline-event::before {
+  content: '';
+  position: absolute;
+  left: -1.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: var(--timeline-icon-color);
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px #f8fafc, 3px 3px 0 rgba(15, 23, 42, 0.15);
+}
+
+.timeline-event--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.timeline-event--highlight {
+  animation: timeline-event-pop 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15);
+}
+
+.timeline-event:hover,
+.timeline-event:focus-within {
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+}
+
+.timeline-event__minute {
+  font-family: 'VT323', 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 1.05rem;
+  color: var(--timeline-icon-color);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.08);
+  box-shadow: inset -2px -2px 0 rgba(15, 23, 42, 0.16), inset 2px 2px 0 rgba(255, 255, 255, 0.55);
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.5px;
+}
+
+.timeline-event__icon {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 10px;
-  background: rgba(226, 232, 240, 0.45);
+  background: var(--timeline-badge-bg);
+  color: var(--timeline-icon-color);
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.35), inset -2px -2px 0 rgba(15, 23, 42, 0.12);
 }
 
-.event-item--pop {
-  animation: event-item-pop 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+.timeline-event__svg {
+  width: 1.6rem;
+  height: 1.6rem;
 }
 
-@keyframes event-item-pop {
+.timeline-event__description {
+  color: #1f2937;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.timeline-event--goal {
+  --timeline-icon-color: var(--timeline-goal-for);
+  --timeline-badge-bg: rgba(34, 197, 94, 0.18);
+  --timeline-border-color: rgba(34, 197, 94, 0.32);
+}
+
+.timeline-event--goal .timeline-event__description,
+.timeline-event--penalty .timeline-event__description,
+.timeline-event--penalty-save .timeline-event__description,
+.timeline-event--substitution .timeline-event__description {
+  color: #134e4a;
+}
+
+.timeline-event--goal-against,
+.timeline-event--penalty-against,
+.timeline-event--penalty-missed,
+.timeline-event--red-card,
+.timeline-event--red-card-opponent {
+  --timeline-border-color: rgba(220, 38, 38, 0.32);
+}
+
+.timeline-event--goal-against {
+  --timeline-icon-color: var(--timeline-goal-against);
+  --timeline-badge-bg: rgba(220, 38, 38, 0.18);
+}
+
+.timeline-event--goal-against .timeline-event__description,
+.timeline-event--penalty-against .timeline-event__description {
+  color: #7f1d1d;
+}
+
+.timeline-event--penalty {
+  --timeline-icon-color: var(--timeline-penalty-for);
+  --timeline-badge-bg: rgba(245, 158, 11, 0.2);
+  --timeline-border-color: rgba(245, 158, 11, 0.35);
+}
+
+.timeline-event--penalty-against {
+  --timeline-icon-color: var(--timeline-penalty-against);
+  --timeline-badge-bg: rgba(251, 113, 133, 0.22);
+}
+
+.timeline-event--penalty-missed {
+  --timeline-icon-color: #ea580c;
+  --timeline-badge-bg: rgba(234, 88, 12, 0.18);
+}
+
+.timeline-event--penalty-save {
+  --timeline-icon-color: var(--timeline-defensive);
+  --timeline-badge-bg: rgba(96, 165, 250, 0.22);
+  --timeline-border-color: rgba(59, 130, 246, 0.32);
+}
+
+.timeline-event--yellow-card {
+  --timeline-icon-color: var(--timeline-card-yellow);
+  --timeline-badge-bg: rgba(250, 204, 21, 0.28);
+  --timeline-border-color: rgba(202, 138, 4, 0.35);
+}
+
+.timeline-event--yellow-card-opponent {
+  --timeline-icon-color: #facc15;
+  --timeline-badge-bg: rgba(250, 204, 21, 0.18);
+  --timeline-border-color: rgba(202, 138, 4, 0.28);
+}
+
+.timeline-event--red-card {
+  --timeline-icon-color: var(--timeline-card-red);
+  --timeline-badge-bg: rgba(239, 68, 68, 0.25);
+}
+
+.timeline-event--red-card-opponent {
+  --timeline-icon-color: #dc2626;
+  --timeline-badge-bg: rgba(248, 113, 113, 0.25);
+}
+
+.timeline-event--injury {
+  --timeline-icon-color: var(--timeline-injury);
+  --timeline-badge-bg: rgba(248, 113, 113, 0.2);
+  --timeline-border-color: rgba(248, 113, 113, 0.28);
+}
+
+.timeline-event--injury .timeline-event__description {
+  color: #7c2d12;
+}
+
+.timeline-event--substitution {
+  --timeline-icon-color: var(--timeline-substitution);
+  --timeline-badge-bg: rgba(56, 189, 248, 0.22);
+  --timeline-border-color: rgba(14, 165, 233, 0.3);
+}
+
+.timeline-event--defensive {
+  --timeline-icon-color: var(--timeline-defensive);
+  --timeline-badge-bg: rgba(96, 165, 250, 0.2);
+  --timeline-border-color: rgba(59, 130, 246, 0.28);
+}
+
+.timeline-event--chance {
+  --timeline-icon-color: var(--timeline-chance);
+  --timeline-badge-bg: rgba(168, 85, 247, 0.2);
+  --timeline-border-color: rgba(139, 92, 246, 0.3);
+}
+
+.timeline-event--chance-opponent {
+  --timeline-icon-color: #f97316;
+  --timeline-badge-bg: rgba(249, 115, 22, 0.18);
+  --timeline-border-color: rgba(217, 119, 6, 0.28);
+}
+
+.timeline-event--generic {
+  --timeline-icon-color: #475569;
+  --timeline-badge-bg: rgba(148, 163, 184, 0.2);
+}
+
+.timeline-event--yellow-card .timeline-event__description,
+.timeline-event--yellow-card-opponent .timeline-event__description {
+  color: #92400e;
+}
+
+.timeline-event--red-card .timeline-event__description,
+.timeline-event--red-card-opponent .timeline-event__description,
+.timeline-event--penalty-missed .timeline-event__description {
+  color: #7f1d1d;
+}
+
+.timeline-event--defensive .timeline-event__description {
+  color: #1e3a8a;
+}
+
+.timeline-event--chance .timeline-event__description {
+  color: #581c87;
+}
+
+@keyframes timeline-event-pop {
   0% {
-    opacity: 0;
-    transform: scale(0.95) translateY(6px);
+    opacity: 0.4;
+    transform: translateY(14px) scale(0.96);
   }
   55% {
     opacity: 1;
-    transform: scale(1.02) translateY(0);
+    transform: translateY(-4px) scale(1.03);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0) scale(1);
   }
-}
-
-.event-item--goal {
-  background: rgba(134, 239, 172, 0.35);
-  color: #166534;
-  font-weight: 600;
-}
-
-.event-item--card {
-  background: rgba(254, 215, 170, 0.5);
-  color: #9a3412;
-}
-
-.event-item--injury {
-  background: rgba(252, 165, 165, 0.45);
-  color: #991b1b;
 }
 
 #narrative-list {
@@ -2179,9 +2405,18 @@ body.modal-open {
   transform: translateY(0);
 }
 
+#narrative-list .narrative-item--goal {
+  background: rgba(34, 197, 94, 0.18);
+  border-left: 4px solid var(--timeline-goal-for);
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  color: #14532d;
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.15);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scoreline--flash,
-  .event-item--pop {
+  .timeline-event--highlight {
     animation: none !important;
   }
 
@@ -2189,6 +2424,12 @@ body.modal-open {
     transition: none;
     opacity: 1;
     transform: translateY(0);
+  }
+
+  .timeline-event {
+    transition: none;
+    opacity: 1;
+    transform: none;
   }
 }
 

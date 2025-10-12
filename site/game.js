@@ -119,7 +119,7 @@ const staffNoteEl = document.querySelector('#staff-note');
 const staffRosterList = document.querySelector('#staff-roster');
 const staffMarketList = document.querySelector('#staff-market');
 const narrativeList = document.querySelector('#narrative-list');
-const eventsList = document.querySelector('#events-list');
+const matchTimeline = document.querySelector('#match-timeline');
 const decisionReport = document.querySelector('#decision-report');
 const decisionNarrative = document.querySelector('#decision-narrative');
 const decisionStats = document.querySelector('#decision-stats');
@@ -132,6 +132,112 @@ const reportPanels = document.querySelectorAll('[data-report-panel]');
 const reportHistoryList = document.querySelector('#report-history-list');
 const reportHistorySeasonSelect = document.querySelector('#report-history-season');
 const reportHistoryEmptyEl = document.querySelector('#report-history-empty');
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const XLINK_NS = 'http://www.w3.org/1999/xlink';
+const GOAL_EVENT_TYPES = new Set(['gol', 'penalti', 'gol_en_contra', 'penalti_en_contra']);
+const TIMELINE_EVENT_META = {
+  gol: {
+    iconId: 'icon-goal',
+    label: 'Gol a favor',
+    className: 'timeline-event--goal',
+    highlight: true,
+  },
+  penalti: {
+    iconId: 'icon-penalty',
+    label: 'Penalti convertido',
+    className: 'timeline-event--penalty',
+    highlight: true,
+  },
+  gol_en_contra: {
+    iconId: 'icon-goal',
+    label: 'Gol encajado',
+    className: 'timeline-event--goal-against',
+    highlight: true,
+  },
+  penalti_en_contra: {
+    iconId: 'icon-penalty',
+    label: 'Penalti encajado',
+    className: 'timeline-event--penalty-against',
+    highlight: true,
+  },
+  penalti_fallado: {
+    iconId: 'icon-penalty',
+    label: 'Penalti fallado',
+    className: 'timeline-event--penalty-missed',
+  },
+  penalti_atrapado: {
+    iconId: 'icon-penalty',
+    label: 'Penalti detenido',
+    className: 'timeline-event--penalty-save',
+  },
+  tarjeta: {
+    iconId: 'icon-yellow-card',
+    label: 'Tarjeta amarilla',
+    className: 'timeline-event--yellow-card',
+    highlight: true,
+  },
+  tarjeta_rival: {
+    iconId: 'icon-yellow-card',
+    label: 'Tarjeta amarilla rival',
+    className: 'timeline-event--yellow-card-opponent',
+    highlight: true,
+  },
+  doble_amarilla: {
+    iconId: 'icon-red-card',
+    label: 'Doble amarilla',
+    className: 'timeline-event--red-card',
+    highlight: true,
+  },
+  expulsion: {
+    iconId: 'icon-red-card',
+    label: 'Expulsión',
+    className: 'timeline-event--red-card',
+    highlight: true,
+  },
+  expulsion_rival: {
+    iconId: 'icon-red-card',
+    label: 'Expulsión rival',
+    className: 'timeline-event--red-card-opponent',
+    highlight: true,
+  },
+  lesion: {
+    iconId: 'icon-injury',
+    label: 'Lesión',
+    className: 'timeline-event--injury',
+    highlight: true,
+  },
+  cambio: {
+    iconId: 'icon-substitution',
+    label: 'Sustitución',
+    className: 'timeline-event--substitution',
+  },
+  atajada: {
+    iconId: 'icon-goal',
+    label: 'Paradón rival',
+    className: 'timeline-event--defensive',
+  },
+  atajada_portero: {
+    iconId: 'icon-goal',
+    label: 'Paradón propio',
+    className: 'timeline-event--defensive',
+  },
+  ocasión: {
+    iconId: 'icon-goal',
+    label: 'Ocasión creada',
+    className: 'timeline-event--chance',
+  },
+  ocasión_rival: {
+    iconId: 'icon-goal',
+    label: 'Ocasión rival',
+    className: 'timeline-event--chance-opponent',
+  },
+  default: {
+    iconId: 'icon-club-shield',
+    label: 'Momento destacado',
+    className: 'timeline-event--generic',
+  },
+};
 
 if (financesDeltaEl) {
   financesDeltaEl.setAttribute('aria-live', 'polite');
@@ -3208,7 +3314,9 @@ function clearReport() {
     matchSeedEl.hidden = true;
   }
   narrativeList.innerHTML = '';
-  eventsList.innerHTML = '';
+  if (matchTimeline) {
+    matchTimeline.innerHTML = '';
+  }
   decisionReport.hidden = true;
   decisionNarrative.textContent = '';
   decisionStats.innerHTML = '';
@@ -3650,36 +3758,77 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
     }
   }
 
+  const goalMinutes = new Set(
+    report.match.events.filter((event) => GOAL_EVENT_TYPES.has(event.type)).map((event) => event.minute)
+  );
+
   narrativeList.innerHTML = '';
   report.match.narrative.forEach((line) => {
     const item = document.createElement('li');
     item.className = 'narrative-item';
     item.textContent = line;
+    const minuteMatch = line.match(/\((\d+)'\)/u);
+    if (minuteMatch) {
+      const minuteValue = Number.parseInt(minuteMatch[1], 10);
+      if (goalMinutes.has(minuteValue)) {
+        item.classList.add('narrative-item--goal');
+      }
+    }
     narrativeList.append(item);
     requestAnimationFrame(() => {
       item.classList.add('narrative-item--visible');
     });
   });
 
-  eventsList.innerHTML = '';
-  report.match.events.forEach((event) => {
-    const item = document.createElement('li');
-    item.className = 'event-item';
-    const isGoalEvent = ['gol', 'penalti'].includes(event.type);
-    const isCardEvent = ['doble_amarilla', 'expulsion', 'tarjeta'].includes(event.type);
-    if (isGoalEvent) {
-      item.classList.add('event-item--goal');
-    } else if (isCardEvent) {
-      item.classList.add('event-item--card');
-    } else if (event.type.includes('lesion')) {
-      item.classList.add('event-item--injury');
-    }
-    item.textContent = `[${event.minute}'] ${event.description}`;
-    eventsList.append(item);
-    if (isGoalEvent || isCardEvent) {
-      restartAnimation(item, 'event-item--pop');
-    }
-  });
+  if (matchTimeline) {
+    matchTimeline.innerHTML = '';
+    report.match.events.forEach((event) => {
+      const metadata = TIMELINE_EVENT_META[event.type] ?? TIMELINE_EVENT_META.default;
+      const item = document.createElement('li');
+      item.className = 'timeline-event';
+      if (metadata.className) {
+        item.classList.add(metadata.className);
+      }
+
+      const minute = document.createElement('span');
+      minute.className = 'timeline-event__minute';
+      minute.textContent = `${event.minute}'`;
+
+      const iconWrapper = document.createElement('span');
+      iconWrapper.className = 'timeline-event__icon';
+      if (metadata.label) {
+        iconWrapper.setAttribute('role', 'img');
+        iconWrapper.setAttribute('aria-label', metadata.label);
+      } else {
+        iconWrapper.setAttribute('aria-hidden', 'true');
+      }
+
+      if (metadata.iconId) {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('class', 'timeline-event__svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('focusable', 'false');
+        const use = document.createElementNS(SVG_NS, 'use');
+        use.setAttribute('href', `icons.svg#${metadata.iconId}`);
+        use.setAttributeNS(XLINK_NS, 'href', `icons.svg#${metadata.iconId}`);
+        svg.append(use);
+        iconWrapper.append(svg);
+      }
+
+      const description = document.createElement('span');
+      description.className = 'timeline-event__description';
+      description.textContent = event.description;
+
+      item.append(minute, iconWrapper, description);
+      matchTimeline.append(item);
+      requestAnimationFrame(() => {
+        item.classList.add('timeline-event--visible');
+        if (metadata.highlight) {
+          item.classList.add('timeline-event--highlight');
+        }
+      });
+    });
+  }
 
   renderDecisionOutcome(decisionOutcome);
 

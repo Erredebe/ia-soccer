@@ -20,6 +20,12 @@ Cada símbolo se puede referenciar con `<use href="icons.svg#IDENTIFICADOR">`. I
 | `icon-decisions` | Decisiones canallas |
 | `icon-stadium` | Mejoras de estadio |
 | `icon-club-shield` | Escudo genérico del club |
+| `icon-goal` | Goles y ocasiones celebradas en la cronología |
+| `icon-penalty` | Lanzamientos desde los once metros |
+| `icon-yellow-card` | Avisos disciplinarios (tarjeta amarilla) |
+| `icon-red-card` | Expulsiones o doble amarilla |
+| `icon-injury` | Parte médico y lesiones |
+| `icon-substitution` | Cambios tácticos o rotaciones |
 
 ## Escudo por defecto
 
