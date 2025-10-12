@@ -609,12 +609,17 @@ export function simulateMatch(club, config, options = {}) {
     ensureContribution(contributions, player.id, 5.4);
   }
 
+  const difficultyMultiplier =
+    typeof config.difficultyMultiplier === 'number' && Number.isFinite(config.difficultyMultiplier)
+      ? clamp(config.difficultyMultiplier, 0.2, 2)
+      : 1;
+
   const initialStrength = calculateClubStrength(
     lineup,
     { ...config, tactic: adjustmentState.tactic, formation: adjustmentState.formation },
     moraleBoost
   );
-  const opponentStrength = config.opponentStrength + intimidation;
+  const opponentStrength = config.opponentStrength * difficultyMultiplier + intimidation;
 
   let goalsFor = 0;
   let goalsAgainst = 0;

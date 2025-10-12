@@ -416,9 +416,30 @@
                 </p>
               </div>
               <form class="game-form" id="league-config-form">
+                <fieldset class="league-config__fieldset">
+                  <legend>Formato de la temporada</legend>
+                  <label class="field">
+                    <span class="field-label">Tamaño de la liga</span>
+                    <select id="league-size-select" name="leagueSize">
+                      <option value="8">Liga callejera · 8 clubes</option>
+                      <option value="12" selected>Liga clásica · 12 clubes</option>
+                      <option value="16">Liga maratoniana · 16 clubes</option>
+                    </select>
+                    <span class="field-hint">Incluye a tu club y define el número de jornadas.</span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Dificultad</span>
+                    <select id="league-difficulty-select" name="leagueDifficulty">
+                      <option value="relajada">Relajada · Rivales 15% más suaves</option>
+                      <option value="canalla" selected>Canalla · Equilibrada</option>
+                      <option value="legendaria">Legendaria · Rivales 20% más duros</option>
+                    </select>
+                    <span class="field-hint">Ajusta la intensidad competitiva para tu aventura canalla.</span>
+                  </label>
+                </fieldset>
                 <div class="league-config__summary">
                   <p id="league-selection-count" class="league-config__count" aria-live="polite" role="status">
-                    0/11 rivales elegidos
+                    0/11 rivales elegidos · 22 jornadas
                   </p>
                   <button type="button" class="lineup-auto-button" id="league-randomize">
                     Sorteo aleatorio

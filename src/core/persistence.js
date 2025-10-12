@@ -13,6 +13,11 @@ import {
   DEFAULT_PRIMARY_COLOR,
   DEFAULT_SECONDARY_COLOR,
   DEFAULT_CLUB_LOGO,
+  DEFAULT_LEAGUE_SIZE,
+  MIN_LEAGUE_SIZE,
+  MAX_LEAGUE_SIZE,
+  calculateTotalMatchdays,
+  resolveLeagueDifficulty,
 } from './data.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -115,11 +120,42 @@ function normaliseClub(club) {
  * Clona una liga asegurando que la tabla es una copia independiente.
  * @param {LeagueState} league
  */
+function clampLeagueSize(value) {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_LEAGUE_SIZE;
+  }
+  const truncated = Math.trunc(value);
+  return Math.max(MIN_LEAGUE_SIZE, Math.min(MAX_LEAGUE_SIZE, Math.max(2, truncated)));
+}
+
 function normaliseLeague(league) {
+  const table = Array.isArray(league.table) ? league.table.map((entry) => ({ ...entry })) : [];
+  const rivals = Array.isArray(league.rivals) ? [...league.rivals] : [];
+  const difficulty = resolveLeagueDifficulty(league?.difficulty);
+  const rivalCountFromData = rivals.length > 0 ? rivals.length : Math.max(1, table.length > 0 ? table.length - 1 : DEFAULT_LEAGUE_SIZE - 1);
+  const sizeCandidate =
+    Number.isFinite(league?.size) && league.size
+      ? Math.trunc(league.size)
+      : rivalCountFromData + 1;
+  const size = clampLeagueSize(sizeCandidate);
+  const rivalCount = Math.max(1, size - 1);
+  const totalMatchdaysCandidate =
+    Number.isFinite(league?.totalMatchdays) && league.totalMatchdays
+      ? Math.max(1, Math.trunc(league.totalMatchdays))
+      : calculateTotalMatchdays(rivalCount);
+  const difficultyMultiplier =
+    typeof league?.difficultyMultiplier === 'number' && Number.isFinite(league.difficultyMultiplier)
+      ? league.difficultyMultiplier
+      : difficulty.multiplier;
+
   return {
     ...league,
-    table: Array.isArray(league.table) ? league.table.map((entry) => ({ ...entry })) : [],
-    rivals: Array.isArray(league.rivals) ? [...league.rivals] : [],
+    table,
+    rivals,
+    size,
+    totalMatchdays: totalMatchdaysCandidate,
+    difficulty: difficulty.id,
+    difficultyMultiplier,
   };
 }
 
@@ -128,6 +164,7 @@ function normaliseLeague(league) {
  * @param {SavedGameBlob} blob
  */
 function normaliseBlob(blob) {
+  const league = normaliseLeague(blob.league);
   const config = { ...blob.config };
   if (config.seed !== undefined && typeof config.seed !== 'string' && typeof config.seed !== 'number') {
     delete config.seed;
@@ -135,11 +172,20 @@ function normaliseBlob(blob) {
   if (config.seed === undefined) {
     config.seed = '';
   }
+  if (typeof config.difficultyMultiplier === 'string') {
+    const parsed = Number.parseFloat(config.difficultyMultiplier);
+    if (Number.isFinite(parsed)) {
+      config.difficultyMultiplier = parsed;
+    }
+  }
+  if (typeof config.difficultyMultiplier !== 'number' || !Number.isFinite(config.difficultyMultiplier)) {
+    config.difficultyMultiplier = league.difficultyMultiplier ?? resolveLeagueDifficulty(league.difficulty).multiplier;
+  }
   return {
     version: SAVE_VERSION,
     timestamp: typeof blob.timestamp === 'number' ? blob.timestamp : Date.now(),
     club: normaliseClub(blob.club),
-    league: normaliseLeague(blob.league),
+    league,
     config,
     transferMarket: Array.isArray(blob.transferMarket) ? blob.transferMarket.map((target) => ({ ...target })) : [],
   };

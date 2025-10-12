@@ -7,7 +7,10 @@ import {
   createExampleClub,
   createExampleLeague,
   createExampleTransferMarket,
-  TOTAL_MATCHDAYS,
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_LEAGUE_DIFFICULTY,
+  calculateTotalMatchdays,
+  resolveLeagueDifficulty,
 } from '../src/core/data.js';
 import { migrateSave, serializeState, SAVE_VERSION } from '../src/core/persistence.js';
 
@@ -29,7 +32,14 @@ test('serializeState normaliza disponibilidad y estadísticas', () => {
   assert.equal(payload.club.secondaryColor, club.secondaryColor);
   assert.equal(payload.club.logoUrl, club.logoUrl);
   assert.equal(Array.isArray(payload.league.rivals), true);
-  assert.equal(payload.league.rivals.length, TOTAL_MATCHDAYS / 2);
+  const defaultRivalCount = DEFAULT_LEAGUE_SIZE - 1;
+  assert.equal(payload.league.size, DEFAULT_LEAGUE_SIZE);
+  assert.equal(payload.league.rivals.length, defaultRivalCount);
+  assert.equal(payload.league.totalMatchdays, calculateTotalMatchdays(defaultRivalCount));
+  const defaultDifficulty = resolveLeagueDifficulty(DEFAULT_LEAGUE_DIFFICULTY);
+  assert.equal(payload.league.difficulty, defaultDifficulty.id);
+  assert.equal(payload.league.difficultyMultiplier, defaultDifficulty.multiplier);
+  assert.equal(payload.config.difficultyMultiplier, defaultDifficulty.multiplier);
 });
 
 test('migrateSave rellena valores faltantes en partidas antiguas', () => {
@@ -55,5 +65,12 @@ test('migrateSave rellena valores faltantes en partidas antiguas', () => {
   assert.equal(migrated?.club.secondaryColor, club.secondaryColor);
   assert.equal(migrated?.club.logoUrl, club.logoUrl);
   assert.equal(Array.isArray(migrated?.league.rivals), true);
-  assert.equal(migrated?.league.rivals?.length, TOTAL_MATCHDAYS / 2);
+  const defaultRivalCount = DEFAULT_LEAGUE_SIZE - 1;
+  assert.equal(migrated?.league.size, DEFAULT_LEAGUE_SIZE);
+  assert.equal(migrated?.league.rivals?.length, defaultRivalCount);
+  assert.equal(migrated?.league.totalMatchdays, calculateTotalMatchdays(defaultRivalCount));
+  const defaultDifficulty = resolveLeagueDifficulty(DEFAULT_LEAGUE_DIFFICULTY);
+  assert.equal(migrated?.league.difficulty, defaultDifficulty.id);
+  assert.equal(migrated?.league.difficultyMultiplier, defaultDifficulty.multiplier);
+  assert.equal(migrated?.config.difficultyMultiplier, defaultDifficulty.multiplier);
 });
