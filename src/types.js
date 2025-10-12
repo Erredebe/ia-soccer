@@ -167,7 +167,7 @@
 
 /**
  * Definición del tipo `MatchViewMode`.
- * @typedef {"quick" | "text"} MatchViewMode
+ * @typedef {"quick" | "text" | "2d"} MatchViewMode
  */
 
 /**
@@ -272,6 +272,43 @@
  */
 
 /**
+ * Representa la posesión del balón en un frame 2D.
+ * @typedef {Object} Match2DBall
+ * @property {number} x
+ * @property {number} y
+ * @property {'us' | 'rival' | 'neutral'} possession
+ */
+
+/**
+ * Información de un jugador renderizado en el tablero 2D.
+ * @typedef {Object} Match2DPlayer
+ * @property {string} id
+ * @property {string} name
+ * @property {'us' | 'rival'} team
+ * @property {'GK' | 'OUT'} role
+ * @property {number} x
+ * @property {number} y
+ */
+
+/**
+ * Fotograma de la visualización 2D.
+ * @typedef {Object} Match2DFrame
+ * @property {number} minute
+ * @property {string} label
+ * @property {Match2DBall} ball
+ * @property {Match2DPlayer[]} players
+ * @property {string[]} pitch
+ */
+
+/**
+ * Colección de frames y leyenda para el modo 2D.
+ * @typedef {Object} Match2DVisualization
+ * @property {{ width: number; height: number }} dimensions
+ * @property {string[]} legend
+ * @property {Match2DFrame[]} frames
+ */
+
+/**
  * Definición del tipo `MatchResult`.
  * @typedef {Object} MatchResult
  * @property {number} goalsFor
@@ -283,6 +320,7 @@
  * @property {MatchStatistics} statistics
  * @property {string[]} commentary
  * @property {MatchViewMode} viewMode
+ * @property {Match2DVisualization=} visualization2d
  * @property {'league' | 'cup'=} competition
  * @property {CupRoundId=} cupRoundId
  * @property {number=} seed

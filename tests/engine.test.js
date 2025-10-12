@@ -51,6 +51,26 @@ test('simulateMatch genera estadísticas y comentarios completos', () => {
   assert.strictEqual(result.viewMode, 'text');
 });
 
+test('simulateMatch genera frames 2D cuando se solicita', () => {
+  const club = createExampleClub();
+  const config = createDefaultMatchConfig();
+  config.viewMode = '2d';
+  config.startingLineup = club.squad.slice(0, 11).map((player) => player.id);
+  config.substitutes = club.squad.slice(11, 16).map((player) => player.id);
+  const rng = createDeterministicRng([0.2, 0.31, 0.45, 0.62, 0.77, 0.12, 0.88, 0.54, 0.27, 0.93]);
+
+  const result = simulateMatch(club, config, { rng });
+  assert.strictEqual(result.viewMode, '2d');
+  assert.ok(result.visualization2d, 'la visualización 2D debe existir');
+  const viz = result.visualization2d;
+  assert.ok(viz.frames.length >= 1, 'debe haber al menos un frame');
+  const firstFrame = viz.frames[0];
+  assert.ok(firstFrame.pitch.length === viz.dimensions.height);
+  assert.ok(firstFrame.pitch.every((row) => row.length === viz.dimensions.width));
+  assert.ok(firstFrame.players.some((player) => player.team === 'us'));
+  assert.ok(viz.legend.length > 0);
+});
+
 test('simulateMatch respeta ajustes tácticos y sustituciones programadas', () => {
   const club = createExampleClub();
   const config = createDefaultMatchConfig();
