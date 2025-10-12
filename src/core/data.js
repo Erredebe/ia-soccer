@@ -42,6 +42,168 @@ function clampNumber(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+const INFRASTRUCTURE_MAX_LEVEL = 5;
+const BASE_STADIUM_CAPACITY = 20000;
+const STADIUM_CAPACITY_PER_LEVEL = 1500;
+const BASE_OPERATING_COSTS = Object.freeze({
+  maintenance: 32000,
+  staff: 24000,
+  academy: 10000,
+  medical: 9000,
+});
+
+/**
+ * Blueprint de mejoras de infraestructura disponibles.
+ */
+export const INFRASTRUCTURE_BLUEPRINT = Object.freeze({
+  stadium: {
+    id: 'stadium',
+    levelKey: 'stadiumLevel',
+    label: 'Grada',
+    description: 'Amplía el aforo y mejora la experiencia de la hinchada.',
+    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
+    baseCost: 350000,
+    costGrowth: 1.6,
+    maintenancePerLevel: 5000,
+  },
+  training: {
+    id: 'training',
+    levelKey: 'trainingLevel',
+    label: 'Centro de entrenamiento',
+    description: 'Refuerza la preparación física y la progresión semanal.',
+    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
+    baseCost: 240000,
+    costGrowth: 1.5,
+    staffPerLevel: 2000,
+  },
+  medical: {
+    id: 'medical',
+    levelKey: 'medicalLevel',
+    label: 'Área médica',
+    description: 'Reduce lesiones prolongadas y acelera la recuperación.',
+    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
+    baseCost: 210000,
+    costGrowth: 1.45,
+    medicalPerLevel: 3000,
+  },
+  academy: {
+    id: 'academy',
+    levelKey: 'academyLevel',
+    label: 'Cantera',
+    description: 'Nutre al primer equipo con canteranos ilusionantes.',
+    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
+    baseCost: 180000,
+    costGrowth: 1.45,
+    academyPerLevel: 6000,
+  },
+});
+
+export const INFRASTRUCTURE_ORDER = Object.freeze(['stadium', 'training', 'medical', 'academy']);
+
+export function clampInfrastructureLevel(type, value) {
+  const blueprint = INFRASTRUCTURE_BLUEPRINT[type];
+  const numeric = Number.isFinite(value) ? Math.trunc(Number(value)) : 0;
+  const maxLevel = blueprint?.maxLevel ?? INFRASTRUCTURE_MAX_LEVEL;
+  return Math.max(0, Math.min(maxLevel, numeric));
+}
+
+function generateProspectId(rng, index = 0) {
+  const randomSegment = Math.floor(Math.max(0, rng()) * 1e6)
+    .toString(36)
+    .padStart(4, '0');
+  return `academy-${Date.now().toString(36)}-${index.toString(36)}-${randomSegment}`;
+}
+
+function clampAttributeValue(value) {
+  const numeric = Number.isFinite(value) ? Number(value) : 0;
+  return Math.max(25, Math.min(99, Math.round(numeric)));
+}
+
+function pickAcademyPosition(rng) {
+  const positions = ['GK', 'DEF', 'MID', 'FWD'];
+  const index = Math.max(0, Math.min(positions.length - 1, Math.floor(rng() * positions.length)));
+  return positions[index];
+}
+
+export function calculateStadiumCapacity(level = 0) {
+  const safeLevel = Number.isFinite(level) ? Math.max(0, Math.trunc(level)) : 0;
+  return BASE_STADIUM_CAPACITY + safeLevel * STADIUM_CAPACITY_PER_LEVEL;
+}
+
+export function calculateInfrastructureUpgradeCost(type, level) {
+  const blueprint = INFRASTRUCTURE_BLUEPRINT[type];
+  if (!blueprint) {
+    return Infinity;
+  }
+  const safeLevel = Math.max(1, Math.trunc(level));
+  return Math.round(blueprint.baseCost * Math.pow(blueprint.costGrowth, safeLevel - 1));
+}
+
+export function calculateOperatingExpensesForInfrastructure(infrastructure) {
+  const stadiumLevel = clampInfrastructureLevel('stadium', infrastructure?.stadiumLevel ?? 0);
+  const trainingLevel = clampInfrastructureLevel('training', infrastructure?.trainingLevel ?? 0);
+  const medicalLevel = clampInfrastructureLevel('medical', infrastructure?.medicalLevel ?? 0);
+  const academyLevel = clampInfrastructureLevel('academy', infrastructure?.academyLevel ?? 0);
+
+  return {
+    maintenance:
+      BASE_OPERATING_COSTS.maintenance + stadiumLevel * (INFRASTRUCTURE_BLUEPRINT.stadium.maintenancePerLevel ?? 0),
+    staff: BASE_OPERATING_COSTS.staff + trainingLevel * (INFRASTRUCTURE_BLUEPRINT.training.staffPerLevel ?? 0),
+    medical: BASE_OPERATING_COSTS.medical + medicalLevel * (INFRASTRUCTURE_BLUEPRINT.medical.medicalPerLevel ?? 0),
+    academy: BASE_OPERATING_COSTS.academy + academyLevel * (INFRASTRUCTURE_BLUEPRINT.academy.academyPerLevel ?? 0),
+  };
+}
+
+export function createExampleInfrastructure() {
+  return { stadiumLevel: 2, academyLevel: 1, medicalLevel: 1, trainingLevel: 2 };
+}
+
+export function createExampleOperatingExpenses(infrastructure = createExampleInfrastructure()) {
+  return calculateOperatingExpensesForInfrastructure(infrastructure);
+}
+
+export function createAcademyProspect(level = 1, options = {}) {
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const position = options.position ?? pickAcademyPosition(rng);
+  const identity = generateRandomPlayerIdentity({ rng });
+  const age = 17 + Math.floor(rng() * 3);
+  const morale = clampAttributeValue(32 + level * 5 + rng() * 8);
+  const baseAttribute = 50 + level * 4;
+  const spread = 14 - Math.min(6, level);
+  const rollAttribute = (offset = 0) =>
+    clampAttributeValue(baseAttribute + offset + (rng() - 0.5) * spread * 2);
+
+  return createPlayer({
+    id: options.id ?? generateProspectId(rng),
+    name: identity.name,
+    nickname: identity.nickname,
+    position,
+    age,
+    morale,
+    salary: Math.round(6000 + level * 1200 + rng() * 800),
+    attributes: {
+      pace: rollAttribute(position === 'FWD' ? 6 : position === 'DEF' ? -4 : 0),
+      stamina: rollAttribute(2),
+      dribbling: rollAttribute(position === 'MID' ? 5 : 0),
+      passing: rollAttribute(position === 'MID' ? 6 : position === 'FWD' ? 2 : 0),
+      shooting: rollAttribute(position === 'FWD' ? 6 : 0),
+      defending: rollAttribute(position === 'DEF' ? 6 : position === 'GK' ? 4 : -2),
+      leadership: clampAttributeValue(38 + level * 4 + rng() * 10),
+      potential: clampAttributeValue(70 + level * 6 + rng() * 8),
+    },
+  });
+}
+
+export function createAcademyProspects(level = 1, options = {}) {
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const baseCount = Math.max(1, Math.trunc(options.count ?? Math.ceil(level / 2)));
+  const prospects = [];
+  for (let index = 0; index < baseCount; index += 1) {
+    prospects.push(createAcademyProspect(level, { rng, id: generateProspectId(rng, index) }));
+  }
+  return prospects;
+}
+
 export function calculateTotalMatchdays(rivalCount = DEFAULT_LEAGUE_SIZE - 1) {
   if (!Number.isFinite(rivalCount) || rivalCount <= 0) {
     return calculateTotalMatchdays(DEFAULT_LEAGUE_SIZE - 1);
@@ -983,22 +1145,6 @@ function createExampleMerchandising() {
 }
 
 /**
- * Especifica el estado de infraestructuras al arrancar una partida.
- * @returns {InfrastructureState}
- */
-function createExampleInfrastructure() {
-  return { stadiumLevel: 2, academyLevel: 1, medicalLevel: 1, trainingLevel: 2 };
-}
-
-/**
- * Establece los gastos operativos mensuales estimados del club base.
- * @returns {OperatingExpenses}
- */
-function createExampleOperatingExpenses() {
-  return { maintenance: 42000, staff: 28000, academy: 16000, medical: 12000 };
-}
-
-/**
  * Crea un registro vacío de clasificación para un club concreto.
  * @param {string} club Nombre del club.
  */
@@ -1540,12 +1686,16 @@ export function createExampleClub(options = {}) {
   const cupParticipants = Array.isArray(options.leagueRivals) ? options.leagueRivals : league.rivals;
   const cup = createExampleCup(name, { participants: cupParticipants, rng: Math.random });
 
+  const infrastructure = createExampleInfrastructure();
+  const stadiumCapacity = calculateStadiumCapacity(infrastructure.stadiumLevel);
+  const operatingExpenses = createExampleOperatingExpenses(infrastructure);
+
   return {
     name,
     stadiumName,
     city,
     budget: 1200000,
-    stadiumCapacity: 23000,
+    stadiumCapacity,
     reputation: 5,
     primaryColor,
     secondaryColor,
@@ -1563,8 +1713,8 @@ export function createExampleClub(options = {}) {
     sponsors: createExampleSponsors({ city, stadiumName }),
     tvDeal: createExampleTvDeal(),
     merchandising: createExampleMerchandising(),
-    infrastructure: createExampleInfrastructure(),
-    operatingExpenses: createExampleOperatingExpenses(),
+    infrastructure,
+    operatingExpenses,
     seasonStats: createSeasonStats(),
     canallaStatus: createInitialCanallaStatus(),
   };

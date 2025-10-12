@@ -17,6 +17,24 @@ import { CUP_ROUND_DEFINITIONS } from './types.js';
 const MONTHLY_MATCHES = 4;
 const CUP_DEFINITION_MAP = new Map(CUP_ROUND_DEFINITIONS.map((definition) => [definition.id, definition]));
 
+function resolveInjuryMitigation(infrastructure) {
+  const medicalLevel = Math.max(0, infrastructure?.medicalLevel ?? 0);
+  const trainingLevel = Math.max(0, infrastructure?.trainingLevel ?? 0);
+  const medicalFactor = 1 - Math.min(0.5, medicalLevel * 0.12);
+  const trainingFactor = 1 - Math.min(0.25, trainingLevel * 0.05);
+  return Math.max(0.35, medicalFactor * trainingFactor);
+}
+
+function resolveAcademyIntakeBonus(infrastructure, ticketIncome) {
+  const academyLevel = Math.max(0, infrastructure?.academyLevel ?? 0);
+  if (academyLevel <= 0) {
+    return 0;
+  }
+  const baseBonus = Math.round(academyLevel * 1400);
+  const ticketBonus = Math.round(ticketIncome * (academyLevel * 0.008));
+  return Math.max(0, baseBonus + ticketBonus);
+}
+
 /**
  * Genera una copia con los gastos semanales aplicados, considerando personal y academia.
  * @param {ClubState} club
@@ -129,6 +147,14 @@ export function calculateMatchdayFinances(club, match) {
     premios: prizeIncome,
   };
 
+  const academyBonus = resolveAcademyIntakeBonus(club.infrastructure, ticketIncome);
+  if (academyBonus > 0) {
+    incomeBreakdown.canteranos = academyBonus;
+    notes.push(
+      `La cantera deja talento en cartera: becas y amistosos juveniles aportan ${academyBonus.toLocaleString('es-ES')}€.`
+    );
+  }
+
   const income = Object.values(incomeBreakdown).reduce((acc, value) => acc + value, 0);
 
   const operating = club.operatingExpenses ?? {
@@ -139,8 +165,18 @@ export function calculateMatchdayFinances(club, match) {
   };
 
   const injuryCosts = match.statistics.injuries.for * 5000;
+  let mitigatedInjuryCosts = injuryCosts;
   if (injuryCosts > 0) {
-    notes.push('Los fisios han pasado factura tras las lesiones de la jornada.');
+    const mitigation = resolveInjuryMitigation(club.infrastructure);
+    mitigatedInjuryCosts = Math.round(injuryCosts * mitigation);
+    if (mitigatedInjuryCosts < injuryCosts) {
+      const reduction = Math.max(5, 100 - Math.round((mitigatedInjuryCosts / injuryCosts) * 100));
+      notes.push(
+        `Los servicios médicos y las dobles sesiones reducen la factura por lesiones en un ${reduction}% esta semana.`
+      );
+    } else {
+      notes.push('Los fisios han pasado factura tras las lesiones de la jornada.');
+    }
   }
 
   const expenseBreakdown = {
@@ -148,7 +184,7 @@ export function calculateMatchdayFinances(club, match) {
     mantenimiento: operating.maintenance,
     personal: operating.staff,
     cantera: operating.academy,
-    serviciosMedicos: operating.medical + injuryCosts,
+    serviciosMedicos: operating.medical + mitigatedInjuryCosts,
   };
 
   const expenses = Object.values(expenseBreakdown).reduce((acc, value) => acc + value, 0);

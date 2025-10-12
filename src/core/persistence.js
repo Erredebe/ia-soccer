@@ -19,6 +19,10 @@ import {
   calculateTotalMatchdays,
   resolveLeagueDifficulty,
   createExampleCup,
+  createExampleInfrastructure,
+  calculateOperatingExpensesForInfrastructure,
+  calculateStadiumCapacity,
+  clampInfrastructureLevel,
 } from './data.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -103,6 +107,39 @@ function normaliseHexColor(value, fallback) {
   return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : fallback;
 }
 
+function normaliseInfrastructure(value) {
+  const baseline = createExampleInfrastructure();
+  const input = isObject(value) ? value : {};
+  return {
+    stadiumLevel: clampInfrastructureLevel('stadium', input.stadiumLevel ?? baseline.stadiumLevel),
+    trainingLevel: clampInfrastructureLevel('training', input.trainingLevel ?? baseline.trainingLevel),
+    medicalLevel: clampInfrastructureLevel('medical', input.medicalLevel ?? baseline.medicalLevel),
+    academyLevel: clampInfrastructureLevel('academy', input.academyLevel ?? baseline.academyLevel),
+  };
+}
+
+function normaliseOperatingExpenses(expenses, infrastructure) {
+  const baseline = calculateOperatingExpensesForInfrastructure(infrastructure);
+  if (!isObject(expenses)) {
+    return baseline;
+  }
+  return {
+    maintenance: Number.isFinite(expenses.maintenance)
+      ? Math.max(0, Math.round(expenses.maintenance))
+      : baseline.maintenance,
+    staff: Number.isFinite(expenses.staff) ? Math.max(0, Math.round(expenses.staff)) : baseline.staff,
+    academy: Number.isFinite(expenses.academy) ? Math.max(0, Math.round(expenses.academy)) : baseline.academy,
+    medical: Number.isFinite(expenses.medical) ? Math.max(0, Math.round(expenses.medical)) : baseline.medical,
+  };
+}
+
+function normaliseStadiumCapacity(value, infrastructure) {
+  if (Number.isFinite(value)) {
+    return Math.max(8000, Math.round(Number(value)));
+  }
+  return calculateStadiumCapacity(infrastructure.stadiumLevel);
+}
+
 /**
  * Normaliza un club reconstruyendo plantilla y estadísticas con valores por defecto.
  * @param {ClubState} club
@@ -123,6 +160,9 @@ function normaliseClub(club) {
   const logoUrl =
     typeof club.logoUrl === 'string' && club.logoUrl.trim().length > 0 ? club.logoUrl.trim() : DEFAULT_CLUB_LOGO;
   const cup = normaliseCup(club.cup, name);
+  const infrastructure = normaliseInfrastructure(club.infrastructure);
+  const stadiumCapacity = normaliseStadiumCapacity(club.stadiumCapacity, infrastructure);
+  const operatingExpenses = normaliseOperatingExpenses(club.operatingExpenses, infrastructure);
   return {
     ...club,
     name,
@@ -131,6 +171,9 @@ function normaliseClub(club) {
     primaryColor,
     secondaryColor,
     logoUrl,
+    stadiumCapacity,
+    infrastructure,
+    operatingExpenses,
     squad: Array.isArray(club.squad) ? club.squad.map((player) => normalisePlayer(player)) : [],
     seasonStats,
     cup,

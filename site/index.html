@@ -882,6 +882,52 @@
                 <dd id="stadium-academy"></dd>
               </div>
             </dl>
+            <div class="stadium-upgrades">
+              <h3 class="stadium-upgrades__title">Plan de mejoras</h3>
+              <ul class="control-list control-list--infra" id="stadium-upgrade-list">
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>Grada</strong>
+                    <p data-infrastructure-description="stadium"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="stadium"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="stadium">
+                    Invertir en grada
+                  </button>
+                </li>
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>Centro de entrenamiento</strong>
+                    <p data-infrastructure-description="training"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="training"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="training">
+                    Mejorar entrenamientos
+                  </button>
+                </li>
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>Área médica</strong>
+                    <p data-infrastructure-description="medical"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="medical"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="medical">
+                    Ampliar servicios médicos
+                  </button>
+                </li>
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>Cantera</strong>
+                    <p data-infrastructure-description="academy"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="academy"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="academy">
+                    Invertir en cantera
+                  </button>
+                </li>
+              </ul>
+              <p id="stadium-upgrade-feedback" class="control-modal__note stadium-upgrades__feedback" aria-live="polite"></p>
+            </div>
             <p id="stadium-note" class="control-modal__note"></p>
           </section>
         </div>
