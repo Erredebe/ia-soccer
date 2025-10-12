@@ -24,6 +24,9 @@ test('serializeState normaliza disponibilidad y estadísticas', () => {
   assert.equal(payload.club.squad[0].availability.injuryMatches, 2);
   assert.ok(payload.club.seasonStats);
   assert.equal(payload.config.seed, 'debug-seed-42');
+  assert.equal(payload.club.primaryColor, club.primaryColor);
+  assert.equal(payload.club.secondaryColor, club.secondaryColor);
+  assert.equal(payload.club.logoUrl, club.logoUrl);
 });
 
 test('migrateSave rellena valores faltantes en partidas antiguas', () => {
@@ -36,10 +39,16 @@ test('migrateSave rellena valores faltantes en partidas antiguas', () => {
   delete legacy.version;
   delete legacy.club.seasonStats;
   delete legacy.club.squad[0].availability;
+  delete legacy.club.primaryColor;
+  delete legacy.club.secondaryColor;
+  delete legacy.club.logoUrl;
   const migrated = migrateSave(legacy);
   assert.ok(migrated);
   assert.equal(migrated?.version, SAVE_VERSION);
   assert.deepEqual(migrated?.club.squad[0].availability, { injuryMatches: 0, suspensionMatches: 0 });
   assert.ok(migrated?.club.seasonStats);
   assert.equal(typeof migrated?.config.seed, 'string');
+  assert.equal(migrated?.club.primaryColor, club.primaryColor);
+  assert.equal(migrated?.club.secondaryColor, club.secondaryColor);
+  assert.equal(migrated?.club.logoUrl, club.logoUrl);
 });

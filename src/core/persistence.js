@@ -10,6 +10,9 @@ import {
   DEFAULT_CLUB_CITY,
   DEFAULT_CLUB_NAME,
   DEFAULT_STADIUM_NAME,
+  DEFAULT_PRIMARY_COLOR,
+  DEFAULT_SECONDARY_COLOR,
+  DEFAULT_CLUB_LOGO,
 } from './data.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -49,6 +52,14 @@ function normalisePlayer(player) {
   };
 }
 
+function normaliseHexColor(value, fallback) {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : fallback;
+}
+
 /**
  * Normaliza un club reconstruyendo plantilla y estadísticas con valores por defecto.
  * @param {ClubState} club
@@ -64,11 +75,18 @@ function normaliseClub(club) {
       ? club.stadiumName
       : DEFAULT_STADIUM_NAME;
   const city = typeof club.city === 'string' && club.city.trim().length > 0 ? club.city : DEFAULT_CLUB_CITY;
+  const primaryColor = normaliseHexColor(club.primaryColor, DEFAULT_PRIMARY_COLOR);
+  const secondaryColor = normaliseHexColor(club.secondaryColor, DEFAULT_SECONDARY_COLOR);
+  const logoUrl =
+    typeof club.logoUrl === 'string' && club.logoUrl.trim().length > 0 ? club.logoUrl.trim() : DEFAULT_CLUB_LOGO;
   return {
     ...club,
     name,
     stadiumName,
     city,
+    primaryColor,
+    secondaryColor,
+    logoUrl,
     squad: Array.isArray(club.squad) ? club.squad.map((player) => normalisePlayer(player)) : [],
     seasonStats,
   };
