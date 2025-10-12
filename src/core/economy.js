@@ -4,6 +4,7 @@
  * @module core/economy
  */
 
+import { calculateStaffWeeklyCost, resolveStaffMatchImpact } from './data.js';
 import { CUP_ROUND_DEFINITIONS } from './types.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -12,6 +13,7 @@ import { CUP_ROUND_DEFINITIONS } from './types.js';
 /** @typedef {import('../types.js').MatchResult} MatchResult */
 /** @typedef {import('../types.js').MatchdayFinancials} MatchdayFinancials */
 /** @typedef {import('../types.js').SponsorContract} SponsorContract */
+/** @typedef {import('../types.js').StaffImpact} StaffImpact */
 /** @typedef {import('./types.js').CupRoundId} CupRoundId */
 
 const MONTHLY_MATCHES = 4;
@@ -49,7 +51,8 @@ export function applyWeeklyExpenses(club) {
   };
   const weeklyOperatingCost =
     operating.maintenance + operating.staff + operating.academy + operating.medical;
-  const updatedBudget = club.budget - club.weeklyWageBill - weeklyOperatingCost;
+  const staffWeeklyCost = calculateStaffWeeklyCost(club.staff);
+  const updatedBudget = club.budget - club.weeklyWageBill - weeklyOperatingCost - staffWeeklyCost;
   return {
     ...club,
     budget: updatedBudget,
@@ -104,6 +107,8 @@ export function calculateMatchdayFinances(club, match) {
   const attendance = calculateAttendance(club, match);
   const ticketPrice = 25 + (club.infrastructure?.stadiumLevel ?? 1) * 1.5;
   const ticketIncome = Math.round(attendance * ticketPrice);
+  const staffImpact = resolveStaffMatchImpact(club.staff);
+  const staffWeeklyCost = calculateStaffWeeklyCost(club.staff);
 
   let sponsorIncome = 0;
   const sponsors = (club.sponsors ?? []).map((sponsor) => ({ ...sponsor }));
@@ -155,6 +160,10 @@ export function calculateMatchdayFinances(club, match) {
     );
   }
 
+  if (staffImpact.budget > 0) {
+    incomeBreakdown.bonusStaff = (incomeBreakdown.bonusStaff ?? 0) + staffImpact.budget;
+  }
+
   const income = Object.values(incomeBreakdown).reduce((acc, value) => acc + value, 0);
 
   const operating = club.operatingExpenses ?? {
@@ -180,15 +189,30 @@ export function calculateMatchdayFinances(club, match) {
   }
 
   const expenseBreakdown = {
-    salarios: club.weeklyWageBill,
+    salariosPlantilla: club.weeklyWageBill,
+    salariosStaff: staffWeeklyCost,
     mantenimiento: operating.maintenance,
-    personal: operating.staff,
+    personalBase: operating.staff,
     cantera: operating.academy,
     serviciosMedicos: operating.medical + mitigatedInjuryCosts,
   };
 
+  if (staffImpact.budget < 0) {
+    const penalty = Math.abs(staffImpact.budget);
+    expenseBreakdown.extrasStaff = (expenseBreakdown.extrasStaff ?? 0) + penalty;
+  }
+
   const expenses = Object.values(expenseBreakdown).reduce((acc, value) => acc + value, 0);
   const net = income - expenses;
+
+  if (staffWeeklyCost > 0) {
+    notes.push(
+      `El staff cobra ${staffWeeklyCost.toLocaleString('es-ES')}€ esta semana entre técnicos, fisios y ojeadores.`
+    );
+  }
+  if (staffImpact.narratives.length > 0) {
+    notes.push(...staffImpact.narratives);
+  }
 
   if (net < 0) {
     notes.push('Las cuentas tiemblan: toca vigilar el gasto o vender a alguna estrella.');
@@ -205,6 +229,7 @@ export function calculateMatchdayFinances(club, match) {
     notes,
     attendance,
     updatedSponsors: sponsors,
+    staffImpact,
   };
 }
 

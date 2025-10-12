@@ -11,6 +11,9 @@ import {
   DEFAULT_CLUB_LOGO,
   DEFAULT_PRIMARY_COLOR,
   DEFAULT_SECONDARY_COLOR,
+  resolveStaffMatchImpact,
+  calculateStaffWeeklyCost,
+  normaliseStaffState,
 } from '../src/core/data.js';
 
 test('createExampleClub acepta identidad personalizada', () => {
@@ -81,4 +84,17 @@ test('createExampleCup y su flujo básico funcionan correctamente', () => {
   assert.ok(progress.historyEntry.prize >= 70000, 'El premio por avanzar debe ser sustancial');
   assert.ok(progress.historyEntry.reputationDelta > 0, 'Ganar debe sumar reputación');
   assert.ok(Array.isArray(progress.historyEntry.narrative) && progress.historyEntry.narrative.length > 0);
+});
+
+test('el staff aporta bonus y costes recurrentes', () => {
+  const staffState = normaliseStaffState({
+    roster: ['staff-ojeador-puente', 'staff-pr-capote'],
+    available: [],
+  });
+  const impact = resolveStaffMatchImpact(staffState);
+  assert.equal(impact.budget, 1400, 'El impacto en caja combina bonus y gastos ocultos');
+  assert.equal(impact.reputation, 1, 'Debe sumarse el balance reputacional del staff activo');
+  assert.ok(impact.narratives.length > 0, 'Los técnicos generan narrativa propia cada jornada');
+  const weeklyCost = calculateStaffWeeklyCost(staffState);
+  assert.ok(weeklyCost > 0, 'El coste semanal del staff debe ser mayor que cero');
 });

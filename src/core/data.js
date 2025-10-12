@@ -20,6 +20,10 @@ import { CUP_ROUND_DEFINITIONS } from './types.js';
 /** @typedef {import('../types.js').MerchandisingPlan} MerchandisingPlan */
 /** @typedef {import('../types.js').InfrastructureState} InfrastructureState */
 /** @typedef {import('../types.js').OperatingExpenses} OperatingExpenses */
+/** @typedef {import('../types.js').StaffMember} StaffMember */
+/** @typedef {import('../types.js').ClubStaffState} ClubStaffState */
+/** @typedef {import('../types.js').StaffImpact} StaffImpact */
+/** @typedef {import('../types.js').StaffRole} StaffRole */
 /** @typedef {import('./types.js').CupState} CupState */
 /** @typedef {import('./types.js').CupRound} CupRound */
 /** @typedef {import('./types.js').CupTie} CupTie */
@@ -99,6 +103,242 @@ export const INFRASTRUCTURE_BLUEPRINT = Object.freeze({
 });
 
 export const INFRASTRUCTURE_ORDER = Object.freeze(['stadium', 'training', 'medical', 'academy']);
+
+export const STAFF_ROLE_INFO = Object.freeze({
+  coach: { id: 'coach', label: 'Entrenador/a jefe', summary: 'Charla táctica y gestión del vestuario.' },
+  scout: { id: 'scout', label: 'Ojeador/a clandestino/a', summary: 'Detecta talento y negocia desde la barra.' },
+  analyst: { id: 'analyst', label: 'Analista de datos', summary: 'Convierte hojas de cálculo en narrativa canalla.' },
+  physio: { id: 'physio', label: 'Fisios de barrio', summary: 'Recupera tocados con métodos poco ortodoxos.' },
+  motivator: { id: 'motivator', label: 'Animador/a de grada', summary: 'Mantiene la fiesta y el ánimo en ebullición.' },
+  pressOfficer: { id: 'pressOfficer', label: 'Jefe/a de prensa', summary: 'Apaga incendios con titulares y vermut.' },
+});
+
+/** @type {readonly StaffMember[]} */
+export const STAFF_CATALOG = Object.freeze([
+  {
+    id: 'staff-maestra-pizarra',
+    role: 'coach',
+    name: "Marga 'La Pizarra' Romero",
+    description: 'Diseña esquemas imposibles y exprime al vestuario con humor barriobajero.',
+    salary: 22000,
+    hiringCost: 85000,
+    dismissalCost: 20000,
+    effects: [
+      {
+        target: 'morale',
+        value: 3,
+        frequency: 'match',
+        narrative: '{{name}} enchufa la charla táctica: la moral del vestuario sube +3.',
+      },
+    ],
+  },
+  {
+    id: 'staff-ojeador-puente',
+    role: 'scout',
+    name: "Teo 'Puente' Delgado",
+    description: 'Merodea mercadillos y conoce a cada representante del barrio.',
+    salary: 16000,
+    hiringCost: 62000,
+    dismissalCost: 15000,
+    effects: [
+      {
+        target: 'budget',
+        value: 2200,
+        frequency: 'match',
+        narrative: '{{name}} trae comisiones discretas: entran +2.200€ de chanchullos.',
+      },
+      {
+        target: 'reputation',
+        value: -1,
+        frequency: 'match',
+        narrative: 'Los tejemanejes de {{name}} levantan cejas entre la prensa (reputación −1).',
+      },
+    ],
+  },
+  {
+    id: 'staff-analista-datos',
+    role: 'analyst',
+    name: 'Irene Datos',
+    description: 'Convierte hojas de cálculo en relatos épicos para la grada.',
+    salary: 15000,
+    hiringCost: 68000,
+    dismissalCost: 17000,
+    effects: [
+      {
+        target: 'reputation',
+        value: 2,
+        frequency: 'match',
+        narrative: '{{name}} viraliza estadísticas canallas: reputación +2.',
+      },
+    ],
+  },
+  {
+    id: 'staff-fisio-habanera',
+    role: 'physio',
+    name: 'Lucho Bendita',
+    description: 'Masajista milagroso que rebaja facturas con brebajes caseros.',
+    salary: 14000,
+    hiringCost: 54000,
+    dismissalCost: 12000,
+    effects: [
+      {
+        target: 'budget',
+        value: 1500,
+        frequency: 'match',
+        narrative: '{{name}} ahorra en camillas y botiquín (+1.500€).',
+      },
+    ],
+  },
+  {
+    id: 'staff-motivadora-batucada',
+    role: 'motivator',
+    name: 'Rocío Batucada',
+    description: 'Organiza batucadas clandestinas para mantener la llama del grupo.',
+    salary: 9000,
+    hiringCost: 38000,
+    dismissalCost: 8000,
+    effects: [
+      {
+        target: 'morale',
+        value: 2,
+        frequency: 'match',
+        narrative: '{{name}} monta fiesta nocturna: moral +2.',
+      },
+      {
+        target: 'budget',
+        value: -600,
+        frequency: 'match',
+        narrative: 'Los saraos de {{name}} cuestan 600€ en refrescos premium.',
+      },
+    ],
+  },
+  {
+    id: 'staff-pr-capote',
+    role: 'pressOfficer',
+    name: 'Carla Capote',
+    description: 'Camina entre micrófonos y tapas para maquillar escándalos.',
+    salary: 11000,
+    hiringCost: 42000,
+    dismissalCost: 9000,
+    effects: [
+      {
+        target: 'reputation',
+        value: 2,
+        frequency: 'match',
+        narrative: '{{name}} maneja titulares con mano izquierda: reputación +2.',
+      },
+      {
+        target: 'budget',
+        value: -800,
+        frequency: 'match',
+        narrative: '{{name}} invita a la prensa a vermut (−800€).',
+      },
+    ],
+  },
+]);
+
+const STAFF_MAP = new Map(STAFF_CATALOG.map((member) => [member.id, member]));
+const DEFAULT_STAFF_ROSTER = Object.freeze([
+  'staff-maestra-pizarra',
+  'staff-ojeador-puente',
+  'staff-fisio-habanera',
+]);
+
+function coerceStaffId(entry) {
+  if (typeof entry === 'string') {
+    return entry.trim();
+  }
+  if (entry && typeof entry === 'object' && typeof entry.id === 'string') {
+    return entry.id.trim();
+  }
+  return '';
+}
+
+export function getStaffDefinition(staffId) {
+  if (typeof staffId !== 'string') {
+    return null;
+  }
+  return STAFF_MAP.get(staffId) ?? null;
+}
+
+export function createExampleStaffState() {
+  const roster = DEFAULT_STAFF_ROSTER.filter((id) => STAFF_MAP.has(id));
+  const rosterSet = new Set(roster);
+  const available = STAFF_CATALOG.map((member) => member.id).filter((id) => !rosterSet.has(id));
+  return { roster, available };
+}
+
+export function normaliseStaffState(value) {
+  const baseline = createExampleStaffState();
+  const input = value && typeof value === 'object' ? value : {};
+  const rawRoster = Array.isArray(input.roster) ? input.roster : [];
+  const filteredRoster = rawRoster
+    .map((entry) => coerceStaffId(entry))
+    .filter((id) => STAFF_MAP.has(id));
+  const roster = filteredRoster.length > 0
+    ? [...new Set(filteredRoster)]
+    : Array.isArray(input.roster) && input.roster.length === 0
+      ? []
+      : [...baseline.roster];
+  const rosterSet = new Set(roster);
+
+  const rawAvailable = Array.isArray(input.available) ? input.available : [];
+  const filteredAvailable = rawAvailable
+    .map((entry) => coerceStaffId(entry))
+    .filter((id) => STAFF_MAP.has(id) && !rosterSet.has(id));
+  const fallbackAvailable = STAFF_CATALOG.map((member) => member.id).filter((id) => !rosterSet.has(id));
+  const available = [...new Set([...filteredAvailable, ...fallbackAvailable])];
+
+  return { roster, available };
+}
+
+export function listStaffMembers(ids = []) {
+  if (!Array.isArray(ids)) {
+    return [];
+  }
+  return ids
+    .map((entry) => getStaffDefinition(coerceStaffId(entry)))
+    .filter((member) => member !== null);
+}
+
+export function calculateStaffWeeklyCost(staffState) {
+  const rosterIds = Array.isArray(staffState?.roster) ? staffState.roster : [];
+  const members = listStaffMembers(rosterIds);
+  return members.reduce((sum, member) => sum + Math.round(member.salary / 4), 0);
+}
+
+export function resolveStaffMatchImpact(staffState) {
+  /** @type {StaffImpact} */
+  const impact = { budget: 0, reputation: 0, morale: 0, narratives: [] };
+  const rosterIds = Array.isArray(staffState?.roster) ? staffState.roster : [];
+  const members = listStaffMembers(rosterIds);
+  members.forEach((member) => {
+    member.effects.forEach((effect) => {
+      if (!effect || effect.frequency !== 'match' || !Number.isFinite(effect.value)) {
+        return;
+      }
+      const value = Number(effect.value);
+      switch (effect.target) {
+        case 'budget':
+          impact.budget += value;
+          break;
+        case 'reputation':
+          impact.reputation += value;
+          break;
+        case 'morale':
+          impact.morale += value;
+          break;
+        default:
+          break;
+      }
+      if (effect.narrative) {
+        const text = effect.narrative.replace(/\{\{name\}\}/g, member.name);
+        impact.narratives.push(text);
+      }
+    });
+  });
+  return impact;
+}
 
 export function clampInfrastructureLevel(type, value) {
   const blueprint = INFRASTRUCTURE_BLUEPRINT[type];
@@ -1715,6 +1955,7 @@ export function createExampleClub(options = {}) {
     merchandising: createExampleMerchandising(),
     infrastructure,
     operatingExpenses,
+    staff: createExampleStaffState(),
     seasonStats: createSeasonStats(),
     canallaStatus: createInitialCanallaStatus(),
   };

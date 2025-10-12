@@ -8,6 +8,7 @@ import {
   createExampleLeague,
   createSeasonStats,
   createDefaultInstructions,
+  calculateStaffWeeklyCost,
   LEAGUE_RIVAL_CATALOG,
   normaliseLeagueRivals,
   estimatePlayerValue,
@@ -37,6 +38,10 @@ import {
   calculateOperatingExpensesForInfrastructure,
   calculateStadiumCapacity,
   createAcademyProspects,
+  normaliseStaffState,
+  getStaffDefinition,
+  STAFF_ROLE_INFO,
+  listStaffMembers,
 } from '../src/core/data.js';
 import { resolveCanallaDecision, resolveCupReputation, tickCanallaState } from '../src/core/reputation.js';
 import { clearSavedGame, loadSavedGame, saveGame, SAVE_VERSION } from '../src/core/persistence.js';
@@ -109,6 +114,10 @@ const financesDeltaEl = document.querySelector('#finances-delta');
 const financesAttendanceEl = document.querySelector('#finances-attendance');
 const financesIncomeList = document.querySelector('#finances-income');
 const financesExpenseList = document.querySelector('#finances-expenses');
+const staffBreakdownEl = document.querySelector('#staff-breakdown');
+const staffNoteEl = document.querySelector('#staff-note');
+const staffRosterList = document.querySelector('#staff-roster');
+const staffMarketList = document.querySelector('#staff-market');
 const narrativeList = document.querySelector('#narrative-list');
 const eventsList = document.querySelector('#events-list');
 const decisionReport = document.querySelector('#decision-report');
@@ -137,6 +146,10 @@ if (financesIncomeList) {
 if (financesExpenseList) {
   financesExpenseList.setAttribute('aria-live', 'polite');
   financesExpenseList.setAttribute('aria-label', 'Detalle de gastos de la jornada');
+}
+
+if (staffNoteEl) {
+  staffNoteEl.setAttribute('aria-live', 'polite');
 }
 
 const seasonSummarySection = document.querySelector('#season-summary');
@@ -170,8 +183,6 @@ const opponentModalRecordEl = document.querySelector('#opponent-modal-record');
 const opponentModalStrengthEl = document.querySelector('#opponent-modal-strength');
 const opponentModalLocationEl = document.querySelector('#opponent-modal-location');
 const opponentModalCommentEl = document.querySelector('#opponent-modal-comment');
-const staffBreakdownEl = document.querySelector('#staff-breakdown');
-const staffNoteEl = document.querySelector('#staff-note');
 const financesBudgetModalEl = document.querySelector('#finances-budget');
 const financesWagesModalEl = document.querySelector('#finances-wages');
 const financesOperatingModalEl = document.querySelector('#finances-operating');
@@ -887,6 +898,7 @@ function rebuildClubState(identity) {
   const freshClub = createExampleClub(resolvedIdentity);
   clubState = { ...freshClub, ...resolvedIdentity };
   clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
+  clubState.staff = normaliseStaffState(clubState.staff);
   leagueState = freshClub.league;
   cupState = freshClub.cup;
   updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
@@ -913,6 +925,7 @@ function rebuildClubState(identity) {
 
 let clubState = createExampleClub();
 clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
+clubState.staff = normaliseStaffState(clubState.staff);
 let leagueState = clubState.league;
 let cupState = clubState.cup;
 updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
@@ -930,6 +943,7 @@ let reportHistoryFilterSeason = 'all';
 let activeReportTab = 'current';
 let clubIdentity = extractClubIdentity(clubState);
 let editingPlayerId = null;
+let staffFeedback = '';
 
 if (!cupState) {
   cupState = createExampleCup(clubState.name, { participants: leagueState?.rivals });
@@ -1426,33 +1440,243 @@ function getOperatingExpenses() {
   };
 }
 
+function ensureStaffState() {
+  const normalised = normaliseStaffState(clubState?.staff);
+  clubState.staff = normalised;
+  return normalised;
+}
+
+function describeStaffRole(role) {
+  return STAFF_ROLE_INFO[role]?.label ?? role;
+}
+
+function formatStaffEffects(member) {
+  if (!Array.isArray(member.effects)) {
+    return 'Sin impacto directo registrado.';
+  }
+  const parts = [];
+  member.effects.forEach((effect) => {
+    if (!effect || effect.frequency !== 'match') {
+      return;
+    }
+    const value = Number(effect.value);
+    if (!Number.isFinite(value) || value === 0) {
+      return;
+    }
+    const absolute = Math.abs(value);
+    if (effect.target === 'budget') {
+      const sign = value > 0 ? '+' : '−';
+      parts.push(`Caja ${sign}${numberFormatter.format(absolute)}`);
+    } else if (effect.target === 'reputation') {
+      const sign = value > 0 ? '+' : '−';
+      parts.push(`Reputación ${sign}${absolute}`);
+    } else if (effect.target === 'morale') {
+      const sign = value > 0 ? '+' : '−';
+      parts.push(`Moral ${sign}${absolute}`);
+    }
+  });
+  return parts.length > 0 ? `${parts.join(' · ')} por jornada` : 'Sin impacto directo registrado.';
+}
+
+function getStaffDismissalCost(member) {
+  if (Number.isFinite(member.dismissalCost)) {
+    return Math.max(0, Math.round(Number(member.dismissalCost)));
+  }
+  return Math.max(0, Math.round(member.salary / 4));
+}
+
+function renderStaffList(listEl, members, options = {}) {
+  if (!listEl) {
+    return;
+  }
+  const settings = {
+    action: 'hire',
+    emptyMessage: 'Sin registros disponibles.',
+    ...options,
+  };
+  listEl.innerHTML = '';
+  if (members.length === 0) {
+    const emptyItem = document.createElement('li');
+    emptyItem.className = 'stadium-upgrades__item';
+    const message = document.createElement('p');
+    message.textContent = settings.emptyMessage;
+    emptyItem.append(message);
+    listEl.append(emptyItem);
+    return;
+  }
+
+  members.forEach((member) => {
+    const item = document.createElement('li');
+    item.className = 'stadium-upgrades__item';
+    const infoWrapper = document.createElement('div');
+    infoWrapper.className = 'stadium-upgrades__info';
+
+    const nameEl = document.createElement('p');
+    nameEl.className = 'stadium-upgrades__title';
+    nameEl.textContent = member.name;
+    const roleEl = document.createElement('p');
+    roleEl.textContent = describeStaffRole(member.role);
+    const descriptionEl = document.createElement('p');
+    descriptionEl.textContent = member.description;
+    const effectsEl = document.createElement('p');
+    effectsEl.textContent = formatStaffEffects(member);
+    const salaryEl = document.createElement('p');
+    salaryEl.textContent = `Salario mensual: ${numberFormatter.format(member.salary)}`;
+
+    infoWrapper.append(nameEl, roleEl, descriptionEl, effectsEl, salaryEl);
+
+    const actionButton = document.createElement('button');
+    actionButton.type = 'button';
+    actionButton.className = 'stadium-upgrades__button';
+
+    if (settings.action === 'fire') {
+      const dismissalCost = getStaffDismissalCost(member);
+      const severanceEl = document.createElement('p');
+      severanceEl.textContent =
+        dismissalCost > 0
+          ? `Indemnización estimada: ${numberFormatter.format(dismissalCost)}`
+          : 'Indemnización simbólica.';
+      infoWrapper.append(severanceEl);
+      actionButton.textContent =
+        dismissalCost > 0
+          ? `Rescindir (${numberFormatter.format(dismissalCost)})`
+          : 'Rescindir sin coste';
+      actionButton.addEventListener('click', () => {
+        fireStaffMember(member.id);
+      });
+    } else {
+      const hireCostEl = document.createElement('p');
+      hireCostEl.textContent = `Coste de firma: ${numberFormatter.format(member.hiringCost)}`;
+      infoWrapper.append(hireCostEl);
+      if (clubState.budget < member.hiringCost) {
+        const warningEl = document.createElement('p');
+        warningEl.textContent = 'Presupuesto insuficiente para este fichaje.';
+        infoWrapper.append(warningEl);
+      }
+      actionButton.textContent = `Contratar por ${numberFormatter.format(member.hiringCost)}`;
+      actionButton.addEventListener('click', () => {
+        hireStaffMember(member.id);
+      });
+    }
+
+    item.append(infoWrapper, actionButton);
+    listEl.append(item);
+  });
+}
+
 function renderStaffModal() {
   if (!staffBreakdownEl || !staffNoteEl) {
     return;
   }
+
+  const staffState = ensureStaffState();
+  const rosterMembers = listStaffMembers(staffState.roster);
+  const availableMembers = listStaffMembers(staffState.available).filter(
+    (member) => !staffState.roster.includes(member.id)
+  );
+  const weeklyStaffCost = calculateStaffWeeklyCost(staffState);
+
   staffBreakdownEl.innerHTML = '';
-
-  const expenses = getOperatingExpenses();
-  const entries = [
-    { label: 'Cuerpo técnico', value: expenses.staff },
-    { label: 'Cantera', value: expenses.academy },
-    { label: 'Área médica', value: expenses.medical },
-    { label: 'Mantenimiento', value: expenses.maintenance },
+  const summaryEntries = [
+    { label: 'Empleados activos', value: String(rosterMembers.length) },
+    { label: 'Coste semanal', value: numberFormatter.format(weeklyStaffCost) },
   ];
-
-  entries.forEach((entry) => {
+  summaryEntries.forEach((entry) => {
     const wrapper = document.createElement('div');
     const dt = document.createElement('dt');
     dt.textContent = entry.label;
     const dd = document.createElement('dd');
-    dd.textContent = numberFormatter.format(entry.value);
+    dd.textContent = entry.value;
     wrapper.append(dt, dd);
     staffBreakdownEl.append(wrapper);
   });
 
-  const academyLevel = clubState.infrastructure?.academyLevel ?? 0;
-  const medicalLevel = clubState.infrastructure?.medicalLevel ?? 0;
-  staffNoteEl.textContent = `Cantera nivel ${academyLevel} · Área médica nivel ${medicalLevel}. Ajusta la inversión si necesitas potenciar jóvenes o recuperar lesionados.`;
+  renderStaffList(staffRosterList, rosterMembers, {
+    action: 'fire',
+    emptyMessage: 'Sin empleados en nómina. El vestuario se autogestiona.',
+  });
+  renderStaffList(staffMarketList, availableMembers, {
+    action: 'hire',
+    emptyMessage: 'No hay candidatos disponibles en la agenda.',
+  });
+
+  const identity = extractClubIdentity(clubState);
+  const defaultMessage = `Mantén el equilibrio entre moral, reputación y caja en ${identity.city}.`;
+  const message = staffFeedback || defaultMessage;
+  staffNoteEl.textContent = message;
+  staffFeedback = '';
+}
+
+function hireStaffMember(staffId) {
+  const member = getStaffDefinition(staffId);
+  if (!member) {
+    staffFeedback = 'No se ha encontrado el perfil solicitado.';
+    renderStaffModal();
+    return;
+  }
+
+  const staffState = ensureStaffState();
+  if (staffState.roster.includes(staffId)) {
+    staffFeedback = `${member.name} ya forma parte del cuerpo técnico.`;
+    renderStaffModal();
+    return;
+  }
+
+  if (clubState.budget < member.hiringCost) {
+    staffFeedback = `Presupuesto insuficiente: necesitas ${numberFormatter.format(
+      member.hiringCost
+    )} para fichar a ${member.name}.`;
+    renderStaffModal();
+    return;
+  }
+
+  const updatedStaff = normaliseStaffState({
+    roster: [...staffState.roster, staffId],
+    available: staffState.available.filter((id) => id !== staffId),
+  });
+
+  clubState = {
+    ...clubState,
+    budget: clubState.budget - member.hiringCost,
+    staff: updatedStaff,
+  };
+  staffFeedback = `${member.name} firma por ${numberFormatter.format(
+    member.hiringCost
+  )} y se suma a la aventura canalla.`;
+  updateClubSummary();
+}
+
+function fireStaffMember(staffId) {
+  const member = getStaffDefinition(staffId);
+  if (!member) {
+    staffFeedback = 'Ese perfil no figura en la plantilla.';
+    renderStaffModal();
+    return;
+  }
+
+  const staffState = ensureStaffState();
+  if (!staffState.roster.includes(staffId)) {
+    staffFeedback = `${member.name} ya no estaba en nómina.`;
+    renderStaffModal();
+    return;
+  }
+
+  const dismissalCost = getStaffDismissalCost(member);
+  const updatedStaff = normaliseStaffState({
+    roster: staffState.roster.filter((id) => id !== staffId),
+    available: [...staffState.available, staffId],
+  });
+
+  clubState = {
+    ...clubState,
+    budget: clubState.budget - dismissalCost,
+    staff: updatedStaff,
+  };
+  staffFeedback =
+    dismissalCost > 0
+      ? `${member.name} se marcha tras abonar ${numberFormatter.format(dismissalCost)} en indemnización.`
+      : `${member.name} se despide sin coste extra.`;
+  updateClubSummary();
 }
 
 function renderFinancesModal() {
@@ -1460,14 +1684,18 @@ function renderFinancesModal() {
     return;
   }
   financesBudgetModalEl.textContent = numberFormatter.format(clubState.budget);
-  financesWagesModalEl.textContent = numberFormatter.format(clubState.weeklyWageBill ?? 0);
+  const staffWeeklyCost = calculateStaffWeeklyCost(clubState.staff);
+  const totalWages = (clubState.weeklyWageBill ?? 0) + staffWeeklyCost;
+  financesWagesModalEl.textContent = numberFormatter.format(totalWages);
 
   const expenses = getOperatingExpenses();
   const totalOperating = Object.values(expenses).reduce((sum, value) => sum + value, 0);
   financesOperatingModalEl.textContent = numberFormatter.format(totalOperating);
 
-  const projected = (clubState.weeklyWageBill ?? 0) + totalOperating;
-  financesNoteEl.textContent = `Proyección semanal estimada: ${numberFormatter.format(projected)} entre salarios y operaciones.`;
+  const projected = totalWages + totalOperating;
+  financesNoteEl.textContent = `Proyección semanal estimada: ${numberFormatter.format(
+    projected
+  )} entre plantilla, staff y operaciones.`;
 }
 
 function describeHeatLevel(heat) {
@@ -3632,6 +3860,7 @@ function startNewSeason() {
     seasonStats: nextSeasonStats,
     weeklyWageBill: calculateWeeklyWageBill(refreshedSquad),
   };
+  clubState.staff = normaliseStaffState(clubState.staff);
   leagueState = newLeague;
   cupState = newCup;
   updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
@@ -3657,6 +3886,7 @@ function applyLoadedState(saved) {
     logoUrl: resolveClubLogoUrl(saved.club),
     weeklyWageBill: calculateWeeklyWageBill(saved.club.squad),
   };
+  clubState = { ...clubState, staff: normaliseStaffState(clubState.staff) };
   const loadedLeague = saved.league;
   const initialRivals = Array.isArray(loadedLeague?.rivals) && loadedLeague.rivals.length > 0
     ? loadedLeague.rivals
