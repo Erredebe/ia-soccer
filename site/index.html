@@ -803,101 +803,158 @@
           <button type="button" class="modal__close" data-modal-close aria-label="Cerrar crónica">×</button>
           <section class="report-card">
             <h2 id="report-title">Crónica de la jornada</h2>
-            <div class="report-top">
-            <div>
-              <h3>Marcador</h3>
-              <p id="scoreline" class="scoreline"></p>
-              <p id="finances-delta" class="finances"></p>
-              <p id="finances-attendance" class="finances-attendance"></p>
-              <p id="match-seed" class="match-seed" hidden></p>
+            <div class="report-tabs" role="tablist" aria-label="Secciones de la crónica">
+              <button
+                type="button"
+                class="report-tab is-active"
+                data-report-tab="current"
+                id="report-tab-current"
+                role="tab"
+                aria-selected="true"
+                aria-controls="report-panel-current"
+              >
+                Crónica actual
+              </button>
+              <button
+                type="button"
+                class="report-tab"
+                data-report-tab="history"
+                id="report-tab-history"
+                role="tab"
+                aria-selected="false"
+                aria-controls="report-panel-history"
+              >
+                Historial
+              </button>
             </div>
-            <div class="decision-report" id="decision-report" hidden>
-              <h3>Decisión canalla</h3>
-              <p id="decision-narrative"></p>
-              <ul id="decision-stats"></ul>
-            </div>
-            <div class="mvp-wrapper">
-              <span id="mvp-badge" class="mvp-badge" hidden></span>
-            </div>
-          </div>
-
-          <div class="finances-breakdown">
-            <div class="finances-panel finances-panel--income">
-              <header class="finances-panel__header">
-                <h3>Ingresos</h3>
-                <p id="finances-income-total" class="finances-total"></p>
-              </header>
-              <div class="finances-panel__visual" aria-hidden="true">
-                <div class="finances-donut finances-donut--income" id="finances-income-donut"></div>
-              </div>
-              <ul id="finances-income" class="finances-list finances-list--income"></ul>
-            </div>
-            <div class="finances-panel finances-panel--expense">
-              <header class="finances-panel__header">
-                <h3>Gastos</h3>
-                <p id="finances-expense-total" class="finances-total"></p>
-              </header>
-              <div class="finances-panel__visual" aria-hidden="true">
-                <div class="finances-bar finances-bar--summary" id="finances-expense-bar">
-                  <span
-                    class="finances-bar__fill finances-bar__fill--expense"
-                    id="finances-expense-bar-fill"
-                  ></span>
+            <div class="report-panels">
+              <div
+                class="report-panel"
+                id="report-panel-current"
+                data-report-panel="current"
+                role="tabpanel"
+                aria-labelledby="report-tab-current"
+              >
+                <div class="report-top">
+                  <div>
+                    <h3>Marcador</h3>
+                    <p id="scoreline" class="scoreline"></p>
+                    <p id="finances-delta" class="finances"></p>
+                    <p id="finances-attendance" class="finances-attendance"></p>
+                    <p id="match-seed" class="match-seed" hidden></p>
+                  </div>
+                  <div class="decision-report" id="decision-report" hidden>
+                    <h3>Decisión canalla</h3>
+                    <p id="decision-narrative"></p>
+                    <ul id="decision-stats"></ul>
+                  </div>
+                  <div class="mvp-wrapper">
+                    <span id="mvp-badge" class="mvp-badge" hidden></span>
+                  </div>
                 </div>
-              </div>
-              <ul id="finances-expenses" class="finances-list finances-list--expense"></ul>
-            </div>
-          </div>
 
-          <div class="report-body">
-            <div>
-              <h3>Narrativa</h3>
-              <ol id="narrative-list"></ol>
-            </div>
-              <div>
-                <h3>Eventos destacados</h3>
-                <ul id="events-list"></ul>
-              </div>
-            </div>
+                <div class="finances-breakdown">
+                  <div class="finances-panel finances-panel--income">
+                    <header class="finances-panel__header">
+                      <h3>Ingresos</h3>
+                      <p id="finances-income-total" class="finances-total"></p>
+                    </header>
+                    <div class="finances-panel__visual" aria-hidden="true">
+                      <div class="finances-donut finances-donut--income" id="finances-income-donut"></div>
+                    </div>
+                    <ul id="finances-income" class="finances-list finances-list--income"></ul>
+                  </div>
+                  <div class="finances-panel finances-panel--expense">
+                    <header class="finances-panel__header">
+                      <h3>Gastos</h3>
+                      <p id="finances-expense-total" class="finances-total"></p>
+                    </header>
+                    <div class="finances-panel__visual" aria-hidden="true">
+                      <div class="finances-bar finances-bar--summary" id="finances-expense-bar">
+                        <span
+                          class="finances-bar__fill finances-bar__fill--expense"
+                          id="finances-expense-bar-fill"
+                        ></span>
+                      </div>
+                    </div>
+                    <ul id="finances-expenses" class="finances-list finances-list--expense"></ul>
+                  </div>
+                </div>
 
-          <div class="club-update">
-            <h3>Estado del club tras la jornada</h3>
-            <dl class="club-stats">
-              <div>
-                <dt>Presupuesto</dt>
-                  <dd id="post-budget"></dd>
+                <div class="report-body">
+                  <div>
+                    <h3>Narrativa</h3>
+                    <ol id="narrative-list"></ol>
+                  </div>
+                  <div>
+                    <h3>Eventos destacados</h3>
+                    <ul id="events-list"></ul>
+                  </div>
                 </div>
-                <div>
-                  <dt>Reputación</dt>
-                  <dd id="post-reputation"></dd>
-                </div>
-                <div>
-                  <dt>Moral media</dt>
-                  <dd id="post-morale"></dd>
-                </div>
-            </dl>
-          </div>
 
-          <section id="season-summary" class="season-summary" hidden>
-            <h3>Resumen de temporada</h3>
-            <p><strong>Campeón:</strong> <span id="season-champion"></span></p>
-            <p><strong>Posesión media:</strong> <span id="season-average-possession"></span></p>
-            <p id="season-streak"></p>
-            <div class="season-summary__lists">
-              <div>
-                <h4>Goleadores</h4>
-                <ol id="season-top-scorers"></ol>
+                <div class="club-update">
+                  <h3>Estado del club tras la jornada</h3>
+                  <dl class="club-stats">
+                    <div>
+                      <dt>Presupuesto</dt>
+                      <dd id="post-budget"></dd>
+                    </div>
+                    <div>
+                      <dt>Reputación</dt>
+                      <dd id="post-reputation"></dd>
+                    </div>
+                    <div>
+                      <dt>Moral media</dt>
+                      <dd id="post-morale"></dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <section id="season-summary" class="season-summary" hidden>
+                  <h3>Resumen de temporada</h3>
+                  <p><strong>Campeón:</strong> <span id="season-champion"></span></p>
+                  <p><strong>Posesión media:</strong> <span id="season-average-possession"></span></p>
+                  <p id="season-streak"></p>
+                  <div class="season-summary__lists">
+                    <div>
+                      <h4>Goleadores</h4>
+                      <ol id="season-top-scorers"></ol>
+                    </div>
+                    <div>
+                      <h4>Asistentes</h4>
+                      <ol id="season-top-assists"></ol>
+                    </div>
+                  </div>
+                  <button type="button" id="new-season" class="plan-button" hidden>
+                    Comenzar nueva temporada
+                  </button>
+                </section>
+
+                <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
               </div>
-              <div>
-                <h4>Asistentes</h4>
-                <ol id="season-top-assists"></ol>
+              <div
+                class="report-panel report-panel--history"
+                id="report-panel-history"
+                data-report-panel="history"
+                role="tabpanel"
+                aria-labelledby="report-tab-history"
+                hidden
+              >
+                <section class="report-history">
+                  <div class="report-history__controls">
+                    <label for="report-history-season">Temporada</label>
+                    <select id="report-history-season">
+                      <option value="all">Todas las temporadas</option>
+                    </select>
+                  </div>
+                  <p id="report-history-empty" class="report-history__empty">
+                    Todavía no has disputado ninguna jornada.
+                  </p>
+                  <ol id="report-history-list" class="report-history__list" aria-live="polite"></ol>
+                </section>
               </div>
             </div>
-            <button type="button" id="new-season" class="plan-button" hidden>Comenzar nueva temporada</button>
           </section>
-
-          <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
-        </section>
       </div>
       </div>
 

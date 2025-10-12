@@ -103,6 +103,11 @@ const postBudgetEl = document.querySelector('#post-budget');
 const postReputationEl = document.querySelector('#post-reputation');
 const postMoraleEl = document.querySelector('#post-morale');
 const mvpBadge = document.querySelector('#mvp-badge');
+const reportTabButtons = document.querySelectorAll('[data-report-tab]');
+const reportPanels = document.querySelectorAll('[data-report-panel]');
+const reportHistoryList = document.querySelector('#report-history-list');
+const reportHistorySeasonSelect = document.querySelector('#report-history-season');
+const reportHistoryEmptyEl = document.querySelector('#report-history-empty');
 
 if (financesDeltaEl) {
   financesDeltaEl.setAttribute('aria-live', 'polite');
@@ -351,6 +356,11 @@ const percentageFormatter = new Intl.NumberFormat('es-ES', {
   maximumFractionDigits: 0,
 });
 
+const historyDateFormatter = new Intl.DateTimeFormat('es-ES', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+});
+
 function syncSidebarState() {
   if (!sidebarToggleButton || !sidebarPanel || !sidebarCollapseQuery) {
     return;
@@ -391,6 +401,16 @@ function restartAnimation(element, className) {
   requestAnimationFrame(() => {
     element.classList.add(className);
   });
+}
+
+function cloneData(value) {
+  if (value === undefined) {
+    return value;
+  }
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
 }
 
 function isSelectable(player) {
@@ -616,6 +636,11 @@ function rebuildClubState(identity) {
   updateMatchSummary();
   switchToPlanningView();
   clearTransferMessage();
+  matchHistory = [];
+  currentHistoryEntryId = null;
+  reportHistoryFilterSeason = 'all';
+  activeReportTab = 'current';
+  renderReportHistory();
   clearReport();
   return resolvedIdentity;
 }
@@ -631,6 +656,10 @@ let opponentRotation = computeOpponentRotation(leagueState, clubState.name);
 let saveMessageTimeout;
 let loadNoticeTimeout;
 let hasLatestReport = false;
+let matchHistory = [];
+let currentHistoryEntryId = null;
+let reportHistoryFilterSeason = 'all';
+let activeReportTab = 'current';
 let clubIdentity = extractClubIdentity(clubState);
 let editingPlayerId = null;
 
@@ -787,8 +816,9 @@ function updateResultsButtonState() {
   if (!resultsControlButton) {
     return;
   }
-  resultsControlButton.disabled = !hasLatestReport;
-  resultsControlButton.setAttribute('aria-disabled', hasLatestReport ? 'false' : 'true');
+  const hasReports = hasLatestReport || matchHistory.length > 0;
+  resultsControlButton.disabled = !hasReports;
+  resultsControlButton.setAttribute('aria-disabled', hasReports ? 'false' : 'true');
 }
 
 function renderCalendarModal() {
@@ -1753,6 +1783,7 @@ function switchToPlanningView() {
 }
 
 function switchToReportView() {
+  switchReportTab(activeReportTab);
   if (reportModal) {
     openModal(reportModal);
   }
@@ -2175,7 +2206,7 @@ function clearReport() {
     seasonSummarySection.hidden = true;
   }
   hideLineupError();
-  hasLatestReport = false;
+  hasLatestReport = matchHistory.length > 0;
   refreshControlPanel();
 }
 
@@ -2352,6 +2383,177 @@ function renderFinancialBreakdown(finances) {
   renderBreakdownList(financesExpenseList, expenseEntries, 'expense', totalExpenses);
 }
 
+function switchReportTab(targetTab = 'current') {
+  activeReportTab = targetTab;
+  reportTabButtons.forEach((button) => {
+    const isActive = button.dataset.reportTab === targetTab;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+  reportPanels.forEach((panel) => {
+    const isActive = panel.dataset.reportPanel === targetTab;
+    panel.hidden = !isActive;
+    panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+  });
+}
+
+function renderReportHistoryFilters() {
+  if (!(reportHistorySeasonSelect instanceof HTMLSelectElement)) {
+    return;
+  }
+  const seasons = Array.from(new Set(matchHistory.map((entry) => entry.season))).sort((a, b) => b - a);
+  const previousFilter = reportHistoryFilterSeason;
+  reportHistorySeasonSelect.innerHTML = '';
+  const allOption = document.createElement('option');
+  allOption.value = 'all';
+  allOption.textContent = 'Todas las temporadas';
+  reportHistorySeasonSelect.append(allOption);
+  seasons.forEach((season) => {
+    const option = document.createElement('option');
+    option.value = String(season);
+    option.textContent = `Temporada ${season}`;
+    reportHistorySeasonSelect.append(option);
+  });
+  if (previousFilter !== 'all') {
+    const previousNumber = Number.parseInt(previousFilter, 10);
+    if (!Number.isFinite(previousNumber) || !seasons.includes(previousNumber)) {
+      reportHistoryFilterSeason = 'all';
+    }
+  }
+  if (reportHistoryFilterSeason !== 'all') {
+    const filterNumber = Number.parseInt(reportHistoryFilterSeason, 10);
+    if (!Number.isFinite(filterNumber) || !seasons.includes(filterNumber)) {
+      reportHistoryFilterSeason = 'all';
+    }
+  }
+  reportHistorySeasonSelect.value = reportHistoryFilterSeason;
+}
+
+function renderReportHistoryList() {
+  if (!reportHistoryList) {
+    return;
+  }
+  const seasonFilter = reportHistoryFilterSeason;
+  const filtered = matchHistory.filter((entry) => {
+    if (seasonFilter === 'all') {
+      return true;
+    }
+    return String(entry.season) === seasonFilter;
+  });
+  const sorted = [...filtered].sort((a, b) => {
+    if (b.season !== a.season) {
+      return b.season - a.season;
+    }
+    if (b.matchday !== a.matchday) {
+      return b.matchday - a.matchday;
+    }
+    return b.timestamp - a.timestamp;
+  });
+  reportHistoryList.innerHTML = '';
+  if (sorted.length === 0) {
+    if (reportHistoryEmptyEl) {
+      reportHistoryEmptyEl.hidden = false;
+      reportHistoryEmptyEl.textContent =
+        matchHistory.length === 0
+          ? 'Todavía no has disputado ninguna jornada.'
+          : 'No hay jornadas guardadas para la temporada seleccionada.';
+    }
+    return;
+  }
+  if (reportHistoryEmptyEl) {
+    reportHistoryEmptyEl.hidden = true;
+  }
+  sorted.forEach((entry) => {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'report-history__item';
+    button.dataset.historyId = entry.id;
+    if (entry.id === currentHistoryEntryId) {
+      button.classList.add('is-active');
+      button.setAttribute('aria-current', 'true');
+    }
+
+    const opponentLabel = entry.opponent || 'Rival misterioso';
+    const clubName = entry.report?.updatedClub?.name ?? clubState.name;
+    const goalsFor = entry.report?.match?.goalsFor ?? 0;
+    const goalsAgainst = entry.report?.match?.goalsAgainst ?? 0;
+
+    const title = document.createElement('span');
+    title.className = 'report-history__title';
+    title.textContent = `Jornada ${entry.matchday} · vs ${opponentLabel}`;
+
+    const score = document.createElement('span');
+    score.className = 'report-history__score';
+    score.textContent = `${clubName} ${goalsFor} - ${goalsAgainst} ${opponentLabel}`;
+
+    const meta = document.createElement('span');
+    meta.className = 'report-history__meta';
+    meta.textContent = `Temporada ${entry.season} · Guardado: ${historyDateFormatter.format(new Date(entry.timestamp))}`;
+
+    button.append(title, score, meta);
+    button.addEventListener('click', () => {
+      showHistoryEntry(entry.id);
+    });
+
+    item.append(button);
+    reportHistoryList.append(item);
+  });
+}
+
+function renderReportHistory() {
+  renderReportHistoryFilters();
+  renderReportHistoryList();
+  updateResultsButtonState();
+}
+
+function addReportToHistory(report, decisionOutcome, opponentName, metadata, season, matchday) {
+  const cleanOpponent = typeof opponentName === 'string' && opponentName.trim().length > 0
+    ? opponentName.trim()
+    : 'Rival misterioso';
+  const fallbackSeason = typeof clubState?.season === 'number' ? Math.max(1, Math.trunc(clubState.season)) : 1;
+  const fallbackMatchday =
+    typeof leagueState?.matchDay === 'number' && Number.isFinite(leagueState.matchDay)
+      ? Math.max(1, Math.trunc(leagueState.matchDay))
+      : 1;
+  const seasonNumber = typeof season === 'number' && Number.isFinite(season)
+    ? Math.max(1, Math.trunc(season))
+    : fallbackSeason;
+  const matchdayNumber = typeof matchday === 'number' && Number.isFinite(matchday)
+    ? Math.max(1, Math.trunc(matchday))
+    : fallbackMatchday;
+  const timestamp = Date.now();
+  const entry = {
+    id: `history-${seasonNumber}-${matchdayNumber}-${timestamp}`,
+    season: seasonNumber,
+    matchday: matchdayNumber,
+    opponent: cleanOpponent,
+    report: cloneData(report),
+    decisionOutcome: decisionOutcome ? cloneData(decisionOutcome) : undefined,
+    metadata: metadata ? cloneData(metadata) : {},
+    timestamp,
+  };
+  matchHistory = [
+    entry,
+    ...matchHistory.filter((item) => !(item.season === seasonNumber && item.matchday === matchdayNumber)),
+  ];
+  currentHistoryEntryId = entry.id;
+  renderReportHistory();
+  return entry;
+}
+
+function showHistoryEntry(entryId) {
+  const entry = matchHistory.find((item) => item.id === entryId);
+  if (!entry) {
+    return;
+  }
+  currentHistoryEntryId = entry.id;
+  switchReportTab('current');
+  renderMatchReport(entry.report, entry.decisionOutcome, entry.opponent, entry.metadata ?? {});
+  renderReportHistory();
+  switchToReportView();
+}
+
 function renderMatchReport(report, decisionOutcome, opponentName = 'Rival misterioso', metadata = {}) {
   const clubName = clubState.name;
   const scoreline = `${clubName} ${report.match.goalsFor} - ${report.match.goalsAgainst} ${opponentName}`;
@@ -2512,6 +2714,7 @@ function persistState(reason = 'auto') {
       league: leagueState,
       config: configState,
       transferMarket: transferMarketState,
+      history: matchHistory,
     },
     undefined
   );
@@ -2610,6 +2813,19 @@ function applyLoadedState(saved) {
   };
   opponentRotation = computeOpponentRotation(leagueState, clubState.name);
   ensureLineupCompleteness();
+  matchHistory = Array.isArray(saved.history)
+    ? saved.history.map((entry) => ({
+        ...entry,
+        report: cloneData(entry.report),
+        decisionOutcome: entry.decisionOutcome ? cloneData(entry.decisionOutcome) : undefined,
+        metadata: entry.metadata ? cloneData(entry.metadata) : {},
+      }))
+    : [];
+  currentHistoryEntryId = matchHistory[0]?.id ?? null;
+  reportHistoryFilterSeason = 'all';
+  activeReportTab = 'current';
+  hasLatestReport = matchHistory.length > 0;
+  renderReportHistory();
 }
 
 form.addEventListener('submit', (event) => {
@@ -2674,7 +2890,16 @@ form.addEventListener('submit', (event) => {
   renderTransferMarket();
   renderLineupBoard();
   updateMatchSummary();
-  renderMatchReport(report, decisionOutcome, opponentName, { seedInputValue: seedValue });
+  const historyEntry = addReportToHistory(
+    report,
+    decisionOutcome,
+    opponentName,
+    { seedInputValue: seedValue },
+    clubState.season,
+    updatedLeague.matchDay
+  );
+  switchReportTab('current');
+  renderMatchReport(historyEntry.report, historyEntry.decisionOutcome, historyEntry.opponent, historyEntry.metadata ?? {});
   updateClubSummary();
   persistState('auto');
   switchToReportView();
@@ -2790,6 +3015,25 @@ if (planNextButton) {
   });
 }
 
+if (reportTabButtons.length > 0) {
+  reportTabButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const targetTab = button.dataset.reportTab;
+      if (typeof targetTab === 'string' && targetTab.length > 0) {
+        switchReportTab(targetTab);
+      }
+    });
+  });
+}
+
+if (reportHistorySeasonSelect instanceof HTMLSelectElement) {
+  reportHistorySeasonSelect.addEventListener('change', () => {
+    const selected = reportHistorySeasonSelect.value || 'all';
+    reportHistoryFilterSeason = selected;
+    renderReportHistory();
+  });
+}
+
 if (sidebarToggleButton && sidebarPanel && sidebarCollapseQuery) {
   sidebarToggleButton.addEventListener('click', () => {
     if (!sidebarCollapseQuery.matches) {
@@ -2815,6 +3059,7 @@ if (sidebarToggleButton && sidebarPanel && sidebarCollapseQuery) {
 function init() {
   attachModalHandlers();
   populateDecisions();
+  renderReportHistory();
   if (saveVersionEl) {
     saveVersionEl.textContent = `Versión guardado v${SAVE_VERSION}`;
   }
