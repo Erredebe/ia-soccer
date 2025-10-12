@@ -119,6 +119,7 @@ function normaliseLeague(league) {
   return {
     ...league,
     table: Array.isArray(league.table) ? league.table.map((entry) => ({ ...entry })) : [],
+    rivals: Array.isArray(league.rivals) ? [...league.rivals] : [],
   };
 }
 

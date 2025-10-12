@@ -7,8 +7,11 @@ import {
   createExampleLeague,
   createSeasonStats,
   createDefaultInstructions,
+  LEAGUE_RIVAL_CATALOG,
+  normaliseLeagueRivals,
   estimatePlayerValue,
   listCanallaDecisions,
+  selectRandomLeagueRivals,
   updateLeagueTableAfterMatch,
   TOTAL_MATCHDAYS,
   DEFAULT_CLUB_NAME,
@@ -119,6 +122,7 @@ const seasonAveragePossessionEl = document.querySelector('#season-average-posses
 const seasonStreakEl = document.querySelector('#season-streak');
 const newSeasonButton = document.querySelector('#new-season');
 const configureClubButton = document.querySelector('#configure-club');
+const configureLeagueButton = document.querySelector('#configure-league');
 const clubIdentityModal = document.querySelector('#modal-club-identity');
 const clubIdentityForm = document.querySelector('#club-identity-form');
 const clubNameInput = document.querySelector('#club-name-input');
@@ -158,6 +162,13 @@ const stadiumMedicalEl = document.querySelector('#stadium-medical');
 const stadiumAcademyEl = document.querySelector('#stadium-academy');
 const stadiumNoteEl = document.querySelector('#stadium-note');
 
+const leagueConfigModal = document.querySelector('#modal-league-config');
+const leagueConfigForm = document.querySelector('#league-config-form');
+const leagueCatalogEl = document.querySelector('#league-catalog');
+const leagueSelectionCountEl = document.querySelector('#league-selection-count');
+const leagueRandomButton = document.querySelector('#league-randomize');
+const leagueConfigErrorEl = document.querySelector('#league-config-error');
+
 const FOCUSABLE_SELECTOR =
   "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
 
@@ -194,6 +205,8 @@ const booleanInstructionText = {
     false: 'Abrir el juego a las bandas',
   },
 };
+
+const RIVAL_TARGET_COUNT = Math.max(1, Math.round(TOTAL_MATCHDAYS / 2));
 
 const numberFormatter = new Intl.NumberFormat('es-ES', {
   style: 'currency',
@@ -886,6 +899,125 @@ function refreshControlPanel() {
   renderDecisionsModal();
   renderStadiumModal();
   updateResultsButtonState();
+}
+
+function getCurrentLeagueRivals() {
+  if (!leagueState || !Array.isArray(leagueState.table)) {
+    return [];
+  }
+  if (Array.isArray(leagueState.rivals) && leagueState.rivals.length > 0) {
+    return leagueState.rivals
+      .map((name) => (typeof name === 'string' ? name.trim() : ''))
+      .filter((name) => name.length > 0 && name !== clubState.name);
+  }
+  return leagueState.table
+    .filter((entry) => entry.club !== clubState.name)
+    .map((entry) => entry.club)
+    .filter((name) => typeof name === 'string' && name.trim().length > 0);
+}
+
+function updateLeagueSelectionCountDisplay() {
+  if (!leagueSelectionCountEl || !leagueCatalogEl) {
+    return;
+  }
+  const selected = leagueCatalogEl.querySelectorAll("input[type='checkbox'][name='league-rival']:checked").length;
+  leagueSelectionCountEl.textContent = `${selected}/${RIVAL_TARGET_COUNT} rivales elegidos`;
+}
+
+function hideLeagueConfigError() {
+  if (!leagueConfigErrorEl) {
+    return;
+  }
+  leagueConfigErrorEl.hidden = true;
+  leagueConfigErrorEl.textContent = '';
+}
+
+function showLeagueConfigError(message) {
+  if (!leagueConfigErrorEl) {
+    return;
+  }
+  leagueConfigErrorEl.hidden = false;
+  leagueConfigErrorEl.textContent = message;
+}
+
+function populateLeagueCatalog() {
+  if (!leagueCatalogEl) {
+    return;
+  }
+  const current = getCurrentLeagueRivals();
+  const currentSet = new Set(current);
+  leagueCatalogEl.innerHTML = '';
+  const seen = new Set();
+  const extras = current.filter((name) => !LEAGUE_RIVAL_CATALOG.includes(name));
+  const combined = [...LEAGUE_RIVAL_CATALOG, ...extras];
+  combined.forEach((name) => {
+    const trimmed = typeof name === 'string' ? name.trim() : '';
+    if (!trimmed || seen.has(trimmed) || trimmed === clubState.name) {
+      return;
+    }
+    seen.add(trimmed);
+    const option = document.createElement('label');
+    option.className = 'league-config__option';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'league-rival';
+    checkbox.value = trimmed;
+    checkbox.checked = currentSet.has(trimmed);
+    const span = document.createElement('span');
+    span.textContent = trimmed;
+    option.append(checkbox, span);
+    leagueCatalogEl.append(option);
+  });
+  updateLeagueSelectionCountDisplay();
+}
+
+function applyLeagueSelectionToForm(rivals) {
+  if (!leagueCatalogEl) {
+    return;
+  }
+  const targetSet = new Set(rivals);
+  const checkboxes = leagueCatalogEl.querySelectorAll("input[type='checkbox'][name='league-rival']");
+  checkboxes.forEach((input) => {
+    input.checked = targetSet.has(input.value);
+  });
+  updateLeagueSelectionCountDisplay();
+}
+
+function getSelectedLeagueRivals() {
+  if (!leagueCatalogEl) {
+    return [];
+  }
+  const checked = leagueCatalogEl.querySelectorAll("input[type='checkbox'][name='league-rival']:checked");
+  return Array.from(checked)
+    .map((input) => (input instanceof HTMLInputElement ? input.value : ''))
+    .map((name) => (typeof name === 'string' ? name.trim() : ''))
+    .filter((name) => name.length > 0 && name !== clubState.name);
+}
+
+function prepareLeagueConfigModal() {
+  populateLeagueCatalog();
+  hideLeagueConfigError();
+  updateLeagueSelectionCountDisplay();
+}
+
+function applyLeagueConfiguration(rivals) {
+  const normalised = normaliseLeagueRivals(rivals, {
+    count: RIVAL_TARGET_COUNT,
+    exclude: [clubState.name],
+  });
+  const newLeague = createExampleLeague(clubState.name, {
+    city: clubState.city,
+    rivals: normalised,
+  });
+  const updatedLeague = { ...newLeague, rivals: normalised };
+  leagueState = updatedLeague;
+  clubState = { ...clubState, league: updatedLeague };
+  opponentRotation = computeOpponentRotation(updatedLeague, clubState.name);
+  clearReport();
+  renderLeagueTable();
+  updateMatchSummary();
+  showLoadNotice('Liga regenerada con los rivales seleccionados. ¡Arranca una nueva temporada!');
+  persistState('silent');
 }
 
 function updateFormDefaults() {
@@ -2264,7 +2396,20 @@ function applyLoadedState(saved) {
     logoUrl: resolveClubLogoUrl(saved.club),
     weeklyWageBill: calculateWeeklyWageBill(saved.club.squad),
   };
-  leagueState = saved.league;
+  const loadedLeague = saved.league;
+  const initialRivals = Array.isArray(loadedLeague?.rivals) && loadedLeague.rivals.length > 0
+    ? loadedLeague.rivals
+    : Array.isArray(loadedLeague?.table)
+      ? loadedLeague.table
+          .filter((entry) => entry.club !== clubState.name)
+          .map((entry) => entry.club)
+      : [];
+  const cleanedRivals = normaliseLeagueRivals(initialRivals, {
+    count: RIVAL_TARGET_COUNT,
+    exclude: [clubState.name],
+  });
+  leagueState = { ...loadedLeague, rivals: cleanedRivals };
+  clubState = { ...clubState, league: leagueState };
   transferMarketState = saved.transferMarket.length
     ? saved.transferMarket
     : createExampleTransferMarket(clubState);
@@ -2377,6 +2522,13 @@ if (configureClubButton && clubIdentityModal) {
   });
 }
 
+if (configureLeagueButton && leagueConfigModal) {
+  configureLeagueButton.addEventListener('click', () => {
+    prepareLeagueConfigModal();
+    openModal(leagueConfigModal);
+  });
+}
+
 if (clubIdentityForm) {
   clubIdentityForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -2398,6 +2550,41 @@ if (clubIdentityForm) {
 
 if (decisionSelect) {
   decisionSelect.addEventListener('change', renderDecisionsModal);
+}
+
+if (leagueCatalogEl) {
+  leagueCatalogEl.addEventListener('change', (event) => {
+    if (event.target instanceof HTMLInputElement && event.target.type === 'checkbox') {
+      updateLeagueSelectionCountDisplay();
+      hideLeagueConfigError();
+    }
+  });
+}
+
+if (leagueRandomButton) {
+  leagueRandomButton.addEventListener('click', () => {
+    const randomSelection = selectRandomLeagueRivals(RIVAL_TARGET_COUNT, {
+      exclude: [clubState.name],
+    });
+    applyLeagueSelectionToForm(randomSelection);
+    hideLeagueConfigError();
+  });
+}
+
+if (leagueConfigForm && leagueConfigModal) {
+  leagueConfigForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const selected = getSelectedLeagueRivals();
+    if (selected.length !== RIVAL_TARGET_COUNT) {
+      showLeagueConfigError(
+        `Selecciona ${RIVAL_TARGET_COUNT} rivales (actualmente ${selected.length}).`
+      );
+      return;
+    }
+    hideLeagueConfigError();
+    applyLeagueConfiguration(selected);
+    closeModal(leagueConfigModal);
+  });
 }
 
 if (planNextButton) {

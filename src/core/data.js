@@ -96,7 +96,7 @@ const RANDOM_NICKNAMES = Object.freeze([
   'La Cometa',
 ]);
 
-const LEAGUE_RIVALS = [
+export const LEAGUE_RIVAL_CATALOG = Object.freeze([
   'Club Verbena del Sur',
   'Rayo Chulapo',
   'CD Barras Bravas',
@@ -108,7 +108,126 @@ const LEAGUE_RIVALS = [
   'Paseo de la Fama FC',
   'Peña Rockanrolera',
   'Furias del Barrio',
-];
+  'Tren Nocturno FC',
+  'Club Caverna Latina',
+  'Atlético de los Faroles',
+  'Rock & Goal United',
+  'Cervecería Old School',
+  'Rockets del Manzanares',
+  'Puente de Hierro CF',
+  'Callejón del Jazz',
+  'Toreros Eléctricos',
+  'Piratas de Malasaña',
+  'Real Bares FC',
+  'Muralla del Carmen',
+  'Forajidos del Retiro',
+  'Barrio Salvaje',
+  'Canallas del Alba',
+  'Taxis Nocturnos CF',
+  'Ola Funky SC',
+  'Patines del Arenal',
+  'Cósmicos del Ensanche',
+]);
+
+/**
+ * Devuelve una copia barajada de la lista de rivales sin mutar la original.
+ * @param {readonly string[]} [rivals]
+ * @param {() => number} [rng]
+ * @returns {string[]}
+ */
+export function shuffleLeagueRivals(rivals = LEAGUE_RIVAL_CATALOG, rng = Math.random) {
+  const clean = Array.isArray(rivals)
+    ? rivals
+        .map((name) => (typeof name === 'string' ? name.trim() : ''))
+        .filter((name) => name.length > 0)
+    : [];
+  const unique = [];
+  clean.forEach((name) => {
+    if (!unique.includes(name)) {
+      unique.push(name);
+    }
+  });
+  const shuffled = [...unique];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rng() * (index + 1));
+    const temp = shuffled[index];
+    shuffled[index] = shuffled[swapIndex];
+    shuffled[swapIndex] = temp;
+  }
+  return shuffled;
+}
+
+/**
+ * Selecciona un subconjunto aleatorio de rivales evitando duplicados y exclusiones.
+ * @param {number} [count]
+ * @param {{ catalog?: readonly string[]; rng?: () => number; exclude?: readonly string[] }} [options]
+ * @returns {string[]}
+ */
+export function selectRandomLeagueRivals(count = 11, options = {}) {
+  if (!Number.isFinite(count) || count <= 0) {
+    return [];
+  }
+  const catalog = Array.isArray(options.catalog) && options.catalog.length > 0 ? options.catalog : LEAGUE_RIVAL_CATALOG;
+  const exclude = Array.isArray(options.exclude) ? options.exclude : [];
+  const filtered = catalog
+    .map((name) => (typeof name === 'string' ? name.trim() : ''))
+    .filter((name) => name.length > 0 && !exclude.includes(name));
+  if (filtered.length === 0) {
+    return [];
+  }
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const shuffled = shuffleLeagueRivals(filtered, rng);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+/**
+ * Normaliza una lista de rivales asegurando cantidad fija y sin duplicados.
+ * @param {string[] | undefined} rivals
+ * @param {{ count?: number; catalog?: readonly string[]; rng?: () => number; exclude?: readonly string[] }} [options]
+ * @returns {string[]}
+ */
+export function normaliseLeagueRivals(rivals, options = {}) {
+  const target = Number.isFinite(options.count) && options.count ? Math.max(1, Math.trunc(options.count)) : 11;
+  const catalog = Array.isArray(options.catalog) ? options.catalog : LEAGUE_RIVAL_CATALOG;
+  const exclude = Array.isArray(options.exclude) ? options.exclude : [];
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+
+  /** @type {string[]} */
+  const manual = Array.isArray(rivals)
+    ? rivals
+        .map((name) => (typeof name === 'string' ? name.trim() : ''))
+        .filter((name) => name.length > 0 && !exclude.includes(name))
+    : [];
+  const normalised = [];
+  manual.forEach((name) => {
+    if (!normalised.includes(name)) {
+      normalised.push(name);
+    }
+  });
+
+  if (normalised.length >= target) {
+    return normalised.slice(0, target);
+  }
+
+  const remaining = target - normalised.length;
+  const available = catalog.filter((name) => !normalised.includes(name) && !exclude.includes(name));
+  const randomFill = selectRandomLeagueRivals(remaining, {
+    catalog: available.length > 0 ? available : catalog,
+    rng,
+    exclude,
+  });
+  randomFill.forEach((name) => {
+    if (!normalised.includes(name) && !exclude.includes(name)) {
+      normalised.push(name);
+    }
+  });
+
+  while (normalised.length < target) {
+    normalised.push(`Rival invitado ${normalised.length + 1}`);
+  }
+
+  return normalised.slice(0, target);
+}
 
 /** @type {TacticalInstructions} */
 const DEFAULT_INSTRUCTIONS = Object.freeze({
@@ -481,14 +600,18 @@ export function estimatePlayerValue(player) {
 /**
  * Construye una liga ficticia con rivales pintorescos y la tabla inicializada.
  * @param {string} clubName Nombre del club controlado por el jugador.
- * @param {{ city?: string }} [options] Opciones para personalizar la ambientación.
+ * @param {{ city?: string; rivals?: string[]; rng?: () => number }} [options] Opciones para personalizar la ambientación.
  * @returns {LeagueState}
  */
 export function createExampleLeague(clubName, options = {}) {
-  const rivals = LEAGUE_RIVALS.slice(0, 11);
-  const table = [clubName, ...rivals]
-    .map((name) => createLeagueStanding(name))
-    .slice(0, 12);
+  const rivalCount = 11;
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const rivals = normaliseLeagueRivals(options.rivals, {
+    count: rivalCount,
+    rng,
+    exclude: [clubName],
+  });
+  const table = [clubName, ...rivals].map((name) => createLeagueStanding(name));
   const trimmedCity = options.city?.trim();
   const leagueName =
     trimmedCity && trimmedCity.length > 0 ? `Liga Canalla de ${trimmedCity}` : 'Liga Canalla PCF';
@@ -496,6 +619,7 @@ export function createExampleLeague(clubName, options = {}) {
     name: leagueName,
     matchDay: 0,
     table,
+    rivals,
   };
 }
 
@@ -535,6 +659,7 @@ export function updateLeagueTableAfterMatch(league, clubName, match, rng = Math.
     ...league,
     matchDay: league.matchDay + 1,
     table: sortStandings(table),
+    rivals: Array.isArray(league.rivals) ? [...league.rivals] : league.rivals,
   };
 }
 

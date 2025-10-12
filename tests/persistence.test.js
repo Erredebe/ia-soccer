@@ -7,6 +7,7 @@ import {
   createExampleClub,
   createExampleLeague,
   createExampleTransferMarket,
+  TOTAL_MATCHDAYS,
 } from '../src/core/data.js';
 import { migrateSave, serializeState, SAVE_VERSION } from '../src/core/persistence.js';
 
@@ -27,6 +28,8 @@ test('serializeState normaliza disponibilidad y estadísticas', () => {
   assert.equal(payload.club.primaryColor, club.primaryColor);
   assert.equal(payload.club.secondaryColor, club.secondaryColor);
   assert.equal(payload.club.logoUrl, club.logoUrl);
+  assert.equal(Array.isArray(payload.league.rivals), true);
+  assert.equal(payload.league.rivals.length, TOTAL_MATCHDAYS / 2);
 });
 
 test('migrateSave rellena valores faltantes en partidas antiguas', () => {
@@ -51,4 +54,6 @@ test('migrateSave rellena valores faltantes en partidas antiguas', () => {
   assert.equal(migrated?.club.primaryColor, club.primaryColor);
   assert.equal(migrated?.club.secondaryColor, club.secondaryColor);
   assert.equal(migrated?.club.logoUrl, club.logoUrl);
+  assert.equal(Array.isArray(migrated?.league.rivals), true);
+  assert.equal(migrated?.league.rivals?.length, TOTAL_MATCHDAYS / 2);
 });
