@@ -74,6 +74,21 @@ const postReputationEl = document.querySelector('#post-reputation');
 const postMoraleEl = document.querySelector('#post-morale');
 const mvpBadge = document.querySelector('#mvp-badge');
 
+if (financesDeltaEl) {
+  financesDeltaEl.setAttribute('aria-live', 'polite');
+  financesDeltaEl.setAttribute('role', 'status');
+}
+
+if (financesIncomeList) {
+  financesIncomeList.setAttribute('aria-live', 'polite');
+  financesIncomeList.setAttribute('aria-label', 'Detalle de ingresos de la jornada');
+}
+
+if (financesExpenseList) {
+  financesExpenseList.setAttribute('aria-live', 'polite');
+  financesExpenseList.setAttribute('aria-label', 'Detalle de gastos de la jornada');
+}
+
 const seasonSummarySection = document.querySelector('#season-summary');
 const seasonChampionEl = document.querySelector('#season-champion');
 const seasonTopScorersList = document.querySelector('#season-top-scorers');
@@ -1565,7 +1580,10 @@ function renderFinancialBreakdown(finances) {
     financesIncomeList.innerHTML = '';
     Object.entries(finances.incomeBreakdown ?? {}).forEach(([key, value]) => {
       const item = document.createElement('li');
-      item.textContent = `${key}: ${numberFormatter.format(value)}`;
+      item.className = 'finances-item finances-item--income';
+      const formattedValue = numberFormatter.format(value);
+      item.textContent = `${key}: ${formattedValue}`;
+      item.setAttribute('aria-label', `Ingreso por ${key}: ${formattedValue}`);
       financesIncomeList.append(item);
     });
   }
@@ -1573,7 +1591,10 @@ function renderFinancialBreakdown(finances) {
     financesExpenseList.innerHTML = '';
     Object.entries(finances.expenseBreakdown ?? {}).forEach(([key, value]) => {
       const item = document.createElement('li');
-      item.textContent = `${key}: ${numberFormatter.format(value)}`;
+      item.className = 'finances-item finances-item--expense';
+      const formattedValue = numberFormatter.format(value);
+      item.textContent = `${key}: ${formattedValue}`;
+      item.setAttribute('aria-label', `Gasto en ${key}: ${formattedValue}`);
       financesExpenseList.append(item);
     });
   }
@@ -1584,9 +1605,19 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
   const scoreline = `${clubName} ${report.match.goalsFor} - ${report.match.goalsAgainst} ${opponentName}`;
   scorelineEl.textContent = scoreline;
 
-  const financesPrefix = report.financesDelta >= 0 ? '+' : '−';
+  const isPositiveFinances = report.financesDelta >= 0;
+  const financesPrefix = isPositiveFinances ? '+' : '−';
   const absFinances = Math.abs(report.financesDelta);
-  financesDeltaEl.textContent = `Balance de la jornada: ${financesPrefix}${numberFormatter.format(absFinances)}`;
+  const formattedFinances = numberFormatter.format(absFinances);
+  if (financesDeltaEl) {
+    financesDeltaEl.classList.remove('finances--positive', 'finances--negative');
+    financesDeltaEl.classList.add(isPositiveFinances ? 'finances--positive' : 'finances--negative');
+    financesDeltaEl.textContent = `Balance de la jornada: ${financesPrefix}${formattedFinances}`;
+    financesDeltaEl.setAttribute(
+      'aria-label',
+      `Balance de la jornada ${isPositiveFinances ? 'a favor' : 'en contra'} de ${formattedFinances}`
+    );
+  }
   renderFinancialBreakdown(report.finances);
 
   if (matchSeedEl) {
