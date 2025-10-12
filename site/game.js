@@ -32,6 +32,11 @@ import {
   drawCupRound,
   getCupFixture,
   applyCupMatchResult,
+  INFRASTRUCTURE_BLUEPRINT,
+  calculateInfrastructureUpgradeCost,
+  calculateOperatingExpensesForInfrastructure,
+  calculateStadiumCapacity,
+  createAcademyProspects,
 } from '../src/core/data.js';
 import { resolveCanallaDecision, resolveCupReputation, tickCanallaState } from '../src/core/reputation.js';
 import { clearSavedGame, loadSavedGame, saveGame, SAVE_VERSION } from '../src/core/persistence.js';
@@ -184,6 +189,10 @@ const stadiumTrainingEl = document.querySelector('#stadium-training');
 const stadiumMedicalEl = document.querySelector('#stadium-medical');
 const stadiumAcademyEl = document.querySelector('#stadium-academy');
 const stadiumNoteEl = document.querySelector('#stadium-note');
+const stadiumUpgradeFeedbackEl = document.querySelector('#stadium-upgrade-feedback');
+const infrastructureUpgradeButtons = document.querySelectorAll('[data-infrastructure-upgrade]');
+const infrastructureCostEls = document.querySelectorAll('[data-infrastructure-cost]');
+const infrastructureDescriptionEls = document.querySelectorAll('[data-infrastructure-description]');
 
 const cupModalEl = document.querySelector('#modal-cup');
 const cupModalStatusEl = document.querySelector('#cup-modal-status');
@@ -1553,6 +1562,191 @@ function describeInfrastructureLevel(level) {
   return 'en obras';
 }
 
+function getInfrastructureLevel(type) {
+  const blueprint = INFRASTRUCTURE_BLUEPRINT[type];
+  if (!blueprint || !clubState) {
+    return 0;
+  }
+  const level = clubState.infrastructure?.[blueprint.levelKey];
+  return Number.isFinite(level) ? Number(level) : 0;
+}
+
+function updateInfrastructureDescriptions() {
+  infrastructureDescriptionEls.forEach((element) => {
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+    const type = element.dataset.infrastructureDescription;
+    const blueprint = type ? INFRASTRUCTURE_BLUEPRINT[type] : undefined;
+    if (!blueprint) {
+      return;
+    }
+    element.textContent = blueprint.description;
+  });
+}
+
+function showInfrastructureFeedback(message, tone = 'info') {
+  if (!stadiumUpgradeFeedbackEl) {
+    return;
+  }
+  stadiumUpgradeFeedbackEl.textContent = message;
+  if (message && tone) {
+    stadiumUpgradeFeedbackEl.dataset.tone = tone;
+  } else {
+    stadiumUpgradeFeedbackEl.removeAttribute('data-tone');
+  }
+}
+
+function updateInfrastructureControls() {
+  if (!clubState) {
+    return;
+  }
+
+  updateInfrastructureDescriptions();
+
+  infrastructureUpgradeButtons.forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+    const type = button.dataset.infrastructureUpgrade;
+    const blueprint = type ? INFRASTRUCTURE_BLUEPRINT[type] : undefined;
+    if (!blueprint) {
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      return;
+    }
+
+    const currentLevel = getInfrastructureLevel(type);
+    const costElement = document.querySelector(`[data-infrastructure-cost="${type}"]`);
+
+    if (currentLevel >= blueprint.maxLevel) {
+      button.textContent = `${blueprint.label}: nivel máximo`;
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      if (costElement instanceof HTMLElement) {
+        costElement.textContent = 'Objetivo cumplido: no hay más ampliaciones disponibles.';
+      }
+      return;
+    }
+
+    const nextLevel = currentLevel + 1;
+    const cost = calculateInfrastructureUpgradeCost(type, nextLevel);
+    const afford = clubState.budget >= cost;
+    button.textContent = `${blueprint.label} · nivel ${nextLevel}`;
+    button.disabled = !afford;
+    button.setAttribute('aria-disabled', afford ? 'false' : 'true');
+    button.dataset.cost = String(cost);
+    button.title = blueprint.description;
+
+    if (costElement instanceof HTMLElement) {
+      const costLabel = numberFormatter.format(cost);
+      costElement.textContent = afford
+        ? `Coste: ${costLabel}`
+        : `Coste: ${costLabel} · falta presupuesto`;
+    }
+  });
+}
+
+function buildInfrastructureFeedback(type, level, capacity, prospects) {
+  if (type === 'stadium') {
+    return `La grada queda en nivel ${level}: aforo para ${capacity.toLocaleString('es-ES')} almas canallas.`;
+  }
+  if (type === 'training') {
+    return `El centro de entrenamiento sube a nivel ${level}. Las piernas cargarán menos cansancio entre jornadas.`;
+  }
+  if (type === 'medical') {
+    return `Área médica nivel ${level}: la enfermería se convierte en spa de élite para la plantilla.`;
+  }
+  if (type === 'academy' && Array.isArray(prospects) && prospects.length > 0) {
+    const names = prospects.map((player) => {
+      if (player.nickname && player.nickname.trim().length > 0) {
+        return `${player.nickname} (${player.name})`;
+      }
+      return player.name;
+    });
+    return `La cantera ya es nivel ${level}: ${names.join(', ')} se suman al primer equipo.`;
+  }
+  return `Infraestructura al nivel ${level}: el proyecto sigue creciendo.`;
+}
+
+function handleInfrastructureUpgrade(type) {
+  if (!type) {
+    return;
+  }
+  const blueprint = INFRASTRUCTURE_BLUEPRINT[type];
+  if (!blueprint) {
+    return;
+  }
+
+  const currentLevel = getInfrastructureLevel(type);
+  if (currentLevel >= blueprint.maxLevel) {
+    showInfrastructureFeedback('Esta área ya luce su máximo esplendor.', 'error');
+    return;
+  }
+
+  const nextLevel = currentLevel + 1;
+  const cost = calculateInfrastructureUpgradeCost(type, nextLevel);
+  if (clubState.budget < cost) {
+    showInfrastructureFeedback('No alcanza la caja para esa obra. Ajusta gastos o espera otra jornada.', 'error');
+    return;
+  }
+
+  const currentInfrastructure = clubState.infrastructure ?? {};
+  const updatedInfrastructure = { ...currentInfrastructure, [blueprint.levelKey]: nextLevel };
+  let updatedStadiumCapacity = clubState.stadiumCapacity;
+  if (type === 'stadium') {
+    updatedStadiumCapacity = calculateStadiumCapacity(nextLevel);
+  }
+
+  let updatedSquad = clubState.squad;
+  let newProspects = [];
+  if (type === 'academy') {
+    const intakeCount = nextLevel >= 4 ? 2 : 1;
+    newProspects = createAcademyProspects(nextLevel, { count: intakeCount });
+    if (newProspects.length > 0) {
+      updatedSquad = [...clubState.squad, ...newProspects];
+    }
+  }
+
+  const updatedOperatingExpenses = calculateOperatingExpensesForInfrastructure(updatedInfrastructure);
+  const updatedBudget = clubState.budget - cost;
+  const updatedWageBill = calculateWeeklyWageBill(updatedSquad);
+
+  clubState = {
+    ...clubState,
+    budget: updatedBudget,
+    infrastructure: updatedInfrastructure,
+    stadiumCapacity: updatedStadiumCapacity,
+    operatingExpenses: updatedOperatingExpenses,
+    squad: updatedSquad,
+    weeklyWageBill: updatedWageBill,
+  };
+
+  if (newProspects.length > 0) {
+    ensureLineupCompleteness();
+    renderLineupBoard();
+  }
+
+  updateClubSummary();
+  showInfrastructureFeedback(
+    buildInfrastructureFeedback(type, nextLevel, updatedStadiumCapacity, newProspects),
+    'success'
+  );
+}
+
+if (infrastructureUpgradeButtons.length > 0) {
+  infrastructureUpgradeButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const type = button.dataset.infrastructureUpgrade ?? '';
+      handleInfrastructureUpgrade(type);
+    });
+  });
+}
+
+if (infrastructureDescriptionEls.length > 0) {
+  updateInfrastructureDescriptions();
+}
+
 function renderStadiumModal() {
   if (
     !stadiumCapacityEl ||
@@ -1573,7 +1767,8 @@ function renderStadiumModal() {
   stadiumAcademyEl.textContent = `Nivel ${infrastructure.academyLevel ?? 0}`;
 
   const identity = extractClubIdentity(clubState);
-  stadiumNoteEl.textContent = `${identity.stadiumName} vibra en ${identity.city}. Invierte en grada y servicios para atraer más taquilla y mantener feliz a la afición.`;
+  stadiumNoteEl.textContent = `${identity.stadiumName} vibra en ${identity.city}. Cada mejora suma costes, pero también impulsa ingresos, salud y cantera.`;
+  updateInfrastructureControls();
 }
 
 function refreshControlPanel() {
