@@ -16,7 +16,7 @@ import {
   createExampleClub,
   listCanallaDecisions,
 } from '../core/data.js';
-import { resolveCanallaDecision } from '../core/reputation.js';
+import { resolveCanallaDecision, tickCanallaState } from '../core/reputation.js';
 
 /**
  * Pregunta al usuario si desea intentar una decisión canalla antes del partido.
@@ -29,6 +29,18 @@ async function promptDecision() {
   console.log('\n=== Decisiones canallas disponibles ===');
   decisions.forEach((decision, index) => {
     console.log(`${index + 1}. ${decision.type} (intensidad ${decision.intensity})`);
+    if (decision.description) {
+      console.log(`   · ${decision.description}`);
+    }
+    if (decision.consequenceSummary) {
+      console.log(`   · Consecuencia: ${decision.consequenceSummary}`);
+    }
+    if (typeof decision.expectedHeat === 'number') {
+      console.log(`   · Sospecha estimada: +${decision.expectedHeat}`);
+    }
+    if (decision.cooldownMatches) {
+      console.log(`   · Cooldown base: ${decision.cooldownMatches} jornada${decision.cooldownMatches === 1 ? '' : 's'}`);
+    }
   });
   console.log('0. Mantenerse pulcro (por ahora)');
 
@@ -72,7 +84,13 @@ async function runDemo() {
       ).toFixed(1)}`
     );
   } else {
+    const passive = tickCanallaState(club);
+    club = passive.updatedClub;
     console.log('Nada de canalladas... por ahora. Veremos si la grada perdona tanta pureza.');
+    if (passive.applied.narratives.length > 0) {
+      console.log('Efectos residuales en curso:');
+      passive.applied.narratives.forEach((line) => console.log(`  • ${line}`));
+    }
   }
 
   const matchConfig = createDefaultMatchConfig();

@@ -290,7 +290,15 @@
 
 /**
  * Definición del tipo `CanallaDecisionType`.
- * @typedef {"sobornoArbitro" | "filtrarRumor" | "fiestaIlegal" | "presionarFederacion"} CanallaDecisionType
+ * @typedef {
+ *   | "sobornoArbitro"
+ *   | "filtrarRumor"
+ *   | "fiestaIlegal"
+ *   | "presionarFederacion"
+ *   | "sobornoJugador"
+ *   | "manipularCesped"
+ *   | "espionajeAnalitico"
+ * } CanallaDecisionType
  */
 
 /**
@@ -298,6 +306,10 @@
  * @typedef {Object} CanallaDecision
  * @property {CanallaDecisionType} type
  * @property {"baja" | "media" | "alta"} intensity
+ * @property {number=} cooldownMatches Tiempo estándar de enfriamiento en jornadas.
+ * @property {string=} description Breve frase con sabor narrativo.
+* @property {string=} consequenceSummary Advertencia sobre consecuencias probables.
+ * @property {number=} expectedHeat Impacto aproximado en el nivel de sospecha (0-100).
  */
 
 /**
@@ -308,9 +320,30 @@
  * @property {number} financesChange
  * @property {number} moraleChange
  * @property {number} riskLevel
+ * @property {number=} heatChange
  * @property {string=} sanctions
  * @property {string} narrative
+ * @property {string[]=} ongoingConsequences
  * @property {boolean=} appliedToClub
+ */
+
+/**
+ * Describe un efecto diferido provocado por una decisión canalla.
+ * @typedef {Object} CanallaOngoingEffect
+ * @property {CanallaDecisionType} source
+ * @property {'budget' | 'reputation' | 'morale' | 'heat'} target
+ * @property {number} magnitude
+ * @property {number} remainingMatches
+ * @property {string} narrative
+ * @property {boolean=} startsNextMatch
+ */
+
+/**
+ * Estado agregado de las fechorías canallas del club.
+ * @typedef {Object} CanallaStatus
+ * @property {number} heat
+ * @property {Record<CanallaDecisionType, number>} cooldowns
+ * @property {CanallaOngoingEffect[]} ongoingEffects
  */
 
 /**
@@ -395,6 +428,7 @@
  * @property {OperatingExpenses=} operatingExpenses
  * @property {ClubSeasonStats=} seasonStats
  * @property {CupState=} cup
+ * @property {CanallaStatus=} canallaStatus
  */
 
 /**
