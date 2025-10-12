@@ -641,6 +641,50 @@
               </thead>
               <tbody id="league-table-body"></tbody>
             </table>
+            <div class="league-panel__stats">
+              <section class="league-stats">
+                <h3>Máximos goleadores</h3>
+                <table class="league-table league-table--compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Jugador</th>
+                      <th scope="col">Club</th>
+                      <th scope="col">Goles</th>
+                    </tr>
+                  </thead>
+                  <tbody id="league-top-scorers-body"></tbody>
+                </table>
+              </section>
+              <section class="league-stats">
+                <h3>Mejores asistentes</h3>
+                <table class="league-table league-table--compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Jugador</th>
+                      <th scope="col">Club</th>
+                      <th scope="col">Asistencias</th>
+                    </tr>
+                  </thead>
+                  <tbody id="league-top-assists-body"></tbody>
+                </table>
+              </section>
+              <section class="league-stats">
+                <h3>Porterías imbatidas</h3>
+                <table class="league-table league-table--compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Jugador</th>
+                      <th scope="col">Club</th>
+                      <th scope="col">Imbatidas</th>
+                    </tr>
+                  </thead>
+                  <tbody id="league-top-clean-sheets-body"></tbody>
+                </table>
+              </section>
+            </div>
           </div>
         </div>
       </div>
@@ -915,6 +959,7 @@
                   <p><strong>Campeón:</strong> <span id="season-champion"></span></p>
                   <p><strong>Posesión media:</strong> <span id="season-average-possession"></span></p>
                   <p id="season-streak"></p>
+                  <p><strong>Títulos logrados:</strong> <span id="season-titles"></span></p>
                   <div class="season-summary__lists">
                     <div>
                       <h4>Goleadores</h4>
@@ -924,6 +969,10 @@
                       <h4>Asistentes</h4>
                       <ol id="season-top-assists"></ol>
                     </div>
+                  </div>
+                  <div class="season-summary__records">
+                    <h4>Récords del club</h4>
+                    <ul id="season-records"></ul>
                   </div>
                   <button type="button" id="new-season" class="plan-button" hidden>
                     Comenzar nueva temporada

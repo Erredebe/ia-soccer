@@ -108,6 +108,34 @@
  */
 
 /**
+ * Definición del tipo `ClubRecord`.
+ * @typedef {Object} ClubRecord
+ * @property {number} season
+ * @property {number} matchday
+ * @property {string} opponent
+ * @property {number} goalsFor
+ * @property {number} goalsAgainst
+ * @property {number} goalDifference
+ * @property {number} totalGoals
+ */
+
+/**
+ * Definición del tipo `ClubRecords`.
+ * @typedef {Object} ClubRecords
+ * @property {ClubRecord=} biggestWin
+ * @property {ClubRecord=} heaviestDefeat
+ * @property {ClubRecord=} goalFestival
+ */
+
+/**
+ * Definición del tipo `ClubHistoricalStats`.
+ * @typedef {Object} ClubHistoricalStats
+ * @property {number} titles
+ * @property {number} lastTitleSeason
+ * @property {ClubRecords} records
+ */
+
+/**
  * Definición del tipo `ClubSeasonStats`.
  * @typedef {Object} ClubSeasonStats
  * @property {number} matches
@@ -119,6 +147,7 @@
  * @property {number} possessionFor
  * @property {number} unbeatenRun
  * @property {number} bestUnbeatenRun
+ * @property {ClubHistoricalStats} history
  */
 
 /**

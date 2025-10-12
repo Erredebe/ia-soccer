@@ -864,6 +864,39 @@ body.modal-open {
   text-align: left;
 }
 
+.league-panel__stats {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .league-panel__stats {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+.league-stats h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.league-table--compact th,
+.league-table--compact td {
+  padding: 0.35rem 0.45rem;
+  font-size: 0.85rem;
+}
+
+.league-table--compact td:first-child,
+.league-table--compact th:first-child {
+  width: 2.5rem;
+}
+
+.league-table--compact tbody tr td:last-child {
+  text-align: right;
+}
+
 .transfer-panel p {
   margin: 0;
 }
@@ -2059,6 +2092,16 @@ body.modal-open {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1rem;
   margin: 1rem 0;
+}
+
+.season-summary__records {
+  margin-top: 1rem;
+}
+
+.season-summary__records ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  color: #0f172a;
 }
 
 .season-summary ol {
