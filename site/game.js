@@ -182,6 +182,16 @@ const SUBS_LIMIT = 5;
 const POSITION_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
 const SAVE_NOTICE_DURATION = 4000;
 
+function restartAnimation(element, className) {
+  if (!element) {
+    return;
+  }
+  element.classList.remove(className);
+  requestAnimationFrame(() => {
+    element.classList.add(className);
+  });
+}
+
 function isSelectable(player) {
   return isPlayerAvailable(player);
 }
@@ -1604,6 +1614,7 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
   const clubName = clubState.name;
   const scoreline = `${clubName} ${report.match.goalsFor} - ${report.match.goalsAgainst} ${opponentName}`;
   scorelineEl.textContent = scoreline;
+  restartAnimation(scorelineEl, 'scoreline--flash');
 
   const isPositiveFinances = report.financesDelta >= 0;
   const financesPrefix = isPositiveFinances ? '+' : '−';
@@ -1639,23 +1650,32 @@ function renderMatchReport(report, decisionOutcome, opponentName = 'Rival mister
   narrativeList.innerHTML = '';
   report.match.narrative.forEach((line) => {
     const item = document.createElement('li');
+    item.className = 'narrative-item';
     item.textContent = line;
     narrativeList.append(item);
+    requestAnimationFrame(() => {
+      item.classList.add('narrative-item--visible');
+    });
   });
 
   eventsList.innerHTML = '';
   report.match.events.forEach((event) => {
     const item = document.createElement('li');
     item.className = 'event-item';
-    if (['gol', 'penalti'].includes(event.type)) {
+    const isGoalEvent = ['gol', 'penalti'].includes(event.type);
+    const isCardEvent = ['doble_amarilla', 'expulsion', 'tarjeta'].includes(event.type);
+    if (isGoalEvent) {
       item.classList.add('event-item--goal');
-    } else if (['doble_amarilla', 'expulsion', 'tarjeta'].includes(event.type)) {
+    } else if (isCardEvent) {
       item.classList.add('event-item--card');
     } else if (event.type.includes('lesion')) {
       item.classList.add('event-item--injury');
     }
     item.textContent = `[${event.minute}'] ${event.description}`;
     eventsList.append(item);
+    if (isGoalEvent || isCardEvent) {
+      restartAnimation(item, 'event-item--pop');
+    }
   });
 
   renderDecisionOutcome(decisionOutcome);
