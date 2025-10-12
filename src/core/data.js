@@ -20,6 +20,9 @@
 /** @typedef {import('../types.js').OperatingExpenses} OperatingExpenses */
 
 export const TOTAL_MATCHDAYS = 22;
+export const DEFAULT_CLUB_NAME = 'Atlético Bar Callejero';
+export const DEFAULT_STADIUM_NAME = 'Campo del Callejón';
+export const DEFAULT_CLUB_CITY = 'Lavapiés';
 
 const LEAGUE_RIVALS = [
   'Club Verbena del Sur',
@@ -239,13 +242,31 @@ export function resetPlayerForNewSeason(player) {
 
 /**
  * Genera un conjunto de contratos de patrocinio ficticios equilibrados.
+ * @param {{ city?: string; stadiumName?: string }} [options]
  * @returns {SponsorContract[]}
  */
-function createExampleSponsors() {
+function createExampleSponsors(options = {}) {
+  const cityLabel = options.city?.trim() || DEFAULT_CLUB_CITY;
+  const stadiumLabel = options.stadiumName?.trim() || DEFAULT_STADIUM_NAME;
   return [
-    { name: 'Vermut Torero', value: 250000, frequency: 'annual', lastPaidMatchDay: -40 },
-    { name: 'Autoescuelas López', value: 60000, frequency: 'monthly', lastPaidMatchDay: -4 },
-    { name: 'Bar Manolo', value: 15000, frequency: 'match', lastPaidMatchDay: -1 },
+    {
+      name: `Vermut ${cityLabel}`,
+      value: 250000,
+      frequency: 'annual',
+      lastPaidMatchDay: -40,
+    },
+    {
+      name: `${stadiumLabel} Tours`,
+      value: 60000,
+      frequency: 'monthly',
+      lastPaidMatchDay: -4,
+    },
+    {
+      name: `Mercado ${cityLabel}`,
+      value: 15000,
+      frequency: 'match',
+      lastPaidMatchDay: -1,
+    },
   ];
 }
 
@@ -364,15 +385,19 @@ export function estimatePlayerValue(player) {
 /**
  * Construye una liga ficticia con rivales pintorescos y la tabla inicializada.
  * @param {string} clubName Nombre del club controlado por el jugador.
+ * @param {{ city?: string }} [options] Opciones para personalizar la ambientación.
  * @returns {LeagueState}
  */
-export function createExampleLeague(clubName) {
+export function createExampleLeague(clubName, options = {}) {
   const rivals = LEAGUE_RIVALS.slice(0, 11);
   const table = [clubName, ...rivals]
     .map((name) => createLeagueStanding(name))
     .slice(0, 12);
+  const trimmedCity = options.city?.trim();
+  const leagueName =
+    trimmedCity && trimmedCity.length > 0 ? `Liga Canalla de ${trimmedCity}` : 'Liga Canalla PCF';
   return {
-    name: 'Liga Canalla PCF',
+    name: leagueName,
     matchDay: 0,
     table,
   };
@@ -475,9 +500,10 @@ function createPlayer(partial) {
 
 /**
  * Construye un club de ejemplo con plantilla, finanzas y contexto narrativo.
+ * @param {{ name?: string; stadiumName?: string; city?: string }} [options]
  * @returns {ClubState}
  */
-export function createExampleClub() {
+export function createExampleClub(options = {}) {
   /** @type {Player[]} */
   const squad = [
     createPlayer({
@@ -754,9 +780,13 @@ export function createExampleClub() {
     }),
   ];
 
-  const name = 'Atlético Bar Callejero';
+  const name = options.name?.trim() || DEFAULT_CLUB_NAME;
+  const stadiumName = options.stadiumName?.trim() || DEFAULT_STADIUM_NAME;
+  const city = options.city?.trim() || DEFAULT_CLUB_CITY;
   return {
     name,
+    stadiumName,
+    city,
     budget: 1200000,
     stadiumCapacity: 23000,
     reputation: 5,
@@ -768,8 +798,8 @@ export function createExampleClub() {
       cupRun: true,
     },
     weeklyWageBill: squad.reduce((acc, player) => acc + player.salary / 4, 0),
-    league: createExampleLeague(name),
-    sponsors: createExampleSponsors(),
+    league: createExampleLeague(name, { city }),
+    sponsors: createExampleSponsors({ city, stadiumName }),
     tvDeal: createExampleTvDeal(),
     merchandising: createExampleMerchandising(),
     infrastructure: createExampleInfrastructure(),

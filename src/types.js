@@ -330,6 +330,8 @@
  * Definición del tipo `ClubState`.
  * @typedef {Object} ClubState
  * @property {string} name
+ * @property {string} city
+ * @property {string} stadiumName
  * @property {number} budget
  * @property {number} stadiumCapacity
  * @property {number} reputation
