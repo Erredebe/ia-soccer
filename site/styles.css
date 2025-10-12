@@ -289,6 +289,62 @@ body {
   border-radius: 0.75rem;
 }
 
+.league-config__intro {
+  margin: 0;
+  color: #334155;
+}
+
+.league-config__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.league-config__count {
+  margin: 0;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.league-config__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.league-config__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(226, 232, 240, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.league-config__option:hover,
+.league-config__option:focus-within {
+  border-color: rgba(37, 99, 235, 0.6);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  background: rgba(191, 219, 254, 0.4);
+}
+
+.league-config__option input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #2563eb;
+}
+
+.league-config__error {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 .control-list {
   list-style: none;
   padding: 0;

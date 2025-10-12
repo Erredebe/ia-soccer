@@ -100,6 +100,7 @@
  * @property {string} name
  * @property {number} matchDay
  * @property {LeagueStanding[]} table
+ * @property {string[]=} rivals
  */
 
 /**

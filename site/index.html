@@ -157,6 +157,7 @@
             </div>
             <div class="club-card__actions">
               <button id="configure-club" type="button" class="reset-button">Configurar club</button>
+              <button id="configure-league" type="button" class="reset-button">Configurar liga</button>
               <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
             </div>
           </header>
@@ -388,6 +389,54 @@
                 <button type="button" class="club-action" data-modal-close>Cancelar</button>
               </div>
             </form>
+          </div>
+        </div>
+
+        <div class="modal" id="modal-league-config" aria-hidden="true">
+          <div
+            class="modal__content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="league-config-title"
+          >
+            <button
+              type="button"
+              class="modal__close"
+              data-modal-close
+              aria-label="Cerrar configuración de liga"
+            >
+              ×
+            </button>
+            <section class="control-modal card-panel">
+              <div>
+                <h2 id="league-config-title">Configura la liga</h2>
+                <p class="league-config__intro">
+                  Selecciona manualmente a los rivales de la temporada o genera un sorteo aleatorio para comenzar
+                  desde cero.
+                </p>
+              </div>
+              <form class="game-form" id="league-config-form">
+                <div class="league-config__summary">
+                  <p id="league-selection-count" class="league-config__count" aria-live="polite" role="status">
+                    0/11 rivales elegidos
+                  </p>
+                  <button type="button" class="lineup-auto-button" id="league-randomize">
+                    Sorteo aleatorio
+                  </button>
+                </div>
+                <div
+                  class="league-config__grid"
+                  id="league-catalog"
+                  role="group"
+                  aria-label="Catálogo de rivales disponibles"
+                ></div>
+                <p class="league-config__error" id="league-config-error" role="alert" hidden></p>
+                <div class="modal__actions">
+                  <button type="submit" class="club-action club-action--primary">Aplicar rivales</button>
+                  <button type="button" class="club-action" data-modal-close>Cancelar</button>
+                </div>
+              </form>
+            </section>
           </div>
         </div>
 
