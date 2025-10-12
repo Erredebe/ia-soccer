@@ -1330,6 +1330,25 @@ body.modal-open {
   color: #0f172a;
 }
 
+.scoreline--flash {
+  animation: scoreline-flash 0.8s ease-out;
+}
+
+@keyframes scoreline-flash {
+  0% {
+    color: #1d4ed8;
+    text-shadow: 0 0 0 rgba(59, 130, 246, 0);
+  }
+  45% {
+    color: #0f172a;
+    text-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
+  }
+  100% {
+    color: #0f172a;
+    text-shadow: 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
 .finances-attendance {
   margin: 0.25rem 0 0;
   font-size: 0.95rem;
@@ -1467,6 +1486,25 @@ body.modal-open {
   background: rgba(226, 232, 240, 0.45);
 }
 
+.event-item--pop {
+  animation: event-item-pop 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes event-item-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 .event-item--goal {
   background: rgba(134, 239, 172, 0.35);
   color: #166534;
@@ -1481,6 +1519,38 @@ body.modal-open {
 .event-item--injury {
   background: rgba(252, 165, 165, 0.45);
   color: #991b1b;
+}
+
+#narrative-list {
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 1.25rem;
+  list-style: decimal;
+  list-style-position: outside;
+}
+
+#narrative-list .narrative-item {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+#narrative-list .narrative-item--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scoreline--flash,
+  .event-item--pop {
+    animation: none !important;
+  }
+
+  #narrative-list .narrative-item {
+    transition: none;
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .club-update .club-stats div {
