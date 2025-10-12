@@ -1281,6 +1281,7 @@ function handleCupDraw() {
   cupState = result.cup;
   clubState = { ...clubState, cup: cupState };
   renderCupModal();
+  renderLineupBoard();
   updateMatchSummary();
   updateCupSummary();
   persistState('silent');
@@ -2615,8 +2616,8 @@ function updateMatchSummary() {
       matchLocationEl.textContent = 'Sede de la federación';
     }
     if (playMatchButton) {
-      playMatchButton.disabled = true;
-      playMatchButton.textContent = 'Esperando sorteo';
+      playMatchButton.disabled = false;
+      playMatchButton.textContent = 'Celebrar sorteo';
     }
     if (homeCheckbox) {
       homeCheckbox.checked = false;
@@ -3734,6 +3735,13 @@ function applyLoadedState(saved) {
 form.addEventListener('submit', (event) => {
   event.preventDefault();
 
+  const nextEvent = determineNextEvent();
+  if (nextEvent.type === 'cup-draw') {
+    hideLineupError();
+    handleCupDraw();
+    return;
+  }
+
   hideLineupError();
   if (configState.startingLineup.length !== STARTERS_LIMIT) {
     showLineupError(`Necesitas ${STARTERS_LIMIT} titulares para saltar al campo.`);
@@ -3744,11 +3752,6 @@ form.addEventListener('submit', (event) => {
     return;
   }
 
-  const nextEvent = determineNextEvent();
-  if (nextEvent.type === 'cup-draw') {
-    showLineupError('Primero celebra el sorteo de copa para conocer al rival.');
-    return;
-  }
   const isCupMatch = nextEvent.type === 'cup-match';
 
   const opponentStanding = getUpcomingOpponent();
