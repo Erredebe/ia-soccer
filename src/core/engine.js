@@ -7,6 +7,7 @@
 
 import { calculateMatchdayFinances } from './economy.js';
 import { createEmptySeasonLog, createSeasonStats } from './data.js';
+import { buildMatchVisualization2D } from './visualization.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
 /** @typedef {import('../types.js').MatchConfig} MatchConfig */
@@ -571,6 +572,7 @@ export function simulateMatch(club, config, options = {}) {
   const { starters, substitutes } = getMatchSquads(club, config);
   const lineup = starters.length > 0 ? [...starters] : [...club.squad.slice(0, 11)];
   const bench = starters.length > 0 ? [...substitutes] : [...club.squad.slice(11)];
+  const initialLineup = [...lineup];
   const playerMap = new Map(club.squad.map((player) => [player.id, player]));
 
   const adjustmentState = {
@@ -1059,10 +1061,20 @@ export function simulateMatch(club, config, options = {}) {
   statistics.expectedGoals.for = Number(statistics.expectedGoals.for.toFixed(2));
   statistics.expectedGoals.against = Number(statistics.expectedGoals.against.toFixed(2));
 
+  const matchEvents = events.filter((event) => event.type !== 'intro');
+  const visualization2d = (config.viewMode ?? 'quick') === '2d'
+    ? buildMatchVisualization2D({
+        events: matchEvents,
+        lineup: initialLineup,
+        playerMap,
+        formation: config.formation,
+      })
+    : undefined;
+
   return {
     goalsFor,
     goalsAgainst,
-    events: events.filter((event) => event.type !== 'intro'),
+    events: matchEvents,
     manOfTheMatch: man?.playerId,
     narrative: finalNarrative,
     contributions: contributionsList,
@@ -1070,6 +1082,7 @@ export function simulateMatch(club, config, options = {}) {
     commentary,
     viewMode: config.viewMode ?? 'quick',
     seed: seedValue,
+    visualization2d,
   };
 }
 
