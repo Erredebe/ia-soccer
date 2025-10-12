@@ -1566,6 +1566,7 @@ export function createExampleClub(options = {}) {
     infrastructure: createExampleInfrastructure(),
     operatingExpenses: createExampleOperatingExpenses(),
     seasonStats: createSeasonStats(),
+    canallaStatus: createInitialCanallaStatus(),
   };
 }
 
@@ -1609,15 +1610,94 @@ export function createDefaultLineup(club) {
   return { starters, substitutes };
 }
 
+const DEFAULT_CANALLA_DECISIONS = [
+  {
+    type: 'sobornoArbitro',
+    intensity: 'alta',
+    cooldownMatches: 3,
+    description: 'Untar al colegiado para inclinar la balanza del encuentro.',
+    consequenceSummary: 'Si sale mal, la federación puede caer con dureza inmediata.',
+    expectedHeat: 18,
+  },
+  {
+    type: 'filtrarRumor',
+    intensity: 'media',
+    cooldownMatches: 1,
+    description: 'Correr la voz de un chisme desestabilizador en la prensa local.',
+    consequenceSummary: 'Puede volverse contra el club si la afición detecta la mentira.',
+    expectedHeat: 8,
+  },
+  {
+    type: 'fiestaIlegal',
+    intensity: 'media',
+    cooldownMatches: 2,
+    description: 'Montar una celebración clandestina para cohesionar a la plantilla.',
+    consequenceSummary: 'La moral se hunde si aparecen videos o sanciones policiales.',
+    expectedHeat: 12,
+  },
+  {
+    type: 'presionarFederacion',
+    intensity: 'baja',
+    cooldownMatches: 2,
+    description: 'Llamadas nocturnas para manipular calendarios y designaciones.',
+    consequenceSummary: 'Los despachos pueden vengarse bloqueando futuras peticiones.',
+    expectedHeat: 10,
+  },
+  {
+    type: 'sobornoJugador',
+    intensity: 'media',
+    cooldownMatches: 4,
+    description: 'Intentar comprar al crack rival para que se borre del partido.',
+    consequenceSummary: 'El vestuario puede fracturarse y la liga vigilará cada paso.',
+    expectedHeat: 24,
+  },
+  {
+    type: 'manipularCesped',
+    intensity: 'baja',
+    cooldownMatches: 1,
+    description: 'Preparar un césped tramposo que favorezca nuestro estilo callejero.',
+    consequenceSummary: 'Los jardineros rivales tomarán nota y podrían denunciar el truco.',
+    expectedHeat: 6,
+  },
+  {
+    type: 'espionajeAnalitico',
+    intensity: 'alta',
+    cooldownMatches: 3,
+    description: 'Hackear datos tácticos del rival para anticipar su plan de juego.',
+    consequenceSummary: 'Un fallo deja rastros digitales y multas tecnológicas severas.',
+    expectedHeat: 20,
+  },
+];
+
+/**
+ * Genera un estado canalla limpio sin sospechas ni efectos pendientes.
+ * @returns {import('../types.js').CanallaStatus}
+ */
+export function createInitialCanallaStatus() {
+  /** @type {Record<import('../types.js').CanallaDecisionType, number>} */
+  const cooldowns = {};
+  DEFAULT_CANALLA_DECISIONS.forEach((decision) => {
+    cooldowns[decision.type] = 0;
+  });
+  return {
+    heat: 0,
+    cooldowns,
+    ongoingEffects: [],
+  };
+}
+
 /**
  * Devuelve la lista de travesuras canallas disponibles en la demo.
+ * Permite sobreescribir parámetros puntuales para pruebas o eventos narrativos.
+ * @param {Partial<Record<import('../types.js').CanallaDecisionType, Partial<CanallaDecision>>>} [overrides]
  * @returns {CanallaDecision[]}
  */
-export function listCanallaDecisions() {
-  return [
-    { type: 'sobornoArbitro', intensity: 'alta' },
-    { type: 'filtrarRumor', intensity: 'media' },
-    { type: 'fiestaIlegal', intensity: 'media' },
-    { type: 'presionarFederacion', intensity: 'baja' },
-  ];
+export function listCanallaDecisions(overrides = {}) {
+  return DEFAULT_CANALLA_DECISIONS.map((decision) => {
+    const override = overrides?.[decision.type];
+    if (override) {
+      return { ...decision, ...override };
+    }
+    return { ...decision };
+  });
 }

@@ -33,7 +33,7 @@ import {
   getCupFixture,
   applyCupMatchResult,
 } from '../src/core/data.js';
-import { resolveCanallaDecision, resolveCupReputation } from '../src/core/reputation.js';
+import { resolveCanallaDecision, resolveCupReputation, tickCanallaState } from '../src/core/reputation.js';
 import { clearSavedGame, loadSavedGame, saveGame, SAVE_VERSION } from '../src/core/persistence.js';
 import { resolveCupPrize } from '../src/core/economy.js';
 import { CUP_ROUND_DEFINITIONS } from '../src/core/types.js';
@@ -177,6 +177,7 @@ const financesIncomeDonutEl = document.querySelector('#finances-income-donut');
 const financesExpenseBarEl = document.querySelector('#finances-expense-bar');
 const financesExpenseBarFillEl = document.querySelector('#finances-expense-bar-fill');
 const decisionsListEl = document.querySelector('#decisions-list');
+const decisionsHeatEl = document.querySelector('#decisions-heat');
 const stadiumCapacityEl = document.querySelector('#stadium-capacity');
 const stadiumLevelEl = document.querySelector('#stadium-level');
 const stadiumTrainingEl = document.querySelector('#stadium-training');
@@ -213,6 +214,9 @@ const decisionLabels = {
   filtrarRumor: 'Filtrar rumor',
   fiestaIlegal: 'Fiesta ilegal',
   presionarFederacion: 'Presionar a la federación',
+  sobornoJugador: 'Soborno a jugador rival',
+  manipularCesped: 'Manipular césped',
+  espionajeAnalitico: 'Espionaje analítico',
 };
 
 const instructionText = {
@@ -1031,19 +1035,39 @@ function attachModalHandlers() {
 }
 
 function populateDecisions() {
-  if (!decisionSelect || decisionSelect.dataset.populated === 'true') {
+  if (!decisionSelect) {
     return;
   }
+
+  const previousValue = decisionSelect.value;
+  decisionSelect.innerHTML = '';
+
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Mantenerse pulcro (sin travesuras)';
+  decisionSelect.append(defaultOption);
 
   decisions.forEach((decision, index) => {
     const option = document.createElement('option');
     const label = decisionLabels[decision.type] ?? decision.type;
     option.value = String(index);
-    option.textContent = `${label} (intensidad ${decision.intensity})`;
+    const pieces = [`${label}`, `intensidad ${decision.intensity}`];
+    const cooldownRemaining = clubState.canallaStatus?.cooldowns?.[decision.type] ?? 0;
+    if (cooldownRemaining > 0) {
+      pieces.push(`en cooldown (${cooldownRemaining})`);
+      option.disabled = true;
+    } else if (decision.cooldownMatches) {
+      pieces.push(`cd ${decision.cooldownMatches}`);
+    }
+    option.textContent = pieces.join(' · ');
     decisionSelect.append(option);
   });
 
-  decisionSelect.dataset.populated = 'true';
+  if (previousValue && decisionSelect.querySelector(`option[value="${previousValue}"]`)) {
+    decisionSelect.value = previousValue;
+  } else {
+    decisionSelect.value = '';
+  }
 }
 
 function getSelectLabel(selectElement, value) {
@@ -1436,22 +1460,73 @@ function renderFinancesModal() {
   financesNoteEl.textContent = `Proyección semanal estimada: ${numberFormatter.format(projected)} entre salarios y operaciones.`;
 }
 
+function describeHeatLevel(heat) {
+  if (heat >= 75) {
+    return `Riesgo acumulado: ${heat}/100 · La lupa mediática arde, el comité acecha.`;
+  }
+  if (heat >= 50) {
+    return `Riesgo acumulado: ${heat}/100 · Hay demasiado ruido; quizá conviene aflojar la picardía.`;
+  }
+  if (heat >= 25) {
+    return `Riesgo acumulado: ${heat}/100 · Las sospechas crecen, mueve ficha con cuidado.`;
+  }
+  return `Riesgo acumulado: ${heat}/100 · Ambiente sereno, perfecto para una jugada fina.`;
+}
+
 function renderDecisionsModal() {
   if (!decisionsListEl) {
     return;
   }
   decisionsListEl.innerHTML = '';
 
+  const status = clubState.canallaStatus ?? { heat: 0, cooldowns: {}, ongoingEffects: [] };
+  if (decisionsHeatEl) {
+    const heatValue = Math.round(status.heat ?? 0);
+    decisionsHeatEl.textContent = describeHeatLevel(heatValue);
+  }
+
   decisions.forEach((decision, index) => {
     const item = document.createElement('li');
-    if (String(index) === decisionSelect.value) {
+    if (decisionSelect && String(index) === decisionSelect.value) {
       item.classList.add('is-active');
     }
+    const header = document.createElement('div');
+    header.className = 'control-decision__header';
     const label = document.createElement('span');
     label.textContent = decisionLabels[decision.type] ?? decision.type;
     const intensity = document.createElement('span');
     intensity.textContent = `Intensidad ${decision.intensity}`;
-    item.append(label, intensity);
+    header.append(label, intensity);
+
+    const description = document.createElement('p');
+    description.className = 'control-decision__description';
+    description.textContent = decision.description ?? 'Sin descripción disponible para esta travesura.';
+
+    const details = document.createElement('p');
+    details.className = 'control-decision__details';
+    const detailParts = [];
+    const cooldownRemaining = status.cooldowns?.[decision.type] ?? 0;
+    if (cooldownRemaining > 0) {
+      detailParts.push(`En enfriamiento: ${cooldownRemaining} jornada${cooldownRemaining === 1 ? '' : 's'}.`);
+    } else if (decision.cooldownMatches) {
+      detailParts.push(`Cooldown base: ${decision.cooldownMatches} jornada${decision.cooldownMatches === 1 ? '' : 's'}.`);
+    }
+    if (typeof decision.expectedHeat === 'number') {
+      detailParts.push(`Sospecha estimada: +${decision.expectedHeat}.`);
+    }
+    if (decision.consequenceSummary) {
+      detailParts.push(decision.consequenceSummary);
+    }
+    const relatedEffects = Array.isArray(status.ongoingEffects)
+      ? status.ongoingEffects.filter((effect) => effect.source === decision.type)
+      : [];
+    relatedEffects.forEach((effect) => {
+      const remainingText = effect.remainingMatches > 1 ? `${effect.remainingMatches} jornadas restantes` : 'Último partido en vigor';
+      detailParts.push(`${effect.narrative} · ${remainingText}.`);
+    });
+    details.textContent = detailParts.length > 0 ? detailParts.join(' ') : 'Sin consecuencias activas registradas.';
+
+    item.append(header, description, details);
     decisionsListEl.append(item);
   });
 
@@ -1502,6 +1577,7 @@ function renderStadiumModal() {
 }
 
 function refreshControlPanel() {
+  populateDecisions();
   renderCalendarModal();
   renderTacticsModal();
   renderOpponentModal();
@@ -2781,8 +2857,19 @@ function renderDecisionOutcome(decisionOutcome) {
     `Nivel de riesgo percibido: ${decisionOutcome.riskLevel}/100`,
   ];
 
+  if (typeof decisionOutcome.heatChange === 'number') {
+    stats.push(`Sospecha: ${decisionOutcome.heatChange >= 0 ? '+' : ''}${decisionOutcome.heatChange}`);
+  }
+
   if (decisionOutcome.sanctions) {
     stats.push(`Sanciones: ${decisionOutcome.sanctions}`);
+  }
+
+  if (Array.isArray(decisionOutcome.ongoingConsequences) && decisionOutcome.ongoingConsequences.length > 0) {
+    stats.push('Consecuencias latentes:');
+    decisionOutcome.ongoingConsequences.forEach((consequence) => {
+      stats.push(`↳ ${consequence}`);
+    });
   }
 
   decisionStats.innerHTML = '';
@@ -3482,6 +3569,24 @@ form.addEventListener('submit', (event) => {
     const resolution = resolveCanallaDecision(workingClub, decision);
     workingClub = resolution.updatedClub;
     decisionOutcome = resolution.outcome;
+  } else {
+    const passive = tickCanallaState(workingClub);
+    workingClub = passive.updatedClub;
+    const { budget = 0, reputation = 0, morale = 0, heat = 0, narratives = [] } = passive.applied ?? {};
+    if (budget !== 0 || reputation !== 0 || morale !== 0 || heat !== 0 || narratives.length > 0) {
+      decisionOutcome = {
+        success: true,
+        reputationChange: reputation,
+        financesChange: budget,
+        moraleChange: morale,
+        heatChange: heat,
+        riskLevel: Math.round(workingClub.canallaStatus?.heat ?? 0),
+        sanctions: undefined,
+        narrative: 'Los ecos de canalladas pasadas siguen presentes en el vestuario.',
+        ongoingConsequences: narratives.length > 0 ? narratives : undefined,
+        appliedToClub: true,
+      };
+    }
   }
 
   const seedValue = seedInput ? seedInput.value.trim() : '';
