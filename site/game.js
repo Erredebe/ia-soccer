@@ -86,6 +86,9 @@ const clubCardEl = document.querySelector('.club-card');
 
 const leagueMatchdayEl = document.querySelector('#league-matchday');
 const leagueTableBody = document.querySelector('#league-table-body');
+const leagueTopScorersBody = document.querySelector('#league-top-scorers-body');
+const leagueTopAssistsBody = document.querySelector('#league-top-assists-body');
+const leagueTopCleanSheetsBody = document.querySelector('#league-top-clean-sheets-body');
 const transferListEl = document.querySelector('#transfer-list');
 const transferMessageEl = document.querySelector('#transfer-message');
 
@@ -130,6 +133,8 @@ const seasonTopScorersList = document.querySelector('#season-top-scorers');
 const seasonTopAssistsList = document.querySelector('#season-top-assists');
 const seasonAveragePossessionEl = document.querySelector('#season-average-possession');
 const seasonStreakEl = document.querySelector('#season-streak');
+const seasonTitlesEl = document.querySelector('#season-titles');
+const seasonRecordsList = document.querySelector('#season-records');
 const newSeasonButton = document.querySelector('#new-season');
 const configureClubButton = document.querySelector('#configure-club');
 const configureLeagueButton = document.querySelector('#configure-league');
@@ -389,6 +394,7 @@ if (clubLogoEl) {
 
 const STARTERS_LIMIT = 11;
 const SUBS_LIMIT = 5;
+const LEADERBOARD_LIMIT = 7;
 const POSITION_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
 const SAVE_NOTICE_DURATION = 4000;
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
@@ -411,6 +417,233 @@ function cloneData(value) {
     return structuredClone(value);
   }
   return JSON.parse(JSON.stringify(value));
+}
+
+function normaliseRecordEntry(entry) {
+  if (!entry) {
+    return null;
+  }
+  const opponent =
+    typeof entry.opponent === 'string' && entry.opponent.trim().length > 0
+      ? entry.opponent.trim()
+      : 'Rival misterioso';
+  const goalsFor = Number.isFinite(entry.goalsFor) ? entry.goalsFor : 0;
+  const goalsAgainst = Number.isFinite(entry.goalsAgainst) ? entry.goalsAgainst : 0;
+  const goalDifference = Number.isFinite(entry.goalDifference)
+    ? entry.goalDifference
+    : goalsFor - goalsAgainst;
+  const totalGoals = Number.isFinite(entry.totalGoals)
+    ? entry.totalGoals
+    : goalsFor + goalsAgainst;
+  const season = Number.isFinite(entry.season) ? entry.season : 1;
+  const matchday = Number.isFinite(entry.matchday) ? entry.matchday : 1;
+  return {
+    ...entry,
+    opponent,
+    goalsFor,
+    goalsAgainst,
+    goalDifference,
+    totalGoals,
+    season,
+    matchday,
+  };
+}
+
+function normaliseSeasonStats(stats) {
+  const defaults = createSeasonStats();
+  if (!stats) {
+    return createSeasonStats();
+  }
+  const merged = { ...defaults, ...stats };
+  const defaultHistory = defaults.history ?? { titles: 0, lastTitleSeason: 0, records: {} };
+  const incomingHistory = stats.history ?? {};
+  const mergedHistory = {
+    ...defaultHistory,
+    ...incomingHistory,
+  };
+  const defaultRecords = defaultHistory.records ?? {};
+  const incomingRecords = incomingHistory.records ?? {};
+  const mergedRecords = {
+    ...defaultRecords,
+    ...incomingRecords,
+  };
+  mergedRecords.biggestWin = normaliseRecordEntry(mergedRecords.biggestWin);
+  mergedRecords.heaviestDefeat = normaliseRecordEntry(mergedRecords.heaviestDefeat);
+  mergedRecords.goalFestival = normaliseRecordEntry(mergedRecords.goalFestival);
+  mergedHistory.records = mergedRecords;
+  mergedHistory.titles = Number.isFinite(mergedHistory.titles) ? mergedHistory.titles : 0;
+  mergedHistory.lastTitleSeason = Number.isFinite(mergedHistory.lastTitleSeason)
+    ? mergedHistory.lastTitleSeason
+    : 0;
+  merged.history = mergedHistory;
+  return merged;
+}
+
+function updateSeasonHistoricalMetrics(report, opponentName, league) {
+  if (!report || !report.updatedClub || !report.match) {
+    return;
+  }
+  const seasonStats = normaliseSeasonStats(report.updatedClub.seasonStats);
+  report.updatedClub.seasonStats = seasonStats;
+  const history = seasonStats.history;
+  const records = history.records;
+  const cleanOpponent =
+    typeof opponentName === 'string' && opponentName.trim().length > 0
+      ? opponentName.trim()
+      : 'Rival misterioso';
+  const matchdayNumber = Number.isFinite(league?.matchDay) ? Math.max(1, league.matchDay) : 1;
+  const entry = {
+    season: report.updatedClub.season,
+    matchday: matchdayNumber,
+    opponent: cleanOpponent,
+    goalsFor: report.match.goalsFor,
+    goalsAgainst: report.match.goalsAgainst,
+    goalDifference: report.match.goalsFor - report.match.goalsAgainst,
+    totalGoals: report.match.goalsFor + report.match.goalsAgainst,
+  };
+
+  if (report.match.goalsFor > report.match.goalsAgainst) {
+    const previous = records.biggestWin;
+    const previousMargin = previous ? previous.goalDifference : Number.NEGATIVE_INFINITY;
+    const previousGoals = previous ? previous.goalsFor : Number.NEGATIVE_INFINITY;
+    if (
+      entry.goalDifference > previousMargin ||
+      (entry.goalDifference === previousMargin && entry.goalsFor > previousGoals)
+    ) {
+      records.biggestWin = normaliseRecordEntry(entry);
+    }
+  }
+
+  if (report.match.goalsAgainst > report.match.goalsFor) {
+    const previous = records.heaviestDefeat;
+    const previousMargin = previous ? previous.goalDifference : Number.POSITIVE_INFINITY;
+    const previousConceded = previous ? previous.goalsAgainst : Number.NEGATIVE_INFINITY;
+    if (
+      entry.goalDifference < previousMargin ||
+      (entry.goalDifference === previousMargin && entry.goalsAgainst > previousConceded)
+    ) {
+      records.heaviestDefeat = normaliseRecordEntry(entry);
+    }
+  }
+
+  const previousFestival = records.goalFestival;
+  const previousGoals = previousFestival ? previousFestival.totalGoals : Number.NEGATIVE_INFINITY;
+  if (entry.totalGoals > previousGoals && entry.totalGoals > 0) {
+    records.goalFestival = normaliseRecordEntry(entry);
+  }
+
+  const totalMatchdays =
+    Number.isFinite(league?.totalMatchdays) && league.totalMatchdays > 0
+      ? Math.max(1, Math.trunc(league.totalMatchdays))
+      : getTotalMatchdays();
+  const champion = league?.table?.[0]?.club;
+  if (
+    league &&
+    league.matchDay >= totalMatchdays &&
+    champion === report.updatedClub.name &&
+    history.lastTitleSeason !== report.updatedClub.season
+  ) {
+    history.titles = (history.titles ?? 0) + 1;
+    history.lastTitleSeason = report.updatedClub.season;
+  }
+}
+
+function buildLeaguePlayerDataset() {
+  const dataset = [];
+  if (clubState && Array.isArray(clubState.squad)) {
+    clubState.squad.forEach((player) => {
+      const log = player.seasonLog ?? {};
+      dataset.push({
+        id: player.id,
+        name: player.name,
+        club: clubState.name,
+        goals: Number.isFinite(log.goals) ? log.goals : 0,
+        assists: Number.isFinite(log.assists) ? log.assists : 0,
+        cleanSheets: Number.isFinite(log.cleanSheets) ? log.cleanSheets : 0,
+      });
+    });
+  }
+
+  if (leagueState && Array.isArray(leagueState.table)) {
+    leagueState.table
+      .filter((standing) => standing.club !== clubState.name)
+      .forEach((standing) => {
+        const syntheticGoals = Math.max(0, Math.round(standing.goalsFor * 0.55));
+        const syntheticAssists = Math.max(0, Math.round(standing.goalsFor * 0.35));
+        const cleanSheetBase = standing.played > 0 ? standing.played - standing.goalsAgainst / 2.5 : 0;
+        const syntheticCleanSheets = Math.max(
+          0,
+          Math.min(standing.played, Math.round(cleanSheetBase))
+        );
+        dataset.push({
+          id: `club-${standing.club}-referente`,
+          name: `Referente de ${standing.club}`,
+          club: standing.club,
+          goals: syntheticGoals,
+          assists: syntheticAssists,
+          cleanSheets: syntheticCleanSheets,
+        });
+      });
+  }
+
+  return dataset;
+}
+
+function computeLeaderboard(dataset, key) {
+  return dataset
+    .filter((entry) => Number.isFinite(entry[key]) && entry[key] > 0)
+    .sort((a, b) => {
+      if (b[key] !== a[key]) {
+        return b[key] - a[key];
+      }
+      if (a.club !== b.club) {
+        return a.club.localeCompare(b.club);
+      }
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, LEADERBOARD_LIMIT);
+}
+
+function renderLeaderboardTable(body, entries, key) {
+  if (!body) {
+    return;
+  }
+  body.innerHTML = '';
+  if (!entries.length) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 4;
+    cell.textContent = 'Todavía no hay datos disponibles.';
+    row.append(cell);
+    body.append(row);
+    return;
+  }
+  entries.forEach((entry, index) => {
+    const row = document.createElement('tr');
+    if (entry.club === clubState.name) {
+      row.classList.add('is-user');
+    }
+    const positionCell = document.createElement('td');
+    positionCell.textContent = String(index + 1);
+    const nameCell = document.createElement('td');
+    nameCell.textContent = entry.name;
+    const clubCell = document.createElement('td');
+    clubCell.textContent = entry.club;
+    const valueCell = document.createElement('td');
+    valueCell.textContent = String(entry[key]);
+    row.append(positionCell, nameCell, clubCell, valueCell);
+    body.append(row);
+  });
+}
+
+function renderLeagueLeaderboards() {
+  const dataset = buildLeaguePlayerDataset();
+  const topScorers = computeLeaderboard(dataset, 'goals');
+  const topAssists = computeLeaderboard(dataset, 'assists');
+  const topCleanSheets = computeLeaderboard(dataset, 'cleanSheets');
+  renderLeaderboardTable(leagueTopScorersBody, topScorers, 'goals');
+  renderLeaderboardTable(leagueTopAssistsBody, topAssists, 'assists');
+  renderLeaderboardTable(leagueTopCleanSheetsBody, topCleanSheets, 'cleanSheets');
 }
 
 function isSelectable(player) {
@@ -622,6 +855,7 @@ function rebuildClubState(identity) {
   clubIdentity = resolvedIdentity;
   const freshClub = createExampleClub(resolvedIdentity);
   clubState = { ...freshClub, ...resolvedIdentity };
+  clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
   leagueState = freshClub.league;
   updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   transferMarketState = createExampleTransferMarket(freshClub);
@@ -646,6 +880,7 @@ function rebuildClubState(identity) {
 }
 
 let clubState = createExampleClub();
+clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
 let leagueState = clubState.league;
 updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
 let transferMarketState = createExampleTransferMarket(clubState);
@@ -1950,6 +2185,7 @@ function renderLeagueTable() {
       leagueMatchdayEl.textContent = `Jornada ${leagueState.matchDay}`;
     }
   }
+  renderLeagueLeaderboards();
   refreshControlPanel();
 }
 
@@ -2655,6 +2891,20 @@ function renderSeasonList(listElement, entries, formatter) {
   });
 }
 
+function describeRecordLine(label, record, options = {}) {
+  if (!record) {
+    return null;
+  }
+  const settings = { includeTotalGoals: false, ...options };
+  const scoreline = `${record.goalsFor}-${record.goalsAgainst}`;
+  const detailParts = [`Temp. ${record.season}`, `J. ${record.matchday}`];
+  if (settings.includeTotalGoals) {
+    detailParts.push(`${record.totalGoals} goles en total`);
+  }
+  const context = detailParts.join(' · ');
+  return `${label}: ${scoreline} vs ${record.opponent} (${context})`;
+}
+
 function renderSeasonSummary() {
   if (!seasonSummarySection) {
     return;
@@ -2678,13 +2928,47 @@ function renderSeasonSummary() {
       champion === clubState.name ? `${champion} (¡campeón!)` : champion;
   }
 
-  const stats = clubState.seasonStats ?? createSeasonStats();
+  const stats = normaliseSeasonStats(clubState.seasonStats);
+  clubState.seasonStats = stats;
   if (seasonAveragePossessionEl) {
     const possessionAvg = stats.matches > 0 ? stats.possessionFor / stats.matches : 0;
     seasonAveragePossessionEl.textContent = `${possessionAvg.toFixed(1)} %`;
   }
   if (seasonStreakEl) {
     seasonStreakEl.textContent = `Mejor racha sin perder: ${stats.bestUnbeatenRun} partidos`;
+  }
+
+  const history = stats.history;
+  if (seasonTitlesEl) {
+    if ((history.titles ?? 0) > 0) {
+      const titleCount = history.titles;
+      seasonTitlesEl.textContent = `${titleCount} título${titleCount === 1 ? '' : 's'} de liga`;
+    } else {
+      seasonTitlesEl.textContent = 'Aún sin trofeos ligueros';
+    }
+  }
+
+  if (seasonRecordsList) {
+    seasonRecordsList.innerHTML = '';
+    const records = history.records ?? {};
+    const entries = [
+      describeRecordLine('Mayor goleada', records.biggestWin),
+      describeRecordLine('Derrota más dolorosa', records.heaviestDefeat),
+      describeRecordLine('Partido con más goles', records.goalFestival, {
+        includeTotalGoals: true,
+      }),
+    ].filter((text) => typeof text === 'string' && text.length > 0);
+    if (entries.length === 0) {
+      const item = document.createElement('li');
+      item.textContent = 'Todavía no hay récords registrados.';
+      seasonRecordsList.append(item);
+    } else {
+      entries.forEach((text) => {
+        const item = document.createElement('li');
+        item.textContent = text;
+        seasonRecordsList.append(item);
+      });
+    }
   }
 
   const scorers = [...clubState.squad]
@@ -2737,13 +3021,17 @@ function startNewSeason() {
     difficulty: leagueSettings.difficulty,
   });
   opponentRotation = computeOpponentRotation(newLeague, clubState.name);
+  const previousStats = normaliseSeasonStats(clubState.seasonStats);
+  const preservedHistory = cloneData(previousStats.history ?? createSeasonStats().history);
+  const nextSeasonStats = createSeasonStats();
+  nextSeasonStats.history = preservedHistory;
 
   clubState = {
     ...clubState,
     season: nextSeason,
     league: newLeague,
     squad: refreshedSquad,
-    seasonStats: createSeasonStats(),
+    seasonStats: nextSeasonStats,
     weeklyWageBill: calculateWeeklyWageBill(refreshedSquad),
   };
   leagueState = newLeague;
@@ -2793,6 +3081,7 @@ function applyLoadedState(saved) {
   };
   updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   clubState = { ...clubState, league: leagueState };
+  clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
   transferMarketState = saved.transferMarket.length
     ? saved.transferMarket
     : createExampleTransferMarket(clubState);
@@ -2874,6 +3163,7 @@ form.addEventListener('submit', (event) => {
 
   const report = playMatchDay(workingClub, configState, simulationOptions);
   const updatedLeague = updateLeagueTableAfterMatch(leagueState ?? workingClub.league, workingClub.name, report.match);
+  updateSeasonHistoricalMetrics(report, opponentName, updatedLeague);
   leagueState = updatedLeague;
   updateLeagueSettingsFromState(updatedLeague);
 

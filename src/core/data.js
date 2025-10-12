@@ -467,6 +467,22 @@ export function createEmptySeasonLog() {
  * Prepara un acumulador de estadísticas de club sin datos previos.
  * @returns {import('../types.js').ClubSeasonStats}
  */
+function createSeasonRecordBook() {
+  return {
+    biggestWin: null,
+    heaviestDefeat: null,
+    goalFestival: null,
+  };
+}
+
+export function createSeasonHistory() {
+  return {
+    titles: 0,
+    lastTitleSeason: 0,
+    records: createSeasonRecordBook(),
+  };
+}
+
 export function createSeasonStats() {
   return {
     matches: 0,
@@ -478,6 +494,7 @@ export function createSeasonStats() {
     possessionFor: 0,
     unbeatenRun: 0,
     bestUnbeatenRun: 0,
+    history: createSeasonHistory(),
   };
 }
 
