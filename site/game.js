@@ -39,6 +39,12 @@ const saveButton = document.querySelector('#save-game');
 const saveFeedback = document.querySelector('#save-feedback');
 const saveVersionEl = document.querySelector('#save-version');
 const loadNoticeEl = document.querySelector('#load-notice');
+const sidebarToggleButton = document.querySelector('#sidebar-toggle');
+const sidebarPanel = document.querySelector('#sidebar-panel');
+const sidebarCollapseQuery =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 960px)')
+    : null;
 
 const matchdayBadgeEl = document.querySelector('#matchday-badge');
 const matchOpponentNameEl = document.querySelector('#match-opponent-name');
@@ -166,6 +172,22 @@ const numberFormatter = new Intl.NumberFormat('es-ES', {
 });
 
 const DEFAULT_CLUB_LOGO = 'assets/club-crest.svg';
+
+function syncSidebarState() {
+  if (!sidebarToggleButton || !sidebarPanel || !sidebarCollapseQuery) {
+    return;
+  }
+
+  if (sidebarCollapseQuery.matches) {
+    sidebarToggleButton.setAttribute(
+      'aria-expanded',
+      sidebarPanel.classList.contains('is-open') ? 'true' : 'false'
+    );
+  } else {
+    sidebarPanel.classList.remove('is-open');
+    sidebarToggleButton.setAttribute('aria-expanded', 'true');
+  }
+}
 
 if (clubLogoEl) {
   clubLogoEl.addEventListener('error', () => {
@@ -1944,6 +1966,28 @@ if (planNextButton) {
     closeModal(reportModal);
     switchToPlanningView();
   });
+}
+
+if (sidebarToggleButton && sidebarPanel && sidebarCollapseQuery) {
+  sidebarToggleButton.addEventListener('click', () => {
+    if (!sidebarCollapseQuery.matches) {
+      return;
+    }
+    const isOpen = sidebarPanel.classList.toggle('is-open');
+    sidebarToggleButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  const handleSidebarBreakpointChange = () => {
+    syncSidebarState();
+  };
+
+  if (typeof sidebarCollapseQuery.addEventListener === 'function') {
+    sidebarCollapseQuery.addEventListener('change', handleSidebarBreakpointChange);
+  } else if (typeof sidebarCollapseQuery.addListener === 'function') {
+    sidebarCollapseQuery.addListener(handleSidebarBreakpointChange);
+  }
+
+  syncSidebarState();
 }
 
 function init() {

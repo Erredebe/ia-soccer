@@ -15,378 +15,384 @@
 
       <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
 
-      <section class="card control-card" id="control-card">
-        <header class="control-card__header">
-          <div>
-            <h2>Panel de control retro</h2>
-            <p class="control-card__tagline">Accede rápido a cada área del club como en los clásicos PC Fútbol.</p>
-          </div>
-          <span class="control-card__badge">Modo manager</span>
-        </header>
-        <div class="control-panel" role="list">
-          <button
-            type="button"
-            class="control-panel__option control-panel__option--highlight"
-            data-panel-action="results"
-            data-modal-target="#modal-report"
-            disabled
-            aria-disabled="true"
-          >
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-results"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Resultados</span>
-          </button>
-          <button
-            type="button"
-            class="control-panel__option control-panel__option--highlight"
-            data-modal-target="#modal-league"
-          >
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-league"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Clasificación</span>
-          </button>
-          <button type="button" class="control-panel__option" data-modal-target="#modal-calendar">
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-calendar"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Calendario</span>
-          </button>
-          <button
-            type="button"
-            class="control-panel__option"
-            data-modal-target="#modal-lineup"
-          >
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-lineup"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Alineación</span>
-          </button>
-          <button type="button" class="control-panel__option" data-modal-target="#modal-tactics">
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-tactics"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Tácticas</span>
-          </button>
-          <button type="button" class="control-panel__option" data-modal-target="#modal-opponent">
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-opponent"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Rival</span>
-          </button>
-          <button
-            type="button"
-            class="control-panel__option control-panel__option--highlight"
-            data-modal-target="#modal-transfers"
-          >
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-transfers"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Fichar</span>
-          </button>
-          <button type="button" class="control-panel__option" data-modal-target="#modal-staff">
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-staff"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Empleados</span>
-          </button>
-          <button type="button" class="control-panel__option" data-modal-target="#modal-finances">
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-finances"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Caja</span>
-          </button>
-          <button type="button" class="control-panel__option" data-modal-target="#modal-decisions">
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-decisions"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Decisiones</span>
-          </button>
-          <button type="button" class="control-panel__option" data-modal-target="#modal-stadium">
-            <span class="control-panel__icon" aria-hidden="true">
-              <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                <use href="icons.svg#icon-stadium"></use>
-              </svg>
-            </span>
-            <span class="control-panel__label">Estadio</span>
-          </button>
-        </div>
-        <p class="control-card__hint">Selecciona un módulo para gestionar tu club con estilo noventero.</p>
-      </section>
+      <button
+        type="button"
+        class="sidebar-toggle"
+        id="sidebar-toggle"
+        aria-controls="sidebar-panel"
+        aria-expanded="false"
+      >
+        Panel de control retro
+      </button>
 
-      <section class="card club-card" id="club-card">
-        <header class="club-card__header">
-          <div class="club-card__title">
-            <img
-              id="club-logo"
-              class="club-card__logo"
-              src="assets/club-crest.svg"
-              alt="Escudo del club"
-              loading="lazy"
-            />
+      <aside class="page__sidebar" id="sidebar-panel">
+        <section class="card control-card" id="control-card">
+          <header class="control-card__header">
             <div>
-              <h2>Tu chiringuito futbolero</h2>
-              <p class="club-card__tagline">Gestiona el vestuario y decide el rumbo de cada jornada.</p>
+              <h2>Panel de control retro</h2>
+              <p class="control-card__tagline">Accede rápido a cada área del club como en los clásicos PC Fútbol.</p>
             </div>
+            <span class="control-card__badge">Modo manager</span>
+          </header>
+          <div class="control-panel" role="list">
+            <button
+              type="button"
+              class="control-panel__option control-panel__option--highlight"
+              data-panel-action="results"
+              data-modal-target="#modal-report"
+              disabled
+              aria-disabled="true"
+            >
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-results"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Resultados</span>
+            </button>
+            <button
+              type="button"
+              class="control-panel__option control-panel__option--highlight"
+              data-modal-target="#modal-league"
+            >
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-league"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Clasificación</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-calendar">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-calendar"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Calendario</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-lineup">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-lineup"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Alineación</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-tactics">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-tactics"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Tácticas</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-opponent">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-opponent"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Rival</span>
+            </button>
+            <button type="button" class="control-panel__option control-panel__option--highlight" data-modal-target="#modal-transfers">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-transfers"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Fichar</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-staff">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-staff"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Empleados</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-finances">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-finances"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Caja</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-decisions">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-decisions"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Decisiones</span>
+            </button>
+            <button type="button" class="control-panel__option" data-modal-target="#modal-stadium">
+              <span class="control-panel__icon" aria-hidden="true">
+                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                  <use href="icons.svg#icon-stadium"></use>
+                </svg>
+              </span>
+              <span class="control-panel__label">Estadio</span>
+            </button>
           </div>
-          <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
-        </header>
-        <dl class="club-stats" id="club-stats">
-          <div>
-            <dt>Club</dt>
-            <dd id="club-name"></dd>
-          </div>
-          <div>
-            <dt>Presupuesto</dt>
-            <dd id="club-budget"></dd>
-          </div>
-          <div>
-            <dt>Reputación</dt>
-            <dd id="club-reputation"></dd>
-          </div>
-          <div>
-            <dt>Moral media</dt>
-            <dd id="club-morale"></dd>
-          </div>
-        </dl>
-        <div class="club-actions">
-          <button type="button" class="club-action club-action--primary" data-modal-target="#modal-lineup">
-            Gestionar alineación
-          </button>
-          <button type="button" class="club-action" data-modal-target="#modal-league">
-            Clasificación liguera
-          </button>
-          <button type="button" class="club-action" data-modal-target="#modal-transfers">
-            Mercado de fichajes
-          </button>
-          <button type="button" class="club-action" id="save-game">Guardar/Continuar</button>
-        </div>
-        <p id="save-feedback" class="save-feedback" hidden></p>
-        <p id="save-version" class="save-version"></p>
-      </section>
+          <p class="control-card__hint">Selecciona un módulo para gestionar tu club con estilo noventero.</p>
+        </section>
+      </aside>
 
-      <section class="card match-card" id="match-card">
-        <header class="match-card__header">
-          <div>
-            <h2>Jornada en curso</h2>
-            <p class="match-card__tagline">Analiza al rival y ajusta tu plan antes del pitido inicial.</p>
-          </div>
-          <span class="match-card__badge" id="matchday-badge">Jornada 1</span>
-        </header>
-        <div class="match-card__body">
-          <dl class="match-summary">
+      <section class="page__content">
+        <section class="card club-card" id="club-card">
+          <header class="club-card__header">
+            <div class="club-card__title">
+              <img
+                id="club-logo"
+                class="club-card__logo"
+                src="assets/club-crest.svg"
+                alt="Escudo del club"
+                loading="lazy"
+              />
+              <div>
+                <h2>Tu chiringuito futbolero</h2>
+                <p class="club-card__tagline">Gestiona el vestuario y decide el rumbo de cada jornada.</p>
+              </div>
+            </div>
+            <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+          </header>
+          <dl class="club-stats" id="club-stats">
             <div>
-              <dt>Rival</dt>
-              <dd id="match-opponent-name">Rival misterioso</dd>
+              <dt>Club</dt>
+              <dd id="club-name"></dd>
             </div>
             <div>
-              <dt>Fortaleza estimada</dt>
-              <dd id="match-opponent-strength">68/100</dd>
+              <dt>Presupuesto</dt>
+              <dd id="club-budget"></dd>
             </div>
             <div>
-              <dt>Estadísticas</dt>
-              <dd id="match-opponent-record">Sin registros disponibles</dd>
+              <dt>Reputación</dt>
+              <dd id="club-reputation"></dd>
             </div>
             <div>
-              <dt>Sede</dt>
-              <dd id="match-location">Tu estadio</dd>
+              <dt>Moral media</dt>
+              <dd id="club-morale"></dd>
             </div>
           </dl>
+          <div class="club-actions">
+            <button type="button" class="club-action club-action--primary" data-modal-target="#modal-lineup">
+              Gestionar alineación
+            </button>
+            <button type="button" class="club-action" data-modal-target="#modal-league">
+              Clasificación liguera
+            </button>
+            <button type="button" class="club-action" data-modal-target="#modal-transfers">
+              Mercado de fichajes
+            </button>
+            <button type="button" class="club-action" id="save-game">Guardar/Continuar</button>
+          </div>
+          <p id="save-feedback" class="save-feedback" hidden></p>
+          <p id="save-version" class="save-version"></p>
+        </section>
 
-          <form class="game-form" id="game-form">
-            <label class="field">
-              <span class="field-label">Canallada previa</span>
-              <select id="decision-select" name="decision">
-                <option value="">Mantenerse pulcro (sin travesuras)</option>
-              </select>
-            </label>
-
-            <div class="field-grid">
-              <label class="field">
-                <span class="field-label">Táctica</span>
-                <select id="tactic-select" name="tactic">
-                  <option value="balanced">Equilibrada</option>
-                  <option value="attacking">Ofensiva</option>
-                  <option value="defensive">Defensiva</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field-label">Alineación</span>
-                <select id="formation-select" name="formation">
-                  <option value="4-4-2">4-4-2 Clásica</option>
-                  <option value="4-3-3">4-3-3 Picante</option>
-                  <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
-                  <option value="3-5-2">3-5-2 Superpoblado</option>
-                  <option value="5-3-2">5-3-2 Autobús Canalla</option>
-                  <option value="4-1-4-1">4-1-4-1 Presión Alta</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field-label">¿Jugamos en casa?</span>
-                <input type="checkbox" id="home-checkbox" name="home" />
-              </label>
-              <label class="field">
-                <span class="field-label">Fuerza rival</span>
-                <input
-                  type="range"
-                  id="opponent-strength"
-                  name="opponentStrength"
-                  min="40"
-                  max="95"
-                  step="1"
-                />
-                <output id="opponent-output" for="opponent-strength"></output>
-              </label>
-              <label class="field">
-                <span class="field-label">Semilla reproducible</span>
-                <input
-                  type="text"
-                  id="seed-input"
-                  name="seed"
-                  placeholder="ej. derby-123"
-                  autocomplete="off"
-                  inputmode="text"
-                  aria-describedby="seed-hint"
-                />
-                <span id="seed-hint" class="field-hint"
-                  >Si introduces una semilla podrás repetir exactamente este partido más adelante.</span
-                >
-              </label>
+        <section class="card match-card" id="match-card">
+          <header class="match-card__header">
+            <div>
+              <h2>Jornada en curso</h2>
+              <p class="match-card__tagline">Analiza al rival y ajusta tu plan antes del pitido inicial.</p>
             </div>
-
-            <div class="match-form__actions">
-              <p id="match-lineup-status" class="match-lineup-status"></p>
-              <div class="match-actions">
-                <button
-                  type="button"
-                  class="club-action club-action--primary"
-                  data-modal-target="#modal-lineup"
-                >
-                  Gestionar alineación
-                </button>
-                <button type="submit" class="play-button">Jugar jornada</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <div class="modal" id="modal-lineup" aria-hidden="true">
-        <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="lineup-title">
-          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar gestión de alineación">×</button>
-          <section class="lineup-panel">
-            <div class="lineup-panel__header">
-              <h2 id="lineup-title">Gestiona tu alineación</h2>
-              <p>Escoge 11 titulares y hasta 5 suplentes antes de lanzarte a la jornada.</p>
-            </div>
-            <div class="lineup-panel__summary">
-              <span id="lineup-count" class="lineup-summary"></span>
-              <span id="subs-count" class="lineup-summary"></span>
-              <button
-                id="lineup-autosort"
-                type="button"
-                class="lineup-auto-button"
-                data-modal-initial-focus
-              >
-                Autoordenar por posición
-              </button>
-            </div>
-            <div class="lineup-help">
-              <p>Consejos rápidos para mimar tu once:</p>
-              <ul>
-                <li>Cambia el rol con los botones Titular/Banquillo/Reserva y replica la tabla clásica de tus juegos favoritos.</li>
-                <li>Usa el botón «Vender» si necesitas aligerar nómina o abrir hueco.</li>
-                <li>Prueba el atajo «Autoordenar por posición» para reordenar titulares y banquillo en segundos.</li>
-              </ul>
-            </div>
-            <section class="lineup-legend" aria-label="Leyenda de abreviaturas de estadísticas">
-              <h3 class="lineup-legend__title">Leyenda rápida de estadísticas</h3>
-              <dl class="lineup-legend__list">
+            <span class="match-card__badge" id="matchday-badge">Jornada 1</span>
+          </header>
+          <div class="match-card__body">
+              <dl class="match-summary">
                 <div>
-                  <dt>EN</dt>
-                  <dd>Energía actual del jugador.</dd>
+                  <dt>Rival</dt>
+                  <dd id="match-opponent-name">Rival misterioso</dd>
                 </div>
                 <div>
-                  <dt>VE</dt>
-                  <dd>Velocidad punta y aceleración.</dd>
+                  <dt>Fortaleza estimada</dt>
+                  <dd id="match-opponent-strength">68/100</dd>
                 </div>
                 <div>
-                  <dt>RE</dt>
-                  <dd>Resistencia para aguantar todo el partido.</dd>
+                  <dt>Estadísticas</dt>
+                  <dd id="match-opponent-record">Sin registros disponibles</dd>
                 </div>
                 <div>
-                  <dt>AT</dt>
-                  <dd>Ataque y capacidad goleadora.</dd>
-                </div>
-                <div>
-                  <dt>DE</dt>
-                  <dd>Defensa y solidez al cortar jugadas.</dd>
-                </div>
-                <div>
-                  <dt>MI</dt>
-                  <dd>Mirada creativa para distribuir el juego (pase).</dd>
-                </div>
-                <div>
-                  <dt>CO</dt>
-                  <dd>Control y regate en espacios reducidos.</dd>
-                </div>
-                <div>
-                  <dt>LI</dt>
-                  <dd>Liderazgo dentro y fuera del campo.</dd>
-                </div>
-                <div>
-                  <dt>MO</dt>
-                  <dd>Moral general del futbolista.</dd>
+                  <dt>Sede</dt>
+                  <dd id="match-location">Tu estadio</dd>
                 </div>
               </dl>
-            </section>
-            <p id="lineup-error" class="form-error" hidden></p>
-            <div id="lineup-board" class="lineup-board">
-              <div class="lineup-table-wrapper">
-                <table class="lineup-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">N.º</th>
-                      <th scope="col">Jugador</th>
-                      <th scope="col"><abbr title="Energía">EN</abbr></th>
-                      <th scope="col"><abbr title="Velocidad">VE</abbr></th>
-                      <th scope="col"><abbr title="Resistencia">RE</abbr></th>
-                      <th scope="col"><abbr title="Ataque">AT</abbr></th>
-                      <th scope="col"><abbr title="Defensa">DE</abbr></th>
-                      <th scope="col"><abbr title="Visión de pase">MI</abbr></th>
-                      <th scope="col"><abbr title="Control y regate">CO</abbr></th>
-                      <th scope="col"><abbr title="Liderazgo">LI</abbr></th>
-                      <th scope="col"><abbr title="Moral">MO</abbr></th>
-                      <th scope="col">Rol</th>
-                      <th scope="col" class="lineup-table__actions-header">Gestión</th>
-                    </tr>
-                  </thead>
-                  <tbody id="lineup-table-body"></tbody>
-                </table>
-              </div>
+  
+              <form class="game-form" id="game-form">
+                <label class="field">
+                  <span class="field-label">Canallada previa</span>
+                  <select id="decision-select" name="decision">
+                    <option value="">Mantenerse pulcro (sin travesuras)</option>
+                  </select>
+                </label>
+  
+                <div class="field-grid">
+                  <label class="field">
+                    <span class="field-label">Táctica</span>
+                    <select id="tactic-select" name="tactic">
+                      <option value="balanced">Equilibrada</option>
+                      <option value="attacking">Ofensiva</option>
+                      <option value="defensive">Defensiva</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Alineación</span>
+                    <select id="formation-select" name="formation">
+                      <option value="4-4-2">4-4-2 Clásica</option>
+                      <option value="4-3-3">4-3-3 Picante</option>
+                      <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
+                      <option value="3-5-2">3-5-2 Superpoblado</option>
+                      <option value="5-3-2">5-3-2 Autobús Canalla</option>
+                      <option value="4-1-4-1">4-1-4-1 Presión Alta</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">¿Jugamos en casa?</span>
+                    <input type="checkbox" id="home-checkbox" name="home" />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Fuerza rival</span>
+                    <input
+                      type="range"
+                      id="opponent-strength"
+                      name="opponentStrength"
+                      min="40"
+                      max="95"
+                      step="1"
+                    />
+                    <output id="opponent-output" for="opponent-strength"></output>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Semilla reproducible</span>
+                    <input
+                      type="text"
+                      id="seed-input"
+                      name="seed"
+                      placeholder="ej. derby-123"
+                      autocomplete="off"
+                      inputmode="text"
+                      aria-describedby="seed-hint"
+                    />
+                    <span id="seed-hint" class="field-hint"
+                      >Si introduces una semilla podrás repetir exactamente este partido más adelante.</span
+                    >
+                  </label>
+                </div>
+  
+                <div class="match-form__actions">
+                  <p id="match-lineup-status" class="match-lineup-status"></p>
+                  <div class="match-actions">
+                    <button
+                      type="button"
+                      class="club-action club-action--primary"
+                      data-modal-target="#modal-lineup"
+                    >
+                      Gestionar alineación
+                    </button>
+                    <button type="submit" class="play-button">Jugar jornada</button>
+                  </div>
+                </div>
+              </form>
             </div>
           </section>
+        </section>
+  
+        <div class="modal" id="modal-lineup" aria-hidden="true">
+          <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="lineup-title">
+            <button type="button" class="modal__close" data-modal-close aria-label="Cerrar gestión de alineación">×</button>
+            <section class="lineup-panel">
+              <div class="lineup-panel__header">
+                <h2 id="lineup-title">Gestiona tu alineación</h2>
+                <p>Escoge 11 titulares y hasta 5 suplentes antes de lanzarte a la jornada.</p>
+              </div>
+              <div class="lineup-panel__summary">
+                <span id="lineup-count" class="lineup-summary"></span>
+                <span id="subs-count" class="lineup-summary"></span>
+                <button
+                  id="lineup-autosort"
+                  type="button"
+                  class="lineup-auto-button"
+                  data-modal-initial-focus
+                >
+                  Autoordenar por posición
+                </button>
+              </div>
+              <div class="lineup-help">
+                <p>Consejos rápidos para mimar tu once:</p>
+                <ul>
+                  <li>Cambia el rol con los botones Titular/Banquillo/Reserva y replica la tabla clásica de tus juegos favoritos.</li>
+                  <li>Usa el botón «Vender» si necesitas aligerar nómina o abrir hueco.</li>
+                  <li>Prueba el atajo «Autoordenar por posición» para reordenar titulares y banquillo en segundos.</li>
+                </ul>
+              </div>
+              <section class="lineup-legend" aria-label="Leyenda de abreviaturas de estadísticas">
+                <h3 class="lineup-legend__title">Leyenda rápida de estadísticas</h3>
+                <dl class="lineup-legend__list">
+                  <div>
+                    <dt>EN</dt>
+                    <dd>Energía actual del jugador.</dd>
+                  </div>
+                  <div>
+                    <dt>VE</dt>
+                    <dd>Velocidad punta y aceleración.</dd>
+                  </div>
+                  <div>
+                    <dt>RE</dt>
+                    <dd>Resistencia para aguantar todo el partido.</dd>
+                  </div>
+                  <div>
+                    <dt>AT</dt>
+                    <dd>Ataque y capacidad goleadora.</dd>
+                  </div>
+                  <div>
+                    <dt>DE</dt>
+                    <dd>Defensa y solidez al cortar jugadas.</dd>
+                  </div>
+                  <div>
+                    <dt>MI</dt>
+                    <dd>Mirada creativa para distribuir el juego (pase).</dd>
+                  </div>
+                  <div>
+                    <dt>CO</dt>
+                    <dd>Control y regate en espacios reducidos.</dd>
+                  </div>
+                  <div>
+                    <dt>LI</dt>
+                    <dd>Liderazgo dentro y fuera del campo.</dd>
+                  </div>
+                  <div>
+                    <dt>MO</dt>
+                    <dd>Moral general del futbolista.</dd>
+                  </div>
+                </dl>
+              </section>
+              <p id="lineup-error" class="form-error" hidden></p>
+              <div id="lineup-board" class="lineup-board">
+                <div class="lineup-table-wrapper">
+                  <table class="lineup-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">N.º</th>
+                        <th scope="col">Jugador</th>
+                        <th scope="col"><abbr title="Energía">EN</abbr></th>
+                        <th scope="col"><abbr title="Velocidad">VE</abbr></th>
+                        <th scope="col"><abbr title="Resistencia">RE</abbr></th>
+                        <th scope="col"><abbr title="Ataque">AT</abbr></th>
+                        <th scope="col"><abbr title="Defensa">DE</abbr></th>
+                        <th scope="col"><abbr title="Visión de pase">MI</abbr></th>
+                        <th scope="col"><abbr title="Control y regate">CO</abbr></th>
+                        <th scope="col"><abbr title="Liderazgo">LI</abbr></th>
+                        <th scope="col"><abbr title="Moral">MO</abbr></th>
+                        <th scope="col">Rol</th>
+                        <th scope="col" class="lineup-table__actions-header">Gestión</th>
+                      </tr>
+                    </thead>
+                    <tbody id="lineup-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
         </div>
       </div>
 
