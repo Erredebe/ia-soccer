@@ -12,6 +12,12 @@
   - icon-decisions
   - icon-stadium
   - icon-club-shield
+  - icon-goal
+  - icon-penalty
+  - icon-yellow-card
+  - icon-red-card
+  - icon-injury
+  - icon-substitution
 -->
 <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
   <symbol id="icon-results" viewBox="0 0 24 24">
@@ -82,5 +88,39 @@
   <symbol id="icon-club-shield" viewBox="0 0 24 24">
     <path d="M12 3 5 6v6c0 4.4 3 7.4 7 9 4-1.6 7-4.6 7-9V6l-7-3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
     <path d="M9 11h6l-3 6Z" fill="currentColor" />
+  </symbol>
+  <symbol id="icon-goal" viewBox="0 0 24 24">
+    <rect x="3.5" y="7" width="17" height="11" rx="1.5" ry="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <path d="M6 10h12M6 13h12M6 16h12" stroke="currentColor" stroke-width="0.9" stroke-linecap="square" />
+    <path d="M9 10v6M12 10v6M15 10v6" stroke="currentColor" stroke-width="0.9" stroke-linecap="square" />
+    <circle cx="12" cy="13" r="1.4" fill="currentColor" />
+    <rect x="4.5" y="18" width="14" height="1.5" fill="currentColor" />
+  </symbol>
+  <symbol id="icon-penalty" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <circle cx="12" cy="12" r="1.7" fill="currentColor" />
+    <path d="M6 6h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" />
+    <path d="M12 4v4M12 16v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" />
+  </symbol>
+  <symbol id="icon-yellow-card" viewBox="0 0 24 24">
+    <rect x="7" y="4" width="10" height="16" rx="1.2" fill="currentColor" stroke="currentColor" stroke-width="1.2" />
+    <path d="M9.5 7.5h5M9.5 11h5M9.5 14.5h3" stroke="#0f172a" stroke-opacity="0.28" stroke-width="1.1" stroke-linecap="square" />
+  </symbol>
+  <symbol id="icon-red-card" viewBox="0 0 24 24">
+    <rect x="7" y="4" width="10" height="16" rx="1.2" fill="currentColor" stroke="currentColor" stroke-width="1.2" />
+    <path d="M9.5 7.5h5M9.5 11h5M9.5 14.5h3" stroke="#0f172a" stroke-opacity="0.28" stroke-width="1.1" stroke-linecap="square" />
+  </symbol>
+  <symbol id="icon-injury" viewBox="0 0 24 24">
+    <rect x="6" y="9" width="12" height="6" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <path d="M4 12h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" />
+    <path d="M9 6h6l-1 3H10Z" fill="currentColor" />
+    <path d="M12 9v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" />
+    <path d="M9 15h6" stroke="#0f172a" stroke-opacity="0.28" stroke-width="1.1" stroke-linecap="square" />
+  </symbol>
+  <symbol id="icon-substitution" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <path d="M9 9h5.5l-1.8-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="round" />
+    <path d="M15 15H9.5l1.8 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="round" />
+    <path d="M9.5 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="square" />
   </symbol>
 </svg>
