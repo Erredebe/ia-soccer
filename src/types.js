@@ -333,6 +333,7 @@
  * @property {number} budget
  * @property {number} stadiumCapacity
  * @property {number} reputation
+ * @property {string=} logoUrl
  * @property {Player[]} squad
  * @property {number} season
  * @property {ClubObjectives} objectives

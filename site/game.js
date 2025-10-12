@@ -52,6 +52,7 @@ const clubNameEl = document.querySelector('#club-name');
 const clubBudgetEl = document.querySelector('#club-budget');
 const clubReputationEl = document.querySelector('#club-reputation');
 const clubMoraleEl = document.querySelector('#club-morale');
+const clubLogoEl = document.querySelector('#club-logo');
 
 const leagueMatchdayEl = document.querySelector('#league-matchday');
 const leagueTableBody = document.querySelector('#league-table-body');
@@ -149,6 +150,18 @@ const numberFormatter = new Intl.NumberFormat('es-ES', {
   maximumFractionDigits: 0,
 });
 
+const DEFAULT_CLUB_LOGO = 'assets/club-crest.svg';
+
+if (clubLogoEl) {
+  clubLogoEl.addEventListener('error', () => {
+    if (clubLogoEl.dataset.logoSrc === DEFAULT_CLUB_LOGO) {
+      return;
+    }
+    clubLogoEl.dataset.logoSrc = DEFAULT_CLUB_LOGO;
+    clubLogoEl.src = DEFAULT_CLUB_LOGO;
+  });
+}
+
 const STARTERS_LIMIT = 11;
 const SUBS_LIMIT = 5;
 const POSITION_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
@@ -167,6 +180,26 @@ function describeAvailability(player) {
     return `Sancionado (${availability.suspensionMatches} jornada${availability.suspensionMatches > 1 ? 's' : ''})`;
   }
   return '';
+}
+
+function resolveClubLogoUrl(club) {
+  if (!club || typeof club.logoUrl !== 'string') {
+    return DEFAULT_CLUB_LOGO;
+  }
+  const trimmed = club.logoUrl.trim();
+  return trimmed.length > 0 ? trimmed : DEFAULT_CLUB_LOGO;
+}
+
+function updateClubLogoDisplay() {
+  if (!clubLogoEl) {
+    return;
+  }
+  const resolved = resolveClubLogoUrl(clubState);
+  if (clubLogoEl.dataset.logoSrc !== resolved) {
+    clubLogoEl.dataset.logoSrc = resolved;
+    clubLogoEl.src = resolved;
+  }
+  clubLogoEl.alt = `Escudo de ${clubState.name}`;
 }
 
 function buildInitialConfig(club) {
@@ -1080,6 +1113,7 @@ function updateClubSummary() {
   clubBudgetEl.textContent = numberFormatter.format(clubState.budget);
   clubReputationEl.textContent = `${clubState.reputation}`;
   clubMoraleEl.textContent = formatMorale(averageMorale(clubState));
+  updateClubLogoDisplay();
   refreshControlPanel();
 }
 
@@ -1729,6 +1763,7 @@ function startNewSeason() {
 function applyLoadedState(saved) {
   clubState = {
     ...saved.club,
+    logoUrl: resolveClubLogoUrl(saved.club),
     weeklyWageBill: calculateWeeklyWageBill(saved.club.squad),
   };
   leagueState = saved.league;
@@ -1804,6 +1839,7 @@ form.addEventListener('submit', (event) => {
 
   clubState = {
     ...report.updatedClub,
+    logoUrl: resolveClubLogoUrl(report.updatedClub),
     weeklyWageBill: refreshedWageBill,
     league: updatedLeague,
   };

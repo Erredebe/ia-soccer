@@ -760,6 +760,7 @@ export function createExampleClub() {
     budget: 1200000,
     stadiumCapacity: 23000,
     reputation: 5,
+    logoUrl: 'assets/club-crest.svg',
     squad,
     season: 1,
     objectives: {
