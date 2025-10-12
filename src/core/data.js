@@ -19,7 +19,54 @@
 /** @typedef {import('../types.js').InfrastructureState} InfrastructureState */
 /** @typedef {import('../types.js').OperatingExpenses} OperatingExpenses */
 
-export const TOTAL_MATCHDAYS = 22;
+export const MIN_LEAGUE_SIZE = 8;
+export const MAX_LEAGUE_SIZE = 20;
+export const DEFAULT_LEAGUE_SIZE = 12;
+export const DEFAULT_LEAGUE_DIFFICULTY = 'canalla';
+
+export const LEAGUE_DIFFICULTIES = Object.freeze([
+  { id: 'relajada', label: 'Relajada', multiplier: 0.85 },
+  { id: 'canalla', label: 'Canalla', multiplier: 1 },
+  { id: 'legendaria', label: 'Legendaria', multiplier: 1.2 },
+]);
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function calculateTotalMatchdays(rivalCount = DEFAULT_LEAGUE_SIZE - 1) {
+  if (!Number.isFinite(rivalCount) || rivalCount <= 0) {
+    return calculateTotalMatchdays(DEFAULT_LEAGUE_SIZE - 1);
+  }
+  const sanitized = Math.max(1, Math.trunc(rivalCount));
+  return sanitized * 2;
+}
+
+export const DEFAULT_TOTAL_MATCHDAYS = calculateTotalMatchdays();
+
+function resolveLeagueSizeCandidate(candidate, rivals = []) {
+  if (Number.isFinite(candidate)) {
+    return clampNumber(Math.trunc(candidate), MIN_LEAGUE_SIZE, MAX_LEAGUE_SIZE);
+  }
+  if (typeof candidate === 'string' && candidate.trim().length > 0) {
+    const parsed = Number.parseInt(candidate, 10);
+    if (Number.isFinite(parsed)) {
+      return clampNumber(Math.trunc(parsed), MIN_LEAGUE_SIZE, MAX_LEAGUE_SIZE);
+    }
+  }
+  const rivalCount = Array.isArray(rivals) ? rivals.filter((name) => typeof name === 'string' && name.trim().length > 0).length : 0;
+  const fallback = rivalCount > 0 ? rivalCount + 1 : DEFAULT_LEAGUE_SIZE;
+  return clampNumber(Math.trunc(fallback), MIN_LEAGUE_SIZE, MAX_LEAGUE_SIZE);
+}
+
+export function resolveLeagueDifficulty(input) {
+  const fallback = LEAGUE_DIFFICULTIES.find((entry) => entry.id === DEFAULT_LEAGUE_DIFFICULTY);
+  if (!input || typeof input !== 'string') {
+    return fallback ?? LEAGUE_DIFFICULTIES[0];
+  }
+  const match = LEAGUE_DIFFICULTIES.find((entry) => entry.id === input.trim());
+  return match ?? (fallback ?? LEAGUE_DIFFICULTIES[0]);
+}
 export const DEFAULT_CLUB_NAME = 'Atlético Bar Callejero';
 export const DEFAULT_STADIUM_NAME = 'Campo del Callejón';
 export const DEFAULT_CLUB_CITY = 'Lavapiés';
@@ -187,7 +234,10 @@ export function selectRandomLeagueRivals(count = 11, options = {}) {
  * @returns {string[]}
  */
 export function normaliseLeagueRivals(rivals, options = {}) {
-  const target = Number.isFinite(options.count) && options.count ? Math.max(1, Math.trunc(options.count)) : 11;
+  const defaultTarget = DEFAULT_LEAGUE_SIZE - 1;
+  const target = Number.isFinite(options.count) && options.count
+    ? Math.max(1, Math.trunc(options.count))
+    : defaultTarget;
   const catalog = Array.isArray(options.catalog) ? options.catalog : LEAGUE_RIVAL_CATALOG;
   const exclude = Array.isArray(options.exclude) ? options.exclude : [];
   const rng = typeof options.rng === 'function' ? options.rng : Math.random;
@@ -604,22 +654,30 @@ export function estimatePlayerValue(player) {
  * @returns {LeagueState}
  */
 export function createExampleLeague(clubName, options = {}) {
-  const rivalCount = 11;
+  const leagueSize = resolveLeagueSizeCandidate(options.leagueSize, options.rivals);
+  const rivalCount = Math.max(1, leagueSize - 1);
   const rng = typeof options.rng === 'function' ? options.rng : Math.random;
   const rivals = normaliseLeagueRivals(options.rivals, {
     count: rivalCount,
     rng,
     exclude: [clubName],
   });
-  const table = [clubName, ...rivals].map((name) => createLeagueStanding(name));
+  const clubs = [clubName, ...rivals];
+  const table = clubs.map((name) => createLeagueStanding(name));
   const trimmedCity = options.city?.trim();
   const leagueName =
     trimmedCity && trimmedCity.length > 0 ? `Liga Canalla de ${trimmedCity}` : 'Liga Canalla PCF';
+  const difficulty = resolveLeagueDifficulty(options.difficulty);
+  const totalMatchdays = calculateTotalMatchdays(rivalCount);
   return {
     name: leagueName,
     matchDay: 0,
     table,
     rivals,
+    totalMatchdays,
+    size: leagueSize,
+    difficulty: difficulty.id,
+    difficultyMultiplier: difficulty.multiplier,
   };
 }
 
@@ -743,7 +801,17 @@ function resolveClubColor(candidate, fallback) {
 
 /**
  * Construye un club de ejemplo con plantilla, finanzas y contexto narrativo.
- * @param {{ name?: string; stadiumName?: string; city?: string; primaryColor?: string; secondaryColor?: string; logoUrl?: string }} [options]
+ * @param {{
+ *   name?: string;
+ *   stadiumName?: string;
+ *   city?: string;
+ *   primaryColor?: string;
+ *   secondaryColor?: string;
+ *   logoUrl?: string;
+ *   leagueSize?: number | string;
+ *   leagueDifficulty?: string;
+ *   leagueRivals?: string[];
+ * }} [options]
  * @returns {ClubState}
  */
 export function createExampleClub(options = {}) {
@@ -1032,6 +1100,13 @@ export function createExampleClub(options = {}) {
     typeof options.logoUrl === 'string' && options.logoUrl.trim().length > 0
       ? options.logoUrl.trim()
       : DEFAULT_CLUB_LOGO;
+  const league = createExampleLeague(name, {
+    city,
+    leagueSize: options.leagueSize,
+    difficulty: options.leagueDifficulty,
+    rivals: options.leagueRivals,
+  });
+
   return {
     name,
     stadiumName,
@@ -1049,7 +1124,7 @@ export function createExampleClub(options = {}) {
       cupRun: true,
     },
     weeklyWageBill: squad.reduce((acc, player) => acc + player.salary / 4, 0),
-    league: createExampleLeague(name, { city }),
+    league,
     sponsors: createExampleSponsors({ city, stadiumName }),
     tvDeal: createExampleTvDeal(),
     merchandising: createExampleMerchandising(),
@@ -1067,6 +1142,7 @@ export function createDefaultMatchConfig() {
   return {
     home: true,
     opponentStrength: 68,
+    difficultyMultiplier: 1,
     tactic: 'balanced',
     formation: '4-4-2',
     startingLineup: [],

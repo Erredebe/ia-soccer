@@ -13,7 +13,12 @@ import {
   listCanallaDecisions,
   selectRandomLeagueRivals,
   updateLeagueTableAfterMatch,
-  TOTAL_MATCHDAYS,
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_LEAGUE_DIFFICULTY,
+  MIN_LEAGUE_SIZE,
+  MAX_LEAGUE_SIZE,
+  calculateTotalMatchdays,
+  resolveLeagueDifficulty,
   DEFAULT_CLUB_NAME,
   DEFAULT_STADIUM_NAME,
   DEFAULT_CLUB_CITY,
@@ -164,6 +169,8 @@ const stadiumNoteEl = document.querySelector('#stadium-note');
 
 const leagueConfigModal = document.querySelector('#modal-league-config');
 const leagueConfigForm = document.querySelector('#league-config-form');
+const leagueSizeSelect = document.querySelector('#league-size-select');
+const leagueDifficultySelect = document.querySelector('#league-difficulty-select');
 const leagueCatalogEl = document.querySelector('#league-catalog');
 const leagueSelectionCountEl = document.querySelector('#league-selection-count');
 const leagueRandomButton = document.querySelector('#league-randomize');
@@ -206,7 +213,132 @@ const booleanInstructionText = {
   },
 };
 
-const RIVAL_TARGET_COUNT = Math.max(1, Math.round(TOTAL_MATCHDAYS / 2));
+const defaultDifficultyInfo = resolveLeagueDifficulty(DEFAULT_LEAGUE_DIFFICULTY);
+
+let leagueSettings = {
+  leagueSize: DEFAULT_LEAGUE_SIZE,
+  difficulty: defaultDifficultyInfo.id,
+  difficultyMultiplier: defaultDifficultyInfo.multiplier,
+  totalMatchdays: calculateTotalMatchdays(DEFAULT_LEAGUE_SIZE - 1),
+};
+
+function clampLeagueSize(value) {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_LEAGUE_SIZE;
+  }
+  const truncated = Math.trunc(value);
+  return Math.max(MIN_LEAGUE_SIZE, Math.min(MAX_LEAGUE_SIZE, truncated));
+}
+
+function parseLeagueSizeValue(raw) {
+  const base = leagueSettings?.leagueSize ?? DEFAULT_LEAGUE_SIZE;
+  if (raw === undefined || raw === null) {
+    return base;
+  }
+  const parsed = typeof raw === 'number' ? raw : Number.parseInt(String(raw), 10);
+  if (!Number.isFinite(parsed)) {
+    return base;
+  }
+  return clampLeagueSize(parsed);
+}
+
+function getActiveLeagueSize() {
+  return leagueSettings?.leagueSize ?? DEFAULT_LEAGUE_SIZE;
+}
+
+function getSelectedLeagueSize() {
+  if (leagueSizeSelect instanceof HTMLSelectElement) {
+    return parseLeagueSizeValue(leagueSizeSelect.value);
+  }
+  return getActiveLeagueSize();
+}
+
+function getTargetRivalCount() {
+  return Math.max(1, getSelectedLeagueSize() - 1);
+}
+
+function deriveLeagueSettings(league) {
+  if (!league) {
+    return { ...leagueSettings };
+  }
+  const difficultyInfo = resolveLeagueDifficulty(
+    typeof league.difficulty === 'string' && league.difficulty.length > 0
+      ? league.difficulty
+      : leagueSettings.difficulty ?? DEFAULT_LEAGUE_DIFFICULTY
+  );
+  const sizeSource = Number.isFinite(league.size) && league.size
+    ? league.size
+    : Array.isArray(league.rivals) && league.rivals.length > 0
+      ? league.rivals.length + 1
+      : Array.isArray(league.table) && league.table.length > 0
+        ? league.table.length
+        : leagueSettings.leagueSize ?? DEFAULT_LEAGUE_SIZE;
+  const leagueSize = clampLeagueSize(sizeSource);
+  const rivalCount = Array.isArray(league.rivals) && league.rivals.length > 0
+    ? league.rivals.length
+    : Math.max(1, leagueSize - 1);
+  const totalMatchdays =
+    typeof league.totalMatchdays === 'number' && Number.isFinite(league.totalMatchdays)
+      ? Math.max(1, Math.trunc(league.totalMatchdays))
+      : calculateTotalMatchdays(rivalCount);
+  const difficultyMultiplier =
+    typeof league.difficultyMultiplier === 'number' && Number.isFinite(league.difficultyMultiplier)
+      ? league.difficultyMultiplier
+      : difficultyInfo.multiplier;
+  return {
+    leagueSize,
+    difficulty: difficultyInfo.id,
+    difficultyMultiplier,
+    totalMatchdays,
+  };
+}
+
+function getTotalMatchdays() {
+  if (typeof leagueSettings?.totalMatchdays === 'number' && Number.isFinite(leagueSettings.totalMatchdays)) {
+    return Math.max(1, Math.trunc(leagueSettings.totalMatchdays));
+  }
+  if (leagueState) {
+    const derived = deriveLeagueSettings(leagueState);
+    leagueSettings = { ...leagueSettings, ...derived };
+    return derived.totalMatchdays;
+  }
+  return calculateTotalMatchdays(DEFAULT_LEAGUE_SIZE - 1);
+}
+
+function getDifficultyInfo() {
+  return resolveLeagueDifficulty(leagueSettings?.difficulty ?? DEFAULT_LEAGUE_DIFFICULTY);
+}
+
+function getDifficultyMultiplier() {
+  if (typeof leagueSettings?.difficultyMultiplier === 'number' && Number.isFinite(leagueSettings.difficultyMultiplier)) {
+    return leagueSettings.difficultyMultiplier;
+  }
+  const info = getDifficultyInfo();
+  leagueSettings = { ...leagueSettings, difficultyMultiplier: info.multiplier };
+  return info.multiplier;
+}
+
+function getDifficultyLabel() {
+  return getDifficultyInfo().label;
+}
+
+function syncLeagueSelectorsFromSettings() {
+  if (leagueSizeSelect instanceof HTMLSelectElement) {
+    leagueSizeSelect.value = String(leagueSettings.leagueSize);
+  }
+  if (leagueDifficultySelect instanceof HTMLSelectElement) {
+    leagueDifficultySelect.value = leagueSettings.difficulty;
+  }
+  updateLeagueSelectionCountDisplay();
+}
+
+function updateLeagueSettingsFromState(league, options = {}) {
+  const derived = deriveLeagueSettings(league);
+  leagueSettings = derived;
+  if (options.syncSelectors) {
+    syncLeagueSelectorsFromSettings();
+  }
+}
 
 const numberFormatter = new Intl.NumberFormat('es-ES', {
   style: 'currency',
@@ -377,12 +509,14 @@ function buildInitialConfig(club) {
   const baseConfig = createDefaultMatchConfig();
   const instructions = { ...createDefaultInstructions(), ...(baseConfig.instructions ?? {}) };
   const defaultLineup = createDefaultLineup(club);
+  const leagueInfo = deriveLeagueSettings(club.league ?? leagueState);
   return {
     ...baseConfig,
     startingLineup: defaultLineup.starters,
     substitutes: defaultLineup.substitutes,
     instructions,
     seed: typeof baseConfig.seed === 'string' ? baseConfig.seed : '',
+    difficultyMultiplier: leagueInfo.difficultyMultiplier,
   };
 }
 
@@ -469,6 +603,7 @@ function rebuildClubState(identity) {
   const freshClub = createExampleClub(resolvedIdentity);
   clubState = { ...freshClub, ...resolvedIdentity };
   leagueState = freshClub.league;
+  updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   transferMarketState = createExampleTransferMarket(freshClub);
   configState = buildInitialConfig(freshClub);
   opponentRotation = computeOpponentRotation(leagueState, freshClub.name);
@@ -487,6 +622,7 @@ function rebuildClubState(identity) {
 
 let clubState = createExampleClub();
 let leagueState = clubState.league;
+updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
 let transferMarketState = createExampleTransferMarket(clubState);
 let configState = buildInitialConfig(clubState);
 let transferMessageTimeout;
@@ -668,8 +804,10 @@ function renderCalendarModal() {
     return;
   }
 
-  if (leagueState.matchDay >= TOTAL_MATCHDAYS) {
-    calendarNoteEl.textContent = `Temporada completada tras ${TOTAL_MATCHDAYS} jornadas.`;
+  const totalMatchdays = getTotalMatchdays();
+
+  if (leagueState.matchDay >= totalMatchdays) {
+    calendarNoteEl.textContent = `Temporada completada tras ${totalMatchdays} jornadas.`;
     return;
   }
 
@@ -679,7 +817,7 @@ function renderCalendarModal() {
     return;
   }
 
-  const remaining = TOTAL_MATCHDAYS - leagueState.matchDay;
+  const remaining = Math.max(0, totalMatchdays - leagueState.matchDay);
   const itemsToShow = Math.min(6, remaining);
 
   for (let offset = 0; offset < itemsToShow; offset += 1) {
@@ -921,7 +1059,9 @@ function updateLeagueSelectionCountDisplay() {
     return;
   }
   const selected = leagueCatalogEl.querySelectorAll("input[type='checkbox'][name='league-rival']:checked").length;
-  leagueSelectionCountEl.textContent = `${selected}/${RIVAL_TARGET_COUNT} rivales elegidos`;
+  const target = getTargetRivalCount();
+  const totalMatchdaysPreview = calculateTotalMatchdays(target);
+  leagueSelectionCountEl.textContent = `${selected}/${target} rivales elegidos · ${totalMatchdaysPreview} jornadas`;
 }
 
 function hideLeagueConfigError() {
@@ -995,28 +1135,42 @@ function getSelectedLeagueRivals() {
 }
 
 function prepareLeagueConfigModal() {
+  syncLeagueSelectorsFromSettings();
   populateLeagueCatalog();
   hideLeagueConfigError();
   updateLeagueSelectionCountDisplay();
 }
 
 function applyLeagueConfiguration(rivals) {
+  const leagueSize = getSelectedLeagueSize();
+  const targetCount = Math.max(1, leagueSize - 1);
+  const difficultyValue =
+    leagueDifficultySelect instanceof HTMLSelectElement
+      ? leagueDifficultySelect.value
+      : leagueSettings.difficulty;
+  const difficultyInfo = resolveLeagueDifficulty(difficultyValue);
   const normalised = normaliseLeagueRivals(rivals, {
-    count: RIVAL_TARGET_COUNT,
+    count: targetCount,
     exclude: [clubState.name],
   });
   const newLeague = createExampleLeague(clubState.name, {
     city: clubState.city,
+    leagueSize,
+    difficulty: difficultyInfo.id,
     rivals: normalised,
   });
   const updatedLeague = { ...newLeague, rivals: normalised };
   leagueState = updatedLeague;
+  updateLeagueSettingsFromState(updatedLeague, { syncSelectors: true });
   clubState = { ...clubState, league: updatedLeague };
+  configState = { ...configState, difficultyMultiplier: leagueSettings.difficultyMultiplier };
   opponentRotation = computeOpponentRotation(updatedLeague, clubState.name);
   clearReport();
   renderLeagueTable();
   updateMatchSummary();
-  showLoadNotice('Liga regenerada con los rivales seleccionados. ¡Arranca una nueva temporada!');
+  showLoadNotice(
+    `Liga regenerada: ${leagueSize} clubes, dificultad ${difficultyInfo.label}. ¡Arranca una nueva temporada!`
+  );
   persistState('silent');
 }
 
@@ -1662,12 +1816,13 @@ function formatOpponentRecord(standing) {
 }
 
 function updateMatchSummary() {
+  const totalMatchdays = getTotalMatchdays();
   if (matchdayBadgeEl) {
-    if (leagueState && leagueState.matchDay >= TOTAL_MATCHDAYS) {
+    if (leagueState && leagueState.matchDay >= totalMatchdays) {
       matchdayBadgeEl.textContent = `Temporada ${clubState.season} completada`;
     } else {
       const nextMatchday = leagueState ? leagueState.matchDay + 1 : 1;
-      matchdayBadgeEl.textContent = `Jornada ${nextMatchday} de ${TOTAL_MATCHDAYS}`;
+      matchdayBadgeEl.textContent = `Jornada ${nextMatchday} de ${totalMatchdays}`;
     }
   }
 
@@ -1679,9 +1834,17 @@ function updateMatchSummary() {
   if (matchOpponentRecordEl) {
     matchOpponentRecordEl.textContent = formatOpponentRecord(opponent);
   }
+  const difficultyMultiplier = getDifficultyMultiplier();
+  if (configState.difficultyMultiplier !== difficultyMultiplier) {
+    configState = { ...configState, difficultyMultiplier };
+  }
   if (matchOpponentStrengthEl) {
-    const strengthValue = opponentStrength?.value ?? `${configState.opponentStrength}`;
-    matchOpponentStrengthEl.textContent = `${strengthValue}/100`;
+    const baseStrength = opponentStrength instanceof HTMLInputElement
+      ? Number.parseInt(opponentStrength.value, 10)
+      : configState.opponentStrength;
+    const numericBase = Number.isFinite(baseStrength) ? baseStrength : configState.opponentStrength;
+    const adjustedStrength = Math.min(100, Math.round(numericBase * difficultyMultiplier));
+    matchOpponentStrengthEl.textContent = `${adjustedStrength}/100 · ${getDifficultyLabel()}`;
   }
   if (matchLocationEl) {
     matchLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
@@ -1703,10 +1866,13 @@ function describeOpponentStrength(value) {
 }
 
 function updateOpponentOutput() {
-  const numericValue = Number.parseInt(opponentStrength.value, 10);
+  const rawValue = Number.parseInt(opponentStrength.value, 10);
+  const numericValue = Number.isFinite(rawValue) ? rawValue : configState.opponentStrength;
+  const multiplier = getDifficultyMultiplier();
+  const adjustedValue = Math.min(100, Math.round(numericValue * multiplier));
   opponentOutput.value = String(numericValue);
-  opponentOutput.textContent = `${numericValue} (${describeOpponentStrength(numericValue)})`;
-  opponentStrength.title = `Fortaleza rival estimada: ${describeOpponentStrength(numericValue)}`;
+  opponentOutput.textContent = `${numericValue} base · ${adjustedValue} real (${describeOpponentStrength(adjustedValue)})`;
+  opponentStrength.title = `Fortaleza rival con dificultad ${getDifficultyLabel()}: ${adjustedValue}/100`;
   updateMatchSummary();
 }
 
@@ -1747,8 +1913,8 @@ function renderLeagueTable() {
   if (leagueMatchdayEl) {
     if (leagueState.matchDay === 0) {
       leagueMatchdayEl.textContent = 'Pretemporada';
-    } else if (leagueState.matchDay >= TOTAL_MATCHDAYS) {
-      leagueMatchdayEl.textContent = `Jornada final (${TOTAL_MATCHDAYS})`;
+    } else if (leagueState.matchDay >= getTotalMatchdays()) {
+      leagueMatchdayEl.textContent = `Jornada final (${getTotalMatchdays()})`;
     } else {
       leagueMatchdayEl.textContent = `Jornada ${leagueState.matchDay}`;
     }
@@ -2291,7 +2457,7 @@ function renderSeasonSummary() {
   if (!seasonSummarySection) {
     return;
   }
-  if (!leagueState || leagueState.matchDay < TOTAL_MATCHDAYS) {
+  if (!leagueState || leagueState.matchDay < getTotalMatchdays()) {
     seasonSummarySection.hidden = true;
     if (newSeasonButton) {
       newSeasonButton.hidden = true;
@@ -2362,7 +2528,11 @@ function persistState(reason = 'auto') {
 function startNewSeason() {
   const nextSeason = clubState.season + 1;
   const refreshedSquad = clubState.squad.map((player) => resetPlayerForNewSeason(player));
-  const newLeague = createExampleLeague(clubState.name, { city: clubState.city });
+  const newLeague = createExampleLeague(clubState.name, {
+    city: clubState.city,
+    leagueSize: leagueSettings.leagueSize,
+    difficulty: leagueSettings.difficulty,
+  });
   opponentRotation = computeOpponentRotation(newLeague, clubState.name);
 
   clubState = {
@@ -2374,6 +2544,7 @@ function startNewSeason() {
     weeklyWageBill: calculateWeeklyWageBill(refreshedSquad),
   };
   leagueState = newLeague;
+  updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   transferMarketState = createExampleTransferMarket(clubState);
   configState = buildInitialConfig(clubState);
 
@@ -2405,10 +2576,19 @@ function applyLoadedState(saved) {
           .map((entry) => entry.club)
       : [];
   const cleanedRivals = normaliseLeagueRivals(initialRivals, {
-    count: RIVAL_TARGET_COUNT,
+    count: Math.max(1, deriveLeagueSettings(loadedLeague).leagueSize - 1),
     exclude: [clubState.name],
   });
-  leagueState = { ...loadedLeague, rivals: cleanedRivals };
+  const loadedSettings = deriveLeagueSettings(loadedLeague);
+  leagueState = {
+    ...loadedLeague,
+    rivals: cleanedRivals,
+    size: loadedSettings.leagueSize,
+    totalMatchdays: loadedSettings.totalMatchdays,
+    difficulty: loadedSettings.difficulty,
+    difficultyMultiplier: loadedSettings.difficultyMultiplier,
+  };
+  updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
   clubState = { ...clubState, league: leagueState };
   transferMarketState = saved.transferMarket.length
     ? saved.transferMarket
@@ -2426,6 +2606,7 @@ function applyLoadedState(saved) {
     ...saved.config,
     instructions: { ...createDefaultInstructions(), ...(saved.config.instructions ?? {}) },
     seed: seedValue,
+    difficultyMultiplier: leagueSettings.difficultyMultiplier,
   };
   opponentRotation = computeOpponentRotation(leagueState, clubState.name);
   ensureLineupCompleteness();
@@ -2467,6 +2648,7 @@ form.addEventListener('submit', (event) => {
     tactic: tacticSelect.value,
     formation: formationSelect.value,
     seed: seedValue,
+    difficultyMultiplier: getDifficultyMultiplier(),
   };
 
   const simulationOptions = { decision, decisionOutcome };
@@ -2477,6 +2659,7 @@ form.addEventListener('submit', (event) => {
   const report = playMatchDay(workingClub, configState, simulationOptions);
   const updatedLeague = updateLeagueTableAfterMatch(leagueState ?? workingClub.league, workingClub.name, report.match);
   leagueState = updatedLeague;
+  updateLeagueSettingsFromState(updatedLeague);
 
   const refreshedWageBill = calculateWeeklyWageBill(report.updatedClub.squad);
 
@@ -2561,9 +2744,23 @@ if (leagueCatalogEl) {
   });
 }
 
+if (leagueSizeSelect instanceof HTMLSelectElement) {
+  leagueSizeSelect.addEventListener('change', () => {
+    updateLeagueSelectionCountDisplay();
+    hideLeagueConfigError();
+  });
+}
+
+if (leagueDifficultySelect instanceof HTMLSelectElement) {
+  leagueDifficultySelect.addEventListener('change', () => {
+    hideLeagueConfigError();
+  });
+}
+
 if (leagueRandomButton) {
   leagueRandomButton.addEventListener('click', () => {
-    const randomSelection = selectRandomLeagueRivals(RIVAL_TARGET_COUNT, {
+    const targetCount = getTargetRivalCount();
+    const randomSelection = selectRandomLeagueRivals(targetCount, {
       exclude: [clubState.name],
     });
     applyLeagueSelectionToForm(randomSelection);
@@ -2575,10 +2772,9 @@ if (leagueConfigForm && leagueConfigModal) {
   leagueConfigForm.addEventListener('submit', (event) => {
     event.preventDefault();
     const selected = getSelectedLeagueRivals();
-    if (selected.length !== RIVAL_TARGET_COUNT) {
-      showLeagueConfigError(
-        `Selecciona ${RIVAL_TARGET_COUNT} rivales (actualmente ${selected.length}).`
-      );
+    const targetCount = getTargetRivalCount();
+    if (selected.length !== targetCount) {
+      showLeagueConfigError(`Selecciona ${targetCount} rivales (actualmente ${selected.length}).`);
       return;
     }
     hideLeagueConfigError();

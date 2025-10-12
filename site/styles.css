@@ -294,6 +294,18 @@ body {
   color: #334155;
 }
 
+.league-config__fieldset {
+  border: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+
+.league-config__fieldset legend {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+}
+
 .league-config__summary {
   display: flex;
   flex-wrap: wrap;

@@ -101,6 +101,10 @@
  * @property {number} matchDay
  * @property {LeagueStanding[]} table
  * @property {string[]=} rivals
+ * @property {number=} size
+ * @property {number=} totalMatchdays
+ * @property {string=} difficulty
+ * @property {number=} difficultyMultiplier
  */
 
 /**
@@ -179,6 +183,7 @@
  * @typedef {Object} MatchConfig
  * @property {boolean} home
  * @property {number} opponentStrength
+ * @property {number=} difficultyMultiplier
  * @property {"defensive" | "balanced" | "attacking" | string} tactic
  * @property {string} formation
  * @property {PlayerId[]} startingLineup
