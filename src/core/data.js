@@ -27,6 +27,75 @@ export const DEFAULT_PRIMARY_COLOR = '#1d4ed8';
 export const DEFAULT_SECONDARY_COLOR = '#bfdbfe';
 export const DEFAULT_CLUB_LOGO = 'assets/club-crest.svg';
 
+const RANDOM_FIRST_NAMES = Object.freeze([
+  'Pilar',
+  'Rocío',
+  'Nerea',
+  'Marina',
+  'Diego',
+  'Iván',
+  'Bruno',
+  'Gael',
+  'Lucía',
+  'Jimena',
+  'Irene',
+  'Lola',
+  'Mateo',
+  'Simón',
+  'Álex',
+  'Ariadna',
+  'Sergio',
+  'Mario',
+  'Candela',
+  'Mara',
+]);
+
+const RANDOM_LAST_NAMES = Object.freeze([
+  'del Pasaje',
+  'del Puerto',
+  'Martínez',
+  'Calderón',
+  'Barrial',
+  'Delgado',
+  'Campoy',
+  'Benítez',
+  'de Lavapiés',
+  'Manzanedo',
+  'Villaverde',
+  'Carvajal',
+  'Gutiérrez',
+  'Castaño',
+  'Serrano',
+  'Coronado',
+  'Pizarro',
+  'Gallego',
+  'Ibáñez',
+  'Chamartín',
+]);
+
+const RANDOM_NICKNAMES = Object.freeze([
+  'El Relámpago',
+  'La Zurdita',
+  'El Callejero',
+  'La Muralla',
+  'El Duende',
+  'La Pantera',
+  'El Motor',
+  'La Brújula',
+  'El Tango',
+  'La Gambeta',
+  'El Trueno',
+  'La Joya',
+  'El Eje',
+  'La Tormenta',
+  'El Callejón',
+  'La Bala',
+  'El Cóndor',
+  'La Cantera',
+  'El Chispa',
+  'La Cometa',
+]);
+
 const LEAGUE_RIVALS = [
   'Club Verbena del Sur',
   'Rayo Chulapo',
@@ -168,12 +237,36 @@ const MARKET_BLUEPRINTS = [
   },
 ];
 
+function pickRandom(values, rng) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return '';
+  }
+  const index = Math.min(values.length - 1, Math.max(0, Math.floor(rng() * values.length)));
+  return values[index];
+}
+
 /**
  * Devuelve las instrucciones tácticas por defecto de la IA canalla.
  * @returns {TacticalInstructions}
  */
 export function createDefaultInstructions() {
   return { ...DEFAULT_INSTRUCTIONS };
+}
+
+/**
+ * Genera un nombre y un apodo aleatorios inspirados en la cantera canalla.
+ * @param {{ rng?: () => number; includeNickname?: boolean }} [options]
+ */
+export function generateRandomPlayerIdentity(options = {}) {
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const includeNickname = options.includeNickname ?? true;
+  const firstName = pickRandom(RANDOM_FIRST_NAMES, rng) || 'Canterano';
+  const lastName = pickRandom(RANDOM_LAST_NAMES, rng) || 'Misterioso';
+  const nickname = includeNickname ? pickRandom(RANDOM_NICKNAMES, rng) : '';
+  return {
+    name: `${firstName} ${lastName}`.trim(),
+    nickname: nickname ?? '',
+  };
 }
 
 /**
@@ -468,14 +561,23 @@ export function createExampleTransferMarket(club) {
  * @returns {Player}
  */
 function createPlayer(partial) {
+  const baseName =
+    typeof partial.name === 'string' && partial.name.trim().length > 0
+      ? partial.name.trim()
+      : 'Canterano misterioso';
+  const nickname = typeof partial.nickname === 'string' ? partial.nickname.trim() : '';
+  const originalName =
+    typeof partial.originalName === 'string' && partial.originalName.trim().length > 0
+      ? partial.originalName.trim()
+      : baseName;
   const availability = {
     injuryMatches: partial.availability?.injuryMatches ?? 0,
     suspensionMatches: partial.availability?.suspensionMatches ?? 0,
   };
   const seasonLog = { ...createEmptySeasonLog(), ...partial.seasonLog };
-  return {
+  const player = {
     id: partial.id,
-    name: partial.name,
+    name: baseName,
     position: partial.position,
     age: partial.age ?? 27,
     attributes: {
@@ -498,7 +600,12 @@ function createPlayer(partial) {
     },
     availability,
     seasonLog,
+    originalName,
   };
+  if (nickname) {
+    player.nickname = nickname;
+  }
+  return player;
 }
 
 function resolveClubColor(candidate, fallback) {

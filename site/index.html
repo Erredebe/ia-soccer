@@ -489,6 +489,64 @@
         </div>
       </div>
 
+      <div class="modal" id="modal-player-edit" aria-hidden="true">
+        <div
+          class="modal__content"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="player-edit-title"
+        >
+          <button
+            type="button"
+            class="modal__close"
+            data-modal-close
+            aria-label="Cerrar editor de jugador"
+          >
+            ×
+          </button>
+          <form class="game-form" id="player-edit-form">
+            <div>
+              <h2 id="player-edit-title">Personaliza a tu futbolista</h2>
+              <p>
+                Ajusta el nombre y el apodo para que la afición coree exactamente lo que tú quieres.
+              </p>
+            </div>
+            <p id="player-edit-error" class="form-error" hidden></p>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-label">Nombre completo</span>
+                <input
+                  type="text"
+                  id="player-edit-name"
+                  name="playerName"
+                  maxlength="60"
+                  autocomplete="off"
+                  required
+                  data-modal-initial-focus
+                />
+              </label>
+              <label class="field">
+                <span class="field-label">Apodo</span>
+                <input
+                  type="text"
+                  id="player-edit-nickname"
+                  name="playerNickname"
+                  maxlength="40"
+                  autocomplete="off"
+                  placeholder="Opcional"
+                />
+                <span class="field-hint">Déjalo vacío si prefieres no usar apodo.</span>
+              </label>
+            </div>
+            <div class="match-form__actions">
+              <button type="submit" class="play-button">Guardar cambios</button>
+              <button type="button" class="club-action" id="player-edit-random">Sorpréndeme</button>
+              <button type="button" class="club-action" data-modal-close>Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div class="modal" id="modal-league" aria-hidden="true">
         <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="league-title">
           <button type="button" class="modal__close" data-modal-close aria-label="Cerrar clasificación">×</button>

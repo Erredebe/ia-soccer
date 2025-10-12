@@ -70,6 +70,8 @@
  * @property {Contract} contract
  * @property {PlayerAvailability=} availability
  * @property {PlayerSeasonLog=} seasonLog
+ * @property {string} originalName
+ * @property {string=} nickname
  */
 
 /**

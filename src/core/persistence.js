@@ -45,11 +45,30 @@ function normalisePlayer(player) {
     ...createEmptySeasonLog(),
     ...(player.seasonLog ?? {}),
   };
-  return {
+  const originalNameCandidate =
+    typeof player.originalName === 'string' && player.originalName.trim().length > 0
+      ? player.originalName.trim()
+      : '';
+  const nameCandidate =
+    typeof player.name === 'string' && player.name.trim().length > 0 ? player.name.trim() : '';
+  const fallbackName = originalNameCandidate || nameCandidate || 'Canterano misterioso';
+  const nicknameCandidate =
+    typeof player.nickname === 'string' && player.nickname.trim().length > 0
+      ? player.nickname.trim()
+      : '';
+  const normalised = {
     ...player,
+    name: nameCandidate || fallbackName,
+    originalName: fallbackName,
     availability,
     seasonLog,
   };
+  if (nicknameCandidate) {
+    normalised.nickname = nicknameCandidate;
+  } else {
+    delete normalised.nickname;
+  }
+  return normalised;
 }
 
 function normaliseHexColor(value, fallback) {

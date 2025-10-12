@@ -19,6 +19,7 @@ import {
   DEFAULT_CLUB_LOGO,
   isPlayerAvailable,
   resetPlayerForNewSeason,
+  generateRandomPlayerIdentity,
 } from '../src/core/data.js';
 import { resolveCanallaDecision } from '../src/core/reputation.js';
 import { clearSavedGame, loadSavedGame, saveGame, SAVE_VERSION } from '../src/core/persistence.js';
@@ -40,6 +41,12 @@ const lineupAutosortButton = document.querySelector('#lineup-autosort');
 const lineupErrorEl = document.querySelector('#lineup-error');
 const lineupModal = document.querySelector('#modal-lineup');
 const reportModal = document.querySelector('#modal-report');
+const playerEditModal = document.querySelector('#modal-player-edit');
+const playerEditForm = document.querySelector('#player-edit-form');
+const playerEditNameInput = document.querySelector('#player-edit-name');
+const playerEditNicknameInput = document.querySelector('#player-edit-nickname');
+const playerEditErrorEl = document.querySelector('#player-edit-error');
+const playerEditRandomButton = document.querySelector('#player-edit-random');
 const planNextButton = document.querySelector('#plan-next');
 const saveButton = document.querySelector('#save-game');
 const saveFeedback = document.querySelector('#save-feedback');
@@ -476,6 +483,7 @@ let saveMessageTimeout;
 let loadNoticeTimeout;
 let hasLatestReport = false;
 let clubIdentity = extractClubIdentity(clubState);
+let editingPlayerId = null;
 
 function updateBodyModalState() {
   const hasOpenModal = document.querySelector('.modal.is-open') !== null;
@@ -504,6 +512,9 @@ function closeModal(modal) {
 
   modal.classList.remove('is-open');
   modal.setAttribute('aria-hidden', 'true');
+  if (modal === playerEditModal) {
+    resetPlayerEditForm();
+  }
   updateBodyModalState();
 }
 
@@ -512,6 +523,9 @@ function closeAllModals() {
   openModals.forEach((modal) => {
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
+    if (modal === playerEditModal) {
+      resetPlayerEditForm();
+    }
   });
   updateBodyModalState();
 }
@@ -1225,6 +1239,95 @@ function handleRoleSelection(playerId, role) {
   }
 }
 
+function clearPlayerEditError() {
+  if (!playerEditErrorEl) {
+    return;
+  }
+  playerEditErrorEl.textContent = '';
+  playerEditErrorEl.hidden = true;
+}
+
+function showPlayerEditError(message) {
+  if (!playerEditErrorEl) {
+    return;
+  }
+  playerEditErrorEl.textContent = message;
+  playerEditErrorEl.hidden = false;
+}
+
+function resetPlayerEditForm() {
+  editingPlayerId = null;
+  if (playerEditForm) {
+    playerEditForm.reset();
+    delete playerEditForm.dataset.playerId;
+  }
+  clearPlayerEditError();
+}
+
+function openPlayerIdentityEditor(playerId) {
+  if (!playerEditModal || !playerEditForm || !playerEditNameInput) {
+    return;
+  }
+  const player = findPlayerById(playerId);
+  if (!player) {
+    showPlayerEditError('No se pudo cargar la ficha del jugador.');
+    return;
+  }
+  editingPlayerId = playerId;
+  clearPlayerEditError();
+  playerEditNameInput.value = player.name ?? '';
+  if (playerEditNicknameInput) {
+    playerEditNicknameInput.value = player.nickname ?? '';
+  }
+  playerEditForm.dataset.playerId = playerId;
+  openModal(playerEditModal);
+}
+
+function handlePlayerEditSubmit(event) {
+  event.preventDefault();
+  if (!playerEditNameInput) {
+    return;
+  }
+  if (!editingPlayerId) {
+    showPlayerEditError('Selecciona un jugador antes de guardar cambios.');
+    return;
+  }
+  const trimmedName = playerEditNameInput.value.trim();
+  const trimmedNickname = playerEditNicknameInput?.value.trim() ?? '';
+  if (trimmedName.length === 0) {
+    showPlayerEditError('El nombre no puede quedar vacío.');
+    playerEditNameInput.focus();
+    return;
+  }
+  const playerIndex = clubState.squad.findIndex((player) => player.id === editingPlayerId);
+  if (playerIndex === -1) {
+    showPlayerEditError('El jugador ya no pertenece a la plantilla.');
+    return;
+  }
+  const targetPlayer = clubState.squad[playerIndex];
+  const originalName = targetPlayer.originalName ?? targetPlayer.name;
+  const updatedPlayer = {
+    ...targetPlayer,
+    originalName,
+    name: trimmedName,
+  };
+  if (trimmedNickname) {
+    updatedPlayer.nickname = trimmedNickname;
+  } else {
+    delete updatedPlayer.nickname;
+  }
+  const updatedSquad = [...clubState.squad];
+  updatedSquad.splice(playerIndex, 1, updatedPlayer);
+  clubState = {
+    ...clubState,
+    squad: updatedSquad,
+  };
+  renderLineupBoard();
+  persistState('silent');
+  clearPlayerEditError();
+  closeModal(playerEditModal);
+}
+
 function renderLineupBoard() {
   if (!lineupBoard || !lineupTableBody) {
     return;
@@ -1288,6 +1391,14 @@ function renderLineupBoard() {
     const name = document.createElement('span');
     name.className = 'lineup-table__player-name';
     name.textContent = player.name;
+    const nicknameLabel = typeof player.nickname === 'string' ? player.nickname.trim() : '';
+    const identityElements = [name];
+    if (nicknameLabel) {
+      const nicknameEl = document.createElement('span');
+      nicknameEl.className = 'lineup-table__player-nickname';
+      nicknameEl.textContent = `«${nicknameLabel}»`;
+      identityElements.push(nicknameEl);
+    }
     const meta = document.createElement('div');
     meta.className = 'lineup-table__player-meta';
     meta.append(
@@ -1306,7 +1417,7 @@ function renderLineupBoard() {
     } else {
       row.dataset.availability = 'available';
     }
-    playerCell.append(name, meta);
+    playerCell.append(...identityElements, meta);
 
     const statValues = [
       player.fitness,
@@ -1326,6 +1437,14 @@ function renderLineupBoard() {
 
     const actionsCell = document.createElement('td');
     actionsCell.className = 'lineup-table__actions';
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'lineup-edit-button';
+    editButton.textContent = 'Editar';
+    editButton.setAttribute('aria-label', `Editar identidad de ${player.name}`);
+    editButton.addEventListener('click', () => {
+      openPlayerIdentityEditor(player.id);
+    });
     const sellButton = document.createElement('button');
     sellButton.type = 'button';
     sellButton.className = 'lineup-sell-button';
@@ -1333,7 +1452,7 @@ function renderLineupBoard() {
     sellButton.addEventListener('click', () => {
       sellPlayer(player.id);
     });
-    actionsCell.append(sellButton);
+    actionsCell.append(editButton, sellButton);
 
     row.append(indexCell, playerCell, ...cells, moraleCell, roleCell, actionsCell);
     lineupTableBody.append(row);
@@ -1760,6 +1879,25 @@ function clearReport() {
   hideLineupError();
   hasLatestReport = false;
   refreshControlPanel();
+}
+
+if (playerEditForm) {
+  playerEditForm.addEventListener('submit', handlePlayerEditSubmit);
+}
+
+if (playerEditRandomButton) {
+  playerEditRandomButton.addEventListener('click', () => {
+    const identity = generateRandomPlayerIdentity();
+    if (playerEditNameInput) {
+      playerEditNameInput.value = identity.name;
+      playerEditNameInput.focus();
+      playerEditNameInput.select();
+    }
+    if (playerEditNicknameInput) {
+      playerEditNicknameInput.value = identity.nickname;
+    }
+    clearPlayerEditError();
+  });
 }
 
 if (lineupAutosortButton) {
