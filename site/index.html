@@ -601,13 +601,30 @@
           </div>
 
           <div class="finances-breakdown">
-            <div>
-              <h3>Ingresos</h3>
-              <ul id="finances-income"></ul>
+            <div class="finances-panel finances-panel--income">
+              <header class="finances-panel__header">
+                <h3>Ingresos</h3>
+                <p id="finances-income-total" class="finances-total"></p>
+              </header>
+              <div class="finances-panel__visual" aria-hidden="true">
+                <div class="finances-donut finances-donut--income" id="finances-income-donut"></div>
+              </div>
+              <ul id="finances-income" class="finances-list finances-list--income"></ul>
             </div>
-            <div>
-              <h3>Gastos</h3>
-              <ul id="finances-expenses"></ul>
+            <div class="finances-panel finances-panel--expense">
+              <header class="finances-panel__header">
+                <h3>Gastos</h3>
+                <p id="finances-expense-total" class="finances-total"></p>
+              </header>
+              <div class="finances-panel__visual" aria-hidden="true">
+                <div class="finances-bar finances-bar--summary" id="finances-expense-bar">
+                  <span
+                    class="finances-bar__fill finances-bar__fill--expense"
+                    id="finances-expense-bar-fill"
+                  ></span>
+                </div>
+              </div>
+              <ul id="finances-expenses" class="finances-list finances-list--expense"></ul>
             </div>
           </div>
 

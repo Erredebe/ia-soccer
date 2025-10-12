@@ -120,6 +120,11 @@ const financesBudgetModalEl = document.querySelector('#finances-budget');
 const financesWagesModalEl = document.querySelector('#finances-wages');
 const financesOperatingModalEl = document.querySelector('#finances-operating');
 const financesNoteEl = document.querySelector('#finances-note');
+const financesIncomeTotalEl = document.querySelector('#finances-income-total');
+const financesExpenseTotalEl = document.querySelector('#finances-expense-total');
+const financesIncomeDonutEl = document.querySelector('#finances-income-donut');
+const financesExpenseBarEl = document.querySelector('#finances-expense-bar');
+const financesExpenseBarFillEl = document.querySelector('#finances-expense-bar-fill');
 const decisionsListEl = document.querySelector('#decisions-list');
 const stadiumCapacityEl = document.querySelector('#stadium-capacity');
 const stadiumLevelEl = document.querySelector('#stadium-level');
@@ -168,6 +173,11 @@ const booleanInstructionText = {
 const numberFormatter = new Intl.NumberFormat('es-ES', {
   style: 'currency',
   currency: 'EUR',
+  maximumFractionDigits: 0,
+});
+
+const percentageFormatter = new Intl.NumberFormat('es-ES', {
+  style: 'percent',
   maximumFractionDigits: 0,
 });
 
@@ -1603,33 +1613,107 @@ function renderFinancialBreakdown(finances) {
   if (!finances) {
     return;
   }
+  const incomeEntries = Object.entries(finances.incomeBreakdown ?? {});
+  const expenseEntries = Object.entries(finances.expenseBreakdown ?? {});
+  const totalIncome = incomeEntries.reduce((sum, [, amount]) => sum + (Number(amount) || 0), 0);
+  const totalExpenses = expenseEntries.reduce((sum, [, amount]) => sum + (Number(amount) || 0), 0);
+  const totalMovement = totalIncome + totalExpenses;
+  const incomeShareRaw = totalMovement > 0 ? totalIncome / totalMovement : 0;
+  const expenseShareRaw = totalMovement > 0 ? totalExpenses / totalMovement : 0;
+  const incomeShare = Math.max(0, Math.min(1, incomeShareRaw));
+  const expenseShare = Math.max(0, Math.min(1, expenseShareRaw));
+
+  if (financesIncomeTotalEl) {
+    financesIncomeTotalEl.textContent =
+      totalIncome > 0
+        ? `${numberFormatter.format(totalIncome)} · ${percentageFormatter.format(incomeShare)} del movimiento`
+        : 'Sin ingresos registrados';
+  }
+
+  if (financesExpenseTotalEl) {
+    financesExpenseTotalEl.textContent =
+      totalExpenses > 0
+        ? `${numberFormatter.format(totalExpenses)} · ${percentageFormatter.format(expenseShare)} del movimiento`
+        : 'Sin gastos registrados';
+  }
+
+  if (financesIncomeDonutEl) {
+    const sweep = Math.max(0, Math.min(360, incomeShare * 360));
+    financesIncomeDonutEl.style.setProperty('--finances-sweep', `${sweep}deg`);
+    financesIncomeDonutEl.dataset.percentage = percentageFormatter.format(incomeShare || 0);
+    financesIncomeDonutEl.classList.toggle('is-empty', totalMovement <= 0);
+  }
+
+  if (financesExpenseBarEl && financesExpenseBarFillEl) {
+    const percent = Math.max(0, Math.min(100, expenseShare * 100));
+    const progressValue = `${percent.toFixed(2)}%`;
+    financesExpenseBarFillEl.style.setProperty('--finances-progress', progressValue);
+    financesExpenseBarFillEl.style.width = progressValue;
+    financesExpenseBarEl.dataset.percentage = percentageFormatter.format(expenseShare || 0);
+    financesExpenseBarEl.classList.toggle('is-empty', totalMovement <= 0);
+  }
+
   if (financesAttendanceEl) {
     financesAttendanceEl.textContent = finances.attendance
       ? `${finances.attendance.toLocaleString('es-ES')} espectadores`
       : 'Asistencia no disponible';
   }
-  if (financesIncomeList) {
-    financesIncomeList.innerHTML = '';
-    Object.entries(finances.incomeBreakdown ?? {}).forEach(([key, value]) => {
+  const renderBreakdownList = (listEl, entries, type, total) => {
+    if (!listEl) {
+      return;
+    }
+    listEl.innerHTML = '';
+    const sortedEntries = [...entries].sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0));
+    sortedEntries.forEach(([label, rawValue]) => {
+      const amount = Number(rawValue) || 0;
+      const formattedValue = numberFormatter.format(amount);
+      const shareRaw = total > 0 ? amount / total : 0;
+      const share = Math.max(0, Math.min(1, shareRaw));
+      const sharePercent = Math.max(0, Math.min(100, share * 100));
+      const shareText = percentageFormatter.format(share);
+
       const item = document.createElement('li');
-      item.className = 'finances-item finances-item--income';
-      const formattedValue = numberFormatter.format(value);
-      item.textContent = `${key}: ${formattedValue}`;
-      item.setAttribute('aria-label', `Ingreso por ${key}: ${formattedValue}`);
-      financesIncomeList.append(item);
+      item.className = `finances-item finances-item--${type}`;
+
+      const row = document.createElement('div');
+      row.className = 'finances-item__row';
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'finances-item__label';
+      labelEl.textContent = label;
+
+      const valueEl = document.createElement('span');
+      valueEl.className = 'finances-item__value';
+      valueEl.textContent = formattedValue;
+
+      row.append(labelEl, valueEl);
+
+      const bar = document.createElement('div');
+      bar.className = 'finances-bar finances-item__bar';
+      bar.setAttribute('aria-hidden', 'true');
+      bar.setAttribute('data-percentage', shareText);
+
+      const barFill = document.createElement('span');
+      barFill.className = `finances-bar__fill finances-bar__fill--${type}`;
+      const progressValue = `${sharePercent.toFixed(2)}%`;
+      barFill.style.setProperty('--finances-progress', progressValue);
+      barFill.style.width = progressValue;
+      bar.append(barFill);
+
+      const ariaLabelPrefix = type === 'income' ? 'Ingreso por' : 'Gasto en';
+      const ariaLabelSuffix = type === 'income' ? 'del total de ingresos' : 'del total de gastos';
+      item.setAttribute(
+        'aria-label',
+        `${ariaLabelPrefix} ${label}: ${formattedValue} (${shareText} ${ariaLabelSuffix})`
+      );
+
+      item.append(row, bar);
+      listEl.append(item);
     });
-  }
-  if (financesExpenseList) {
-    financesExpenseList.innerHTML = '';
-    Object.entries(finances.expenseBreakdown ?? {}).forEach(([key, value]) => {
-      const item = document.createElement('li');
-      item.className = 'finances-item finances-item--expense';
-      const formattedValue = numberFormatter.format(value);
-      item.textContent = `${key}: ${formattedValue}`;
-      item.setAttribute('aria-label', `Gasto en ${key}: ${formattedValue}`);
-      financesExpenseList.append(item);
-    });
-  }
+  };
+
+  renderBreakdownList(financesIncomeList, incomeEntries, 'income', totalIncome);
+  renderBreakdownList(financesExpenseList, expenseEntries, 'expense', totalExpenses);
 }
 
 function renderMatchReport(report, decisionOutcome, opponentName = 'Rival misterioso', metadata = {}) {
