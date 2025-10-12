@@ -4,6 +4,8 @@
  * @module core/data
  */
 
+import { CUP_ROUND_DEFINITIONS } from './types.js';
+
 /** @typedef {import('../types.js').Player} Player */
 /** @typedef {import('../types.js').ClubState} ClubState */
 /** @typedef {import('../types.js').MatchConfig} MatchConfig */
@@ -18,6 +20,12 @@
 /** @typedef {import('../types.js').MerchandisingPlan} MerchandisingPlan */
 /** @typedef {import('../types.js').InfrastructureState} InfrastructureState */
 /** @typedef {import('../types.js').OperatingExpenses} OperatingExpenses */
+/** @typedef {import('./types.js').CupState} CupState */
+/** @typedef {import('./types.js').CupRound} CupRound */
+/** @typedef {import('./types.js').CupTie} CupTie */
+/** @typedef {import('./types.js').CupFixture} CupFixture */
+/** @typedef {import('./types.js').CupRoundDefinition} CupRoundDefinition */
+/** @typedef {import('./types.js').CupProgression} CupProgression */
 
 export const MIN_LEAGUE_SIZE = 8;
 export const MAX_LEAGUE_SIZE = 20;
@@ -277,6 +285,412 @@ export function normaliseLeagueRivals(rivals, options = {}) {
   }
 
   return normalised.slice(0, target);
+}
+
+const DEFAULT_CUP_SIZE = 8;
+const MIN_CUP_SIZE = 4;
+const MAX_CUP_SIZE = 16;
+const DEFAULT_CUP_NAME = 'Copa Callejera de Lavapiés';
+
+function clampCupSize(size) {
+  if (!Number.isFinite(size)) {
+    return DEFAULT_CUP_SIZE;
+  }
+  const truncated = Math.max(MIN_CUP_SIZE, Math.min(MAX_CUP_SIZE, Math.trunc(size)));
+  const exponents = [4, 8, 16];
+  let closest = exponents[0];
+  for (const candidate of exponents) {
+    if (Math.abs(candidate - truncated) < Math.abs(closest - truncated)) {
+      closest = candidate;
+    }
+  }
+  return closest;
+}
+
+function shuffleParticipants(values, rng = Math.random) {
+  const copy = [...values];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rng() * (index + 1));
+    const temp = copy[index];
+    copy[index] = copy[swapIndex];
+    copy[swapIndex] = temp;
+  }
+  return copy;
+}
+
+function createCupTieFromDefinition(roundId, index) {
+  return {
+    id: `${roundId}-${index + 1}`,
+    home: null,
+    away: null,
+    homeGoals: null,
+    awayGoals: null,
+    played: false,
+    winner: null,
+    includesClub: false,
+    status: 'pending',
+  };
+}
+
+/**
+ * Construye la estructura base de una ronda eliminatoria.
+ * @param {CupRoundDefinition} definition
+ * @returns {CupRound}
+ */
+export function createCupRound(definition) {
+  const tieCount = Math.max(1, Math.floor(definition.size / 2));
+  const ties = Array.from({ length: tieCount }, (_, index) => createCupTieFromDefinition(definition.id, index));
+  return {
+    id: definition.id,
+    name: definition.name,
+    reward: definition.reward,
+    ties,
+    drawCompleted: false,
+    finished: false,
+    drawNarrative: [],
+  };
+}
+
+function findRoundDefinition(roundId) {
+  return CUP_ROUND_DEFINITIONS.find((entry) => entry.id === roundId);
+}
+
+function resolveCupDefinitions(participantCount) {
+  return CUP_ROUND_DEFINITIONS.filter((definition) => definition.size <= participantCount);
+}
+
+function normaliseCupParticipants(clubName, count, participants, options = {}) {
+  const base = Array.isArray(participants) ? participants : [];
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const desired = Math.max(1, count - 1);
+  const uniqueBase = base
+    .map((name) => (typeof name === 'string' ? name.trim() : ''))
+    .filter((name) => name.length > 0 && name !== clubName);
+  const filled = normaliseLeagueRivals(uniqueBase, {
+    count: desired,
+    catalog: options.catalog,
+    exclude: [clubName],
+    rng,
+  });
+  return [clubName, ...filled];
+}
+
+function describeDrawForClub(roundName, clubName, fixture) {
+  if (!fixture) {
+    return `Sorteo de ${roundName}: el ${clubName} ya no figura en el bombo.`;
+  }
+  const venue = fixture.home ? 'como locales' : 'a domicilio';
+  return `Sorteo de ${roundName}: el ${clubName} se mide a ${fixture.opponent} ${venue}.`;
+}
+
+function simulateNeutralTie(home, away, rng) {
+  const homeGoals = Math.floor(rng() * 4);
+  const awayGoals = Math.floor(rng() * 4);
+  let winner;
+  if (homeGoals === awayGoals) {
+    winner = rng() < 0.5 ? home : away;
+  } else {
+    winner = homeGoals > awayGoals ? home : away;
+  }
+  return { homeGoals, awayGoals, winner };
+}
+
+/**
+ * Genera una copa estándar con rondas escalonadas.
+ * @param {string} clubName
+ * @param {{
+ *   size?: number;
+ *   participants?: string[];
+ *   catalog?: readonly string[];
+ *   rng?: () => number;
+ *   name?: string;
+ *   edition?: number;
+ * }} [options]
+ * @returns {CupState}
+ */
+export function createExampleCup(clubName, options = {}) {
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const sizeCandidate = Number.isFinite(options.size) ? Number(options.size) : DEFAULT_CUP_SIZE;
+  const cupSize = clampCupSize(sizeCandidate);
+  const participants = normaliseCupParticipants(clubName, cupSize, options.participants, {
+    catalog: options.catalog,
+    rng,
+  });
+  const definitions = resolveCupDefinitions(participants.length);
+  const rounds = definitions.map((definition) => createCupRound(definition));
+  const pendingParticipants = shuffleParticipants(participants, rng);
+  const status = rounds.length > 0 ? 'awaiting-draw' : 'idle';
+  const nameCandidate = typeof options.name === 'string' && options.name.trim().length > 0
+    ? options.name.trim()
+    : DEFAULT_CUP_NAME;
+  const edition = Number.isFinite(options.edition) ? Math.max(1, Math.trunc(/** @type {number} */ (options.edition))) : 1;
+  return {
+    name: nameCandidate,
+    edition,
+    rounds,
+    currentRoundIndex: 0,
+    status,
+    pendingParticipants,
+    nextFixture: null,
+    history: [],
+  };
+}
+
+/**
+ * Ejecuta el sorteo de la ronda actual y devuelve el nuevo estado de copa.
+ * @param {CupState} cup
+ * @param {string} clubName
+ * @param {{ rng?: () => number }} [options]
+ * @returns {{ cup: CupState; narrative: string[] }}
+ */
+export function drawCupRound(cup, clubName, options = {}) {
+  if (!cup || cup.status === 'eliminated' || cup.status === 'champions') {
+    return { cup, narrative: [] };
+  }
+  const round = cup.rounds[cup.currentRoundIndex];
+  if (!round || round.drawCompleted) {
+    return { cup, narrative: [] };
+  }
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const participants = cup.pendingParticipants.length > 0 ? [...cup.pendingParticipants] : [clubName];
+  const required = round.ties.length * 2;
+  while (participants.length < required) {
+    participants.push(`Invitado copero ${participants.length + 1}`);
+  }
+  const shuffled = shuffleParticipants(participants, rng);
+  const updatedTies = round.ties.map((tie, index) => {
+    const home = shuffled[index * 2] ?? null;
+    const away = shuffled[index * 2 + 1] ?? null;
+    const includesClub = home === clubName || away === clubName;
+    return {
+      ...tie,
+      home,
+      away,
+      homeGoals: null,
+      awayGoals: null,
+      played: false,
+      winner: null,
+      includesClub,
+      status: home && away ? 'scheduled' : 'pending',
+    };
+  });
+  const updatedRound = {
+    ...round,
+    ties: updatedTies,
+    drawCompleted: true,
+  };
+  const highlight = updatedTies.find((tie) => tie.includesClub && tie.home && tie.away) ?? null;
+  const nextFixture = highlight
+    ? {
+        tieId: highlight.id,
+        roundId: updatedRound.id,
+        roundName: updatedRound.name,
+        opponent: highlight.home === clubName ? /** @type {string} */ (highlight.away) : /** @type {string} */ (highlight.home),
+        home: highlight.home === clubName,
+      }
+    : null;
+  const narrative = [describeDrawForClub(updatedRound.name, clubName, nextFixture)];
+  updatedRound.drawNarrative = narrative;
+  const updatedRounds = [...cup.rounds];
+  updatedRounds[cup.currentRoundIndex] = updatedRound;
+  const updatedCup = {
+    ...cup,
+    rounds: updatedRounds,
+    pendingParticipants: [],
+    status: nextFixture ? 'awaiting-match' : cup.status,
+    nextFixture,
+  };
+  return { cup: updatedCup, narrative };
+}
+
+/**
+ * Recupera la próxima eliminatoria disponible para el club.
+ * @param {CupState | undefined} cup
+ * @param {string} clubName
+ * @returns {CupFixture | null}
+ */
+export function getCupFixture(cup, clubName) {
+  if (!cup) {
+    return null;
+  }
+  if (cup.nextFixture) {
+    return cup.nextFixture;
+  }
+  const round = cup.rounds[cup.currentRoundIndex];
+  if (!round) {
+    return null;
+  }
+  const tie = round.ties.find((entry) => entry.includesClub && entry.home && entry.away);
+  if (!tie) {
+    return null;
+  }
+  return {
+    tieId: tie.id,
+    roundId: round.id,
+    roundName: round.name,
+    opponent: tie.home === clubName ? /** @type {string} */ (tie.away) : /** @type {string} */ (tie.home),
+    home: tie.home === clubName,
+  };
+}
+
+/**
+ * Actualiza el cuadro de copa tras disputar la eliminatoria del club.
+ * @param {CupState} cup
+ * @param {string} clubName
+ * @param {MatchResult} match
+ * @param {{ rng?: () => number }} [options]
+ * @returns {CupProgression}
+ */
+export function applyCupMatchResult(cup, clubName, match, options = {}) {
+  const rng = typeof options.rng === 'function' ? options.rng : Math.random;
+  const roundIndex = Math.max(0, cup.currentRoundIndex);
+  const currentRound = cup.rounds[roundIndex];
+  if (!currentRound) {
+    return {
+      cup,
+      historyEntry: {
+        roundId: 'final',
+        roundName: 'Final',
+        outcome: 'eliminated',
+        prize: 0,
+        reputationDelta: 0,
+        narrative: ['No se pudo actualizar la copa porque no hay ronda activa.'],
+      },
+      nextFixture: cup.nextFixture,
+    };
+  }
+
+  const updatedRound = {
+    ...currentRound,
+    ties: currentRound.ties.map((tie) => ({ ...tie })),
+  };
+
+  const definition = findRoundDefinition(currentRound.id);
+  const playerTieIndex = cup.nextFixture
+    ? updatedRound.ties.findIndex((tie) => tie.id === cup.nextFixture?.tieId)
+    : updatedRound.ties.findIndex((tie) => tie.includesClub);
+  const winners = [];
+  let clubWon = false;
+  let opponentName = 'Rival misterioso';
+
+  updatedRound.ties.forEach((tie, index) => {
+    if (!tie.home || !tie.away) {
+      return;
+    }
+    if (index === playerTieIndex) {
+      const isHome = tie.home === clubName;
+      const homeGoals = isHome ? match.goalsFor : match.goalsAgainst;
+      const awayGoals = isHome ? match.goalsAgainst : match.goalsFor;
+      let winner;
+      if (homeGoals > awayGoals) {
+        winner = tie.home;
+      } else if (awayGoals > homeGoals) {
+        winner = tie.away;
+      } else {
+        winner = match.goalsFor >= match.goalsAgainst ? clubName : isHome ? tie.away : tie.home;
+      }
+      opponentName = isHome ? tie.away ?? opponentName : tie.home ?? opponentName;
+      tie.homeGoals = homeGoals;
+      tie.awayGoals = awayGoals;
+      tie.played = true;
+      tie.status = 'played';
+      tie.winner = winner;
+      tie.includesClub = true;
+      clubWon = winner === clubName;
+    }
+  });
+
+  updatedRound.ties.forEach((tie, index) => {
+    if (!tie.home || !tie.away) {
+      return;
+    }
+    if (!tie.played) {
+      const result = simulateNeutralTie(tie.home, tie.away, rng);
+      tie.homeGoals = result.homeGoals;
+      tie.awayGoals = result.awayGoals;
+      tie.winner = result.winner;
+      tie.played = true;
+      tie.status = 'played';
+    }
+    if (typeof tie.winner === 'string') {
+      winners.push(tie.winner);
+    }
+  });
+
+  updatedRound.finished = updatedRound.ties.every((tie) => tie.played);
+
+  const nextRoundExists = roundIndex + 1 < cup.rounds.length;
+  const champion = clubWon && !nextRoundExists;
+  const outcome = champion ? 'champion' : clubWon ? 'victory' : 'eliminated';
+
+  let prize = 0;
+  let reputationDelta = 0;
+  if (definition) {
+    if (clubWon) {
+      prize = definition.reward;
+      reputationDelta = definition.reputationWin;
+      if (champion && Number.isFinite(definition.championBonus)) {
+        prize += definition.championBonus ?? 0;
+        reputationDelta += 8;
+      }
+    } else {
+      prize = definition.consolationReward;
+      reputationDelta = definition.reputationEliminated;
+    }
+  }
+
+  const narrative = [];
+  if (clubWon) {
+    const nextRound = cup.rounds[roundIndex + 1]?.name;
+    narrative.push(
+      `El ${clubName} supera a ${opponentName} por ${match.goalsFor}-${match.goalsAgainst} en ${currentRound.name}.`
+    );
+    if (champion) {
+      narrative.push('La grada estalla: la copa viaja a nuestra vitrina canalla.');
+    } else if (nextRound) {
+      narrative.push(`Se avecina sorteo de ${nextRound}; toca preparar las bolas calientes.`);
+    }
+  } else {
+    narrative.push(
+      `${clubName} cae ${match.goalsFor}-${match.goalsAgainst} ante ${opponentName} y se despide en ${currentRound.name}.`
+    );
+  }
+
+  const historyEntry = {
+    roundId: currentRound.id,
+    roundName: currentRound.name,
+    outcome,
+    prize,
+    reputationDelta,
+    narrative,
+  };
+
+  const updatedRounds = [...cup.rounds];
+  updatedRounds[roundIndex] = updatedRound;
+
+  let status = clubWon ? (champion ? 'champions' : 'awaiting-draw') : 'eliminated';
+  let currentRoundIndex = clubWon && nextRoundExists ? roundIndex + 1 : roundIndex;
+  const pendingParticipants = winners;
+
+  if (!nextRoundExists && clubWon) {
+    currentRoundIndex = roundIndex;
+  }
+
+  const updatedCup = {
+    ...cup,
+    rounds: updatedRounds,
+    status,
+    currentRoundIndex,
+    pendingParticipants,
+    nextFixture: null,
+    history: [...cup.history, historyEntry],
+  };
+
+  return {
+    cup: updatedCup,
+    historyEntry,
+    nextFixture: updatedCup.nextFixture,
+  };
 }
 
 /** @type {TacticalInstructions} */
@@ -1123,6 +1537,8 @@ export function createExampleClub(options = {}) {
     difficulty: options.leagueDifficulty,
     rivals: options.leagueRivals,
   });
+  const cupParticipants = Array.isArray(options.leagueRivals) ? options.leagueRivals : league.rivals;
+  const cup = createExampleCup(name, { participants: cupParticipants, rng: Math.random });
 
   return {
     name,
@@ -1139,9 +1555,11 @@ export function createExampleClub(options = {}) {
     objectives: {
       minPosition: 8,
       cupRun: true,
+      cupRoundTarget: 'semiFinal',
     },
     weeklyWageBill: squad.reduce((acc, player) => acc + player.salary / 4, 0),
     league,
+    cup,
     sponsors: createExampleSponsors({ city, stadiumName }),
     tvDeal: createExampleTvDeal(),
     merchandising: createExampleMerchandising(),

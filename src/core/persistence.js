@@ -18,6 +18,7 @@ import {
   MAX_LEAGUE_SIZE,
   calculateTotalMatchdays,
   resolveLeagueDifficulty,
+  createExampleCup,
 } from './data.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -28,7 +29,7 @@ import {
 /** @typedef {import('../types.js').MatchHistoryEntry} MatchHistoryEntry */
 /** @typedef {import('../types.js').MatchDayReport} MatchDayReport */
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const SAVE_KEY = 'ia-soccer-manager-state';
 
 /**
@@ -121,6 +122,7 @@ function normaliseClub(club) {
   const secondaryColor = normaliseHexColor(club.secondaryColor, DEFAULT_SECONDARY_COLOR);
   const logoUrl =
     typeof club.logoUrl === 'string' && club.logoUrl.trim().length > 0 ? club.logoUrl.trim() : DEFAULT_CLUB_LOGO;
+  const cup = normaliseCup(club.cup, name);
   return {
     ...club,
     name,
@@ -131,6 +133,7 @@ function normaliseClub(club) {
     logoUrl,
     squad: Array.isArray(club.squad) ? club.squad.map((player) => normalisePlayer(player)) : [],
     seasonStats,
+    cup,
   };
 }
 
@@ -174,6 +177,117 @@ function normaliseLeague(league) {
     totalMatchdays: totalMatchdaysCandidate,
     difficulty: difficulty.id,
     difficultyMultiplier,
+  };
+}
+
+/**
+ * Normaliza la estructura de la copa conservando datos válidos del guardado.
+ * @param {import('../types.js').CupState | undefined} cup
+ * @param {string} clubName
+ */
+function normaliseCup(cup, clubName) {
+  const baseline = createExampleCup(clubName);
+  if (!cup || typeof cup !== 'object') {
+    return baseline;
+  }
+  const rounds = Array.isArray(cup.rounds) && cup.rounds.length > 0
+    ? cup.rounds.map((round, index) => {
+        const fallback = baseline.rounds[index] ?? baseline.rounds[baseline.rounds.length - 1];
+        const ties = Array.isArray(round?.ties)
+          ? round.ties.map((tie, tieIndex) => ({
+              id: typeof tie?.id === 'string' && tie.id.trim().length > 0 ? tie.id.trim() : `${fallback.id}-${tieIndex + 1}`,
+              home: typeof tie?.home === 'string' && tie.home.trim().length > 0 ? tie.home.trim() : null,
+              away: typeof tie?.away === 'string' && tie.away.trim().length > 0 ? tie.away.trim() : null,
+              homeGoals: Number.isFinite(tie?.homeGoals) ? Math.trunc(/** @type {number} */ (tie.homeGoals)) : null,
+              awayGoals: Number.isFinite(tie?.awayGoals) ? Math.trunc(/** @type {number} */ (tie.awayGoals)) : null,
+              played: Boolean(tie?.played),
+              winner: typeof tie?.winner === 'string' && tie.winner.trim().length > 0 ? tie.winner.trim() : null,
+              includesClub: Boolean(tie?.includesClub),
+              status:
+                tie?.status === 'scheduled' || tie?.status === 'played'
+                  ? tie.status
+                  : tie?.status === 'pending'
+                    ? 'pending'
+                    : fallback.ties[tieIndex]?.status ?? 'pending',
+            }))
+          : fallback.ties;
+        return {
+          id: typeof round?.id === 'string' && round.id.trim().length > 0 ? round.id.trim() : fallback.id,
+          name: typeof round?.name === 'string' && round.name.trim().length > 0 ? round.name.trim() : fallback.name,
+          reward: Number.isFinite(round?.reward) ? Math.max(0, Math.trunc(/** @type {number} */ (round.reward))) : fallback.reward,
+          ties,
+          drawCompleted: Boolean(round?.drawCompleted),
+          finished: Boolean(round?.finished),
+          drawNarrative: Array.isArray(round?.drawNarrative)
+            ? round.drawNarrative.map((line) => (typeof line === 'string' ? line : String(line))).filter((line) => line.length > 0)
+            : [],
+        };
+      })
+    : baseline.rounds;
+  const statusOptions = ['idle', 'awaiting-draw', 'awaiting-match', 'eliminated', 'champions'];
+  const status = statusOptions.includes(cup.status) ? /** @type {typeof statusOptions[number]} */ (cup.status) : baseline.status;
+  const currentRoundIndex = Number.isFinite(cup.currentRoundIndex)
+    ? Math.min(Math.max(0, Math.trunc(/** @type {number} */ (cup.currentRoundIndex))), Math.max(0, rounds.length - 1))
+    : baseline.currentRoundIndex;
+  const pendingParticipants = Array.isArray(cup.pendingParticipants)
+    ? cup.pendingParticipants
+        .map((name) => (typeof name === 'string' ? name.trim() : ''))
+        .filter((name) => name.length > 0)
+    : baseline.pendingParticipants;
+  const nextFixture =
+    cup.nextFixture && typeof cup.nextFixture === 'object'
+      ? {
+          tieId:
+            typeof cup.nextFixture.tieId === 'string' && cup.nextFixture.tieId.trim().length > 0
+              ? cup.nextFixture.tieId.trim()
+              : '',
+          roundId:
+            typeof cup.nextFixture.roundId === 'string' && cup.nextFixture.roundId.trim().length > 0
+              ? cup.nextFixture.roundId.trim()
+              : rounds[currentRoundIndex]?.id ?? baseline.rounds[0].id,
+          roundName:
+            typeof cup.nextFixture.roundName === 'string' && cup.nextFixture.roundName.trim().length > 0
+              ? cup.nextFixture.roundName.trim()
+              : rounds[currentRoundIndex]?.name ?? baseline.rounds[0].name,
+          opponent:
+            typeof cup.nextFixture.opponent === 'string' && cup.nextFixture.opponent.trim().length > 0
+              ? cup.nextFixture.opponent.trim()
+              : 'Rival misterioso',
+          home: Boolean(cup.nextFixture.home),
+        }
+      : null;
+  const history = Array.isArray(cup.history)
+    ? cup.history.map((entry) => ({
+        roundId:
+          typeof entry?.roundId === 'string' && entry.roundId.trim().length > 0
+            ? entry.roundId.trim()
+            : baseline.rounds[0].id,
+        roundName:
+          typeof entry?.roundName === 'string' && entry.roundName.trim().length > 0
+            ? entry.roundName.trim()
+            : 'Ronda misteriosa',
+        outcome:
+          entry?.outcome === 'victory' || entry?.outcome === 'eliminated' || entry?.outcome === 'champion'
+            ? entry.outcome
+            : 'victory',
+        prize: Number.isFinite(entry?.prize) ? Math.trunc(/** @type {number} */ (entry.prize)) : 0,
+        reputationDelta: Number.isFinite(entry?.reputationDelta)
+          ? Math.trunc(/** @type {number} */ (entry.reputationDelta))
+          : 0,
+        narrative: Array.isArray(entry?.narrative)
+          ? entry.narrative.map((line) => (typeof line === 'string' ? line : String(line))).filter((line) => line.length > 0)
+          : [],
+      }))
+    : [];
+  return {
+    name: typeof cup.name === 'string' && cup.name.trim().length > 0 ? cup.name.trim() : baseline.name,
+    edition: Number.isFinite(cup.edition) ? Math.max(1, Math.trunc(/** @type {number} */ (cup.edition))) : baseline.edition,
+    rounds,
+    currentRoundIndex,
+    status,
+    pendingParticipants,
+    nextFixture,
+    history,
   };
 }
 

@@ -4,14 +4,18 @@
  * @module core/economy
  */
 
+import { CUP_ROUND_DEFINITIONS } from './types.js';
+
 /** @typedef {import('../types.js').ClubState} ClubState */
 /** @typedef {import('../types.js').PlayerId} PlayerId */
 /** @typedef {import('../types.js').TransferOffer} TransferOffer */
 /** @typedef {import('../types.js').MatchResult} MatchResult */
 /** @typedef {import('../types.js').MatchdayFinancials} MatchdayFinancials */
 /** @typedef {import('../types.js').SponsorContract} SponsorContract */
+/** @typedef {import('./types.js').CupRoundId} CupRoundId */
 
 const MONTHLY_MATCHES = 4;
+const CUP_DEFINITION_MAP = new Map(CUP_ROUND_DEFINITIONS.map((definition) => [definition.id, definition]));
 
 /**
  * Genera una copia con los gastos semanales aplicados, considerando personal y academia.
@@ -198,6 +202,44 @@ export function processTransferOffer(club, playerId, offer) {
   ];
 
   return { updatedClub, narrative };
+}
+
+/**
+ * Calcula el premio económico asociado a una ronda copera según el desenlace.
+ * @param {CupRoundId} roundId
+ * @param {'victory' | 'eliminated' | 'champion'} [outcome]
+ * @returns {{ prize: number; notes: string[] }}
+ */
+export function resolveCupPrize(roundId, outcome = 'victory') {
+  const definition = CUP_DEFINITION_MAP.get(roundId);
+  if (!definition) {
+    const fallbackPrize = outcome === 'eliminated' ? 20000 : 50000;
+    return {
+      prize: fallbackPrize,
+      notes: [`Prima estimada de copa: ${fallbackPrize.toLocaleString('es-ES')}€.`],
+    };
+  }
+  let prize = 0;
+  const notes = [];
+  if (outcome === 'eliminated') {
+    prize = definition.consolationReward;
+    notes.push(
+      `Pese a la eliminación en ${definition.name}, llegan ${prize.toLocaleString('es-ES')}€ en derechos de retransmisión.`
+    );
+  } else {
+    prize = definition.reward;
+    notes.push(
+      `Avanzar desde ${definition.name} deja ${prize.toLocaleString('es-ES')}€ frescos para la tesorería.`
+    );
+    if (outcome === 'champion') {
+      const bonus = definition.championBonus ?? Math.round(prize * 0.75);
+      prize += bonus;
+      notes.push(
+        `El título copa se celebra con un bonus extra de ${bonus.toLocaleString('es-ES')}€ entre taquilla y patrocinadores.`
+      );
+    }
+  }
+  return { prize, notes };
 }
 
 /**

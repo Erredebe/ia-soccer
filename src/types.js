@@ -5,6 +5,11 @@
  * @module types
  */
 
+/** @typedef {import('./core/types.js').CupState} CupState */
+/** @typedef {import('./core/types.js').CupRoundId} CupRoundId */
+/** @typedef {import('./core/types.js').CupProgression} CupProgression */
+/** @typedef {import('./core/types.js').CupHistoryEntry} CupHistoryEntry */
+
 /**
  * Definición del tipo `PlayerId`.
  * @typedef {string} PlayerId
@@ -79,7 +84,8 @@
  * @typedef {Object} ClubObjectives
  * @property {number=} minPosition
  * @property {boolean=} cupRun
- */
+ * @property {CupRoundId=} cupRoundTarget
+*/
 
 /**
  * Definición del tipo `LeagueStanding`.
@@ -277,8 +283,10 @@
  * @property {MatchStatistics} statistics
  * @property {string[]} commentary
  * @property {MatchViewMode} viewMode
+ * @property {'league' | 'cup'=} competition
+ * @property {CupRoundId=} cupRoundId
  * @property {number=} seed
- */
+*/
 
 /**
  * Definición del tipo `CanallaDecisionType`.
@@ -386,6 +394,7 @@
  * @property {InfrastructureState=} infrastructure
  * @property {OperatingExpenses=} operatingExpenses
  * @property {ClubSeasonStats=} seasonStats
+ * @property {CupState=} cup
  */
 
 /**
@@ -396,7 +405,9 @@
  * @property {number} financesDelta
  * @property {MatchdayFinancials=} finances
  * @property {ClubState} updatedClub
- */
+ * @property {'league' | 'cup'=} competition
+ * @property {CupProgression=} cupProgress
+*/
 
 /**
  * Definición del tipo `MatchHistoryEntry`.
@@ -408,8 +419,11 @@
  * @property {MatchDayReport} report
  * @property {DecisionOutcome=} decisionOutcome
  * @property {{ seedInputValue?: string }=} metadata
+ * @property {'league' | 'cup'=} competition
+ * @property {CupRoundId=} cupRoundId
+ * @property {string=} cupRoundName
  * @property {number} timestamp
- */
+*/
 
 /**
  * Definición del tipo `SavedGameBlob`.

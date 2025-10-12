@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createExampleClub } from '../src/core/data.js';
-import { resolveCanallaDecision } from '../src/core/reputation.js';
+import { resolveCanallaDecision, resolveCupReputation } from '../src/core/reputation.js';
 
 /** Retorna un valor bajo para forzar éxitos en las pruebas. */
 const alwaysSuccess = () => 0.01;
@@ -35,4 +35,13 @@ test('resolveCanallaDecision castiga duramente cuando se descubre la jugada', ()
   assert.ok(outcome.reputationChange < 0);
   assert.equal(typeof outcome.sanctions, 'string');
   assert.ok(updatedClub.budget < club.budget);
+});
+
+test('resolveCupReputation premia levantar el trofeo y castiga la eliminación', () => {
+  const win = resolveCupReputation('final', 'champion');
+  assert.ok(win.reputation > 0);
+  assert.ok(win.narrative.includes('mito'));
+  const elimination = resolveCupReputation('semiFinal', 'eliminated');
+  assert.ok(elimination.reputation < 0);
+  assert.ok(elimination.narrative.includes('tropiezo'));
 });
