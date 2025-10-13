@@ -1194,6 +1194,17 @@ body.modal-open {
   accent-color: #2563eb;
 }
 
+.field-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-toggle__label {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));

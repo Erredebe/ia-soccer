@@ -55,7 +55,7 @@ const homeCheckbox = document.querySelector('#home-checkbox');
 const opponentStrength = document.querySelector('#opponent-strength');
 const opponentOutput = document.querySelector('#opponent-output');
 const seedInput = document.querySelector('#seed-input');
-const viewModeSelect = document.querySelector('#view-mode-select');
+const viewModeToggle = document.querySelector('#view-mode-toggle');
 const form = document.querySelector('#game-form');
 const resetButton = document.querySelector('#reset-club');
 const lineupBoard = document.querySelector('#lineup-board');
@@ -2284,8 +2284,8 @@ function updateFormDefaults() {
   if (seedInput) {
     seedInput.value = typeof configState.seed === 'string' ? configState.seed : '';
   }
-  if (viewModeSelect instanceof HTMLSelectElement) {
-    viewModeSelect.value = configState.viewMode === '2d' ? '2d' : 'text';
+  if (viewModeToggle instanceof HTMLInputElement) {
+    viewModeToggle.checked = configState.viewMode === '2d';
   }
   updateOpponentOutput();
   refreshControlPanel();
@@ -3546,8 +3546,8 @@ function renderFinancialBreakdown(finances) {
 
 
 function resolveSelectedViewMode() {
-  if (viewModeSelect instanceof HTMLSelectElement) {
-    return viewModeSelect.value === '2d' ? '2d' : 'text';
+  if (viewModeToggle instanceof HTMLInputElement) {
+    return viewModeToggle.checked ? '2d' : 'text';
   }
   return configState.viewMode === '2d' ? '2d' : 'text';
 }
@@ -3650,7 +3650,7 @@ function renderMatchVisualization(report) {
   };
 
   if (selectedViewMode !== '2d') {
-    clearVisualization('Activa el modo 2D para proyectar la simulación en la pantalla luminosa.');
+    clearVisualization('Activa la casilla de simulación 2D para proyectar la pizarra retro.');
     return;
   }
 
@@ -4371,7 +4371,7 @@ form.addEventListener('submit', (event) => {
 
   const seedValue = seedInput ? seedInput.value.trim() : '';
   const selectedViewMode =
-    viewModeSelect instanceof HTMLSelectElement && viewModeSelect.value === '2d' ? '2d' : 'text';
+    viewModeToggle instanceof HTMLInputElement && viewModeToggle.checked ? '2d' : 'text';
   configState = {
     ...configState,
     home: isCupMatch && nextEvent.type === 'cup-match' && nextEvent.fixture
@@ -4609,9 +4609,9 @@ if (planNextButton) {
   });
 }
 
-if (viewModeSelect instanceof HTMLSelectElement) {
-  viewModeSelect.addEventListener('change', () => {
-    const mode = viewModeSelect.value === '2d' ? '2d' : 'text';
+if (viewModeToggle instanceof HTMLInputElement) {
+  viewModeToggle.addEventListener('change', () => {
+    const mode = viewModeToggle.checked ? '2d' : 'text';
     configState = { ...configState, viewMode: mode };
     renderMatchVisualization(currentReportData);
   });
