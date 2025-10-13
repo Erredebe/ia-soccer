@@ -196,8 +196,10 @@ function calculateClubStrength(players, config, moraleBoost = 0) {
  */
 function narrativeIntro(config, club) {
   const place = config.home ? 'en el templo propio' : 'visitando campo ajeno';
+  const rawOpponent = typeof config.opponentName === 'string' ? config.opponentName.trim() : '';
+  const opponentLabel = rawOpponent.length > 0 ? rawOpponent : 'Rival misterioso';
   return [
-    `La banda del ${club.name} salta al verde ${place}, con la grada lista para repartir cera verbal.`,
+    `La banda del ${club.name} salta al verde ${place}, con la grada lista para repartir cera verbal ante ${opponentLabel}.`,
   ];
 }
 
@@ -1016,6 +1018,10 @@ export function simulateMatch(club, config, options = {}) {
   }
 
   const finalNarrative = narrativeIntro(config, club);
+  const finalOpponentName =
+    typeof config.opponentName === 'string' && config.opponentName.trim().length > 0
+      ? config.opponentName.trim()
+      : 'Rival misterioso';
   const strengthDiffFinal = initialStrength - opponentStrength;
   finalNarrative.push(
     strengthDiffFinal > 5
@@ -1024,7 +1030,7 @@ export function simulateMatch(club, config, options = {}) {
       ? 'Costó horrores frenar la avalancha rival; sudor frío y uñas comidas.'
       : 'Partido tenso, digno de sobremesa con tertulianos gritones.'
   );
-  finalNarrative.push(`Marcador final: ${club.name} ${goalsFor}-${goalsAgainst} rival sin nombre pero con mala baba.`);
+  finalNarrative.push(`Marcador final: ${club.name} ${goalsFor}-${goalsAgainst} ${finalOpponentName} con mala baba.`);
   finalNarrative.push(
     `Posesión: ${Math.round(statistics.possession.for / MATCH_MINUTES.length)}% vs ${Math.round(
       statistics.possession.against / MATCH_MINUTES.length

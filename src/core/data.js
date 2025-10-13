@@ -2270,6 +2270,7 @@ export function createDefaultMatchConfig() {
     formation: '4-4-2',
     startingLineup: [],
     substitutes: [],
+    opponentName: '',
     instructions: createDefaultInstructions(),
     halftimeAdjustments: {
       tactic: 'balanced',

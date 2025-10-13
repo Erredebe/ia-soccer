@@ -235,3 +235,22 @@ test('playMatchDay reproduce la misma crónica con semilla compartida', () => {
   assert.equal(reportA.match.seed, reportB.match.seed);
   assert.ok(Number.isFinite(reportA.match.seed));
 });
+
+test('playMatchDay narra el marcador con el nombre del rival', () => {
+  const club = createExampleClub();
+  const config = createDefaultMatchConfig();
+  const lineup = createDefaultLineup(club);
+  config.startingLineup = [...lineup.starters];
+  config.substitutes = [...lineup.substitutes];
+  config.opponentName = 'Atlético del Ensanche';
+  const rng = createDeterministicRng([0.18, 0.44, 0.73, 0.52, 0.29, 0.61, 0.83, 0.35, 0.47, 0.92]);
+
+  const report = playMatchDay(club, config, { rng });
+  const scoreboardLine = report.match.narrative.find((line) => line.startsWith('Marcador final'));
+
+  assert.ok(scoreboardLine, 'la narrativa debe incluir el marcador final');
+  assert.ok(
+    scoreboardLine?.includes('Atlético del Ensanche'),
+    'el marcador debe mencionar al rival real'
+  );
+});
