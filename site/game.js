@@ -77,6 +77,11 @@ const saveButton = document.querySelector('#save-game');
 const saveFeedback = document.querySelector('#save-feedback');
 const saveVersionEl = document.querySelector('#save-version');
 const loadNoticeEl = document.querySelector('#load-notice');
+const startMenuEl = document.querySelector('#start-menu');
+const startMenuMessageEl = document.querySelector('#start-menu-message');
+const startNewGameButton = document.querySelector('#start-new-game');
+const startContinueButton = document.querySelector('#start-continue-game');
+const mainPageEl = document.querySelector('main.page');
 const sidebarToggleButton = document.querySelector('#sidebar-toggle');
 const sidebarPanel = document.querySelector('#sidebar-panel');
 const sidebarCollapseQuery =
@@ -1236,10 +1241,126 @@ let currentReportData = null;
 let clubIdentity = extractClubIdentity(clubState);
 let editingPlayerId = null;
 let staffFeedback = '';
+let pendingSavedGame = null;
+let autoContinueTimeoutId = null;
 
 if (!cupState) {
   cupState = createExampleCup(clubState.name, { participants: leagueState?.rivals });
   clubState = { ...clubState, cup: cupState };
+}
+
+function setStartMenuVisibility(isVisible) {
+  if (!startMenuEl) {
+    if (!isVisible && mainPageEl) {
+      mainPageEl.classList.remove('is-hidden');
+      mainPageEl.removeAttribute('aria-hidden');
+      mainPageEl.hidden = false;
+    }
+    return;
+  }
+  startMenuEl.classList.toggle('is-hidden', !isVisible);
+  startMenuEl.hidden = !isVisible;
+  startMenuEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
+  if (mainPageEl) {
+    mainPageEl.classList.toggle('is-hidden', isVisible);
+    if (isVisible) {
+      mainPageEl.setAttribute('aria-hidden', 'true');
+      mainPageEl.hidden = true;
+    } else {
+      mainPageEl.removeAttribute('aria-hidden');
+      mainPageEl.hidden = false;
+    }
+  }
+  document.body.classList.toggle('start-menu-active', Boolean(isVisible));
+}
+
+function setStartMenuMessage(message) {
+  if (!startMenuMessageEl) {
+    return;
+  }
+  if (typeof message === 'string' && message.trim().length > 0) {
+    startMenuMessageEl.textContent = message.trim();
+    startMenuMessageEl.hidden = false;
+  } else {
+    startMenuMessageEl.textContent = '';
+    startMenuMessageEl.hidden = true;
+  }
+}
+
+function setContinueAvailability(canContinue) {
+  if (!startContinueButton) {
+    return;
+  }
+  const enabled = Boolean(canContinue);
+  startContinueButton.disabled = !enabled;
+  if (enabled) {
+    startContinueButton.removeAttribute('aria-disabled');
+  } else {
+    startContinueButton.setAttribute('aria-disabled', 'true');
+  }
+}
+
+function showStartMenu({ message = '', canContinue = false } = {}) {
+  setStartMenuVisibility(true);
+  setContinueAvailability(canContinue);
+  setStartMenuMessage(message);
+}
+
+function hideStartMenu() {
+  setStartMenuVisibility(false);
+  setStartMenuMessage('');
+}
+
+function cancelAutoContinue() {
+  if (autoContinueTimeoutId !== null) {
+    window.clearTimeout(autoContinueTimeoutId);
+    autoContinueTimeoutId = null;
+  }
+}
+
+function refreshManagementInterfaceAfterLoad() {
+  updateFormDefaults();
+  updateClubSummary();
+  renderLeagueTable();
+  renderTransferMarket();
+  updateOpponentOutput();
+  switchToPlanningView();
+  renderMatchVisualization(currentReportData);
+}
+
+function handleStartMenuContinue({ saved, showNotice = true } = {}) {
+  cancelAutoContinue();
+  const state = saved ?? pendingSavedGame ?? loadSavedGame();
+  if (!state) {
+    setContinueAvailability(false);
+    setStartMenuMessage('No encontramos un guardado disponible. Lanza una nueva partida para empezar.');
+    return;
+  }
+  setStartMenuMessage('Cargando partida guardada...');
+  pendingSavedGame = state;
+  applyLoadedState(state);
+  refreshManagementInterfaceAfterLoad();
+  hideStartMenu();
+  if (showNotice) {
+    showLoadNotice('Partida recuperada del guardado local.');
+  }
+}
+
+function handleStartMenuNewGame() {
+  cancelAutoContinue();
+  setStartMenuMessage('Preparando nueva partida...');
+  clearSavedGame();
+  clearSaveMessage();
+  clearLoadNotice();
+  pendingSavedGame = null;
+  setContinueAvailability(false);
+  rebuildClubState(clubIdentity);
+  hideStartMenu();
+  showLoadNotice('Nueva partida lista. Personaliza tu club para empezar.');
+  prefillClubIdentityForm();
+  if (clubIdentityModal) {
+    openModal(clubIdentityModal);
+  }
 }
 
 function updateBodyModalState() {
@@ -4496,6 +4617,21 @@ function applyLoadedState(saved) {
   renderReportHistory();
 }
 
+if (startNewGameButton) {
+  startNewGameButton.addEventListener('click', () => {
+    handleStartMenuNewGame();
+  });
+}
+
+if (startContinueButton) {
+  startContinueButton.addEventListener('click', () => {
+    if (startContinueButton.disabled) {
+      return;
+    }
+    handleStartMenuContinue({ showNotice: true });
+  });
+}
+
 form.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -4886,21 +5022,21 @@ function init() {
   if (saveVersionEl) {
     saveVersionEl.textContent = `Versión guardado v${SAVE_VERSION}`;
   }
+  cancelAutoContinue();
   const saved = loadSavedGame();
+  pendingSavedGame = saved ?? null;
+
+  const introMessage = saved
+    ? 'Guardado detectado. Entrando al despacho manager en un instante...'
+    : 'Pulsa “Nueva partida” para montar tu chiringuito futbolero.';
+  showStartMenu({ message: introMessage, canContinue: Boolean(saved) });
+
   if (saved) {
-    applyLoadedState(saved);
-    showLoadNotice('Partida recuperada del guardado local.');
-  }
-  updateFormDefaults();
-  updateClubSummary();
-  renderLeagueTable();
-  renderTransferMarket();
-  updateOpponentOutput();
-  switchToPlanningView();
-  renderMatchVisualization(currentReportData);
-  if (!saved && clubIdentityModal) {
-    prefillClubIdentityForm();
-    openModal(clubIdentityModal);
+    autoContinueTimeoutId = window.setTimeout(() => {
+      handleStartMenuContinue({ saved, showNotice: true });
+    }, 1200);
+  } else if (startNewGameButton && typeof startNewGameButton.focus === 'function') {
+    startNewGameButton.focus();
   }
 }
 
