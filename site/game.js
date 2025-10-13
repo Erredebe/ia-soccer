@@ -1118,6 +1118,7 @@ function buildInitialConfig(club) {
     ...baseConfig,
     startingLineup: defaultLineup.starters,
     substitutes: defaultLineup.substitutes,
+    opponentName: typeof baseConfig.opponentName === 'string' ? baseConfig.opponentName : '',
     instructions,
     seed: typeof baseConfig.seed === 'string' ? baseConfig.seed : '',
     difficultyMultiplier: leagueInfo.difficultyMultiplier,
@@ -5202,7 +5203,10 @@ form.addEventListener('submit', (event) => {
   const isCupMatch = nextEvent.type === 'cup-match';
 
   const opponentStanding = getUpcomingOpponent();
-  const opponentName = opponentStanding?.club ?? 'Rival misterioso';
+  const opponentName =
+    typeof opponentStanding?.club === 'string' && opponentStanding.club.trim().length > 0
+      ? opponentStanding.club.trim()
+      : 'Rival misterioso';
 
   const decisionIndex = decisionSelect.value;
   let decision;
@@ -5243,6 +5247,7 @@ form.addEventListener('submit', (event) => {
       ? nextEvent.fixture.home
       : homeCheckbox.checked,
     opponentStrength: Number.parseInt(opponentStrength.value, 10),
+    opponentName,
     tactic: tacticSelect.value,
     formation: formationSelect.value,
     seed: seedValue,

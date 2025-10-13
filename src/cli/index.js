@@ -98,6 +98,7 @@ async function runDemo() {
   const defaultLineup = createDefaultLineup(club);
   matchConfig.startingLineup = defaultLineup.starters;
   matchConfig.substitutes = defaultLineup.substitutes;
+  matchConfig.opponentName = 'Rival misterioso';
   const report = playMatchDay(club, matchConfig, { decision, decisionOutcome });
 
   console.log('\n>>> Crónica del partido <<<');

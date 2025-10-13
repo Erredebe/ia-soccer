@@ -223,6 +223,7 @@
  * @property {string} formation
  * @property {PlayerId[]} startingLineup
  * @property {PlayerId[]} substitutes
+ * @property {string=} opponentName
  * @property {TacticalInstructions=} instructions
  * @property {MatchAdjustment=} halftimeAdjustments
  * @property {MatchAdjustment[]=} inMatchAdjustments
