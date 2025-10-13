@@ -3438,3 +3438,127 @@ body.modal-open {
   }
 }
 
+.commercial-alert-button {
+  position: relative;
+}
+
+.commercial-alert-button--active::after {
+  content: '';
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 0.75rem;
+  border: 2px solid var(--color-accent, #f3c800);
+  animation: commercial-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes commercial-pulse {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.commercial-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+}
+
+.commercial-modal__header p {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+}
+
+.commercial-modal__offers,
+.commercial-modal__history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.commercial-offer-list,
+.commercial-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.commercial-offer {
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--color-surface-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.commercial-offer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.commercial-offer__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.commercial-offer__tag {
+  background: var(--color-highlight-soft, rgba(255, 215, 0, 0.15));
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.commercial-offer__summary,
+.commercial-offer__meta,
+.commercial-offer__duration {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.commercial-offer__clauses {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-text-secondary);
+}
+
+.commercial-offer__clauses li + li {
+  margin-top: 0.25rem;
+}
+
+.commercial-offer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.commercial-history__item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.commercial-history__item:last-child {
+  border-bottom: none;
+}
+
+.commercial-empty {
+  margin: 0;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+

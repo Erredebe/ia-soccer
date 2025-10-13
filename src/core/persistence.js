@@ -20,6 +20,7 @@ import {
   resolveLeagueDifficulty,
   createExampleCup,
   createExampleInfrastructure,
+  createExampleTvDeal,
   createExampleStaffState,
   calculateOperatingExpensesForInfrastructure,
   calculateStadiumCapacity,
@@ -35,7 +36,7 @@ import {
 /** @typedef {import('../types.js').MatchHistoryEntry} MatchHistoryEntry */
 /** @typedef {import('../types.js').MatchDayReport} MatchDayReport */
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SAVE_KEY = 'ia-soccer-manager-state';
 
 /**
@@ -142,6 +143,130 @@ function normaliseStadiumCapacity(value, infrastructure) {
   return calculateStadiumCapacity(infrastructure.stadiumLevel);
 }
 
+const VALID_SPONSOR_FREQUENCIES = new Set(['match', 'monthly', 'annual']);
+
+function createOfferId(prefix) {
+  const random = Math.floor(Math.random() * 1_000_000);
+  return `${prefix}-${Date.now().toString(36)}-${random.toString(36)}`;
+}
+
+function normaliseSponsorContract(contract, fallbackName) {
+  if (!isObject(contract)) {
+    return {
+      name: fallbackName,
+      value: 15000,
+      frequency: 'match',
+      lastPaidMatchDay: -1,
+    };
+  }
+  const name =
+    typeof contract.name === 'string' && contract.name.trim().length > 0
+      ? contract.name.trim()
+      : fallbackName;
+  const value = Number.isFinite(contract.value) ? Math.max(1000, Math.round(contract.value)) : 15000;
+  const frequency = VALID_SPONSOR_FREQUENCIES.has(contract.frequency)
+    ? contract.frequency
+    : 'match';
+  const lastPaidMatchDay = Number.isFinite(contract.lastPaidMatchDay)
+    ? Math.trunc(contract.lastPaidMatchDay)
+    : -1;
+  return { name, value, frequency, lastPaidMatchDay };
+}
+
+function normaliseSponsorOffer(offer) {
+  if (!isObject(offer)) {
+    return null;
+  }
+  const id = typeof offer.id === 'string' && offer.id.trim().length > 0 ? offer.id.trim() : createOfferId('sponsor');
+  const profile = offer.profile === 'purista' || offer.profile === 'canalla' ? offer.profile : 'equilibrado';
+  const summary = typeof offer.summary === 'string' && offer.summary.trim().length > 0 ? offer.summary.trim() : '';
+  const clauses = Array.isArray(offer.clauses)
+    ? offer.clauses
+        .map((line) => (typeof line === 'string' ? line.trim() : ''))
+        .filter((line) => line.length > 0)
+    : [];
+  const upfrontPayment = Number.isFinite(offer.upfrontPayment) ? Math.max(0, Math.round(offer.upfrontPayment)) : 0;
+  const reputationImpact = {
+    accept: Number.isFinite(offer.reputationImpact?.accept)
+      ? Math.trunc(offer.reputationImpact.accept)
+      : 0,
+    reject: Number.isFinite(offer.reputationImpact?.reject)
+      ? Math.trunc(offer.reputationImpact.reject)
+      : 0,
+  };
+  const contract = normaliseSponsorContract(offer.contract, `Patrocinio ${id}`);
+  const durationMatches = Number.isFinite(offer.durationMatches)
+    ? Math.max(4, Math.trunc(offer.durationMatches))
+    : undefined;
+  const durationSeasons = Number.isFinite(offer.durationSeasons)
+    ? Math.max(1, Math.trunc(offer.durationSeasons))
+    : undefined;
+  return {
+    id,
+    profile,
+    contract,
+    upfrontPayment,
+    reputationImpact,
+    summary,
+    clauses,
+    durationMatches,
+    durationSeasons,
+  };
+}
+
+function normaliseTvDealOffer(offer) {
+  if (!isObject(offer)) {
+    return null;
+  }
+  const id = typeof offer.id === 'string' && offer.id.trim().length > 0 ? offer.id.trim() : createOfferId('tv');
+  const profile = offer.profile === 'purista' || offer.profile === 'canalla' ? offer.profile : 'equilibrado';
+  const summary = typeof offer.summary === 'string' && offer.summary.trim().length > 0 ? offer.summary.trim() : '';
+  const clauses = Array.isArray(offer.clauses)
+    ? offer.clauses
+        .map((line) => (typeof line === 'string' ? line.trim() : ''))
+        .filter((line) => line.length > 0)
+    : [];
+  const upfrontPayment = Number.isFinite(offer.upfrontPayment) ? Math.max(0, Math.round(offer.upfrontPayment)) : 0;
+  const reputationImpact = {
+    accept: Number.isFinite(offer.reputationImpact?.accept)
+      ? Math.trunc(offer.reputationImpact.accept)
+      : 0,
+    reject: Number.isFinite(offer.reputationImpact?.reject)
+      ? Math.trunc(offer.reputationImpact.reject)
+      : 0,
+  };
+  const deal = isObject(offer.deal)
+    ? {
+        name:
+          typeof offer.deal.name === 'string' && offer.deal.name.trim().length > 0
+            ? offer.deal.name.trim()
+            : `TV ${id}`,
+        perMatch: Number.isFinite(offer.deal.perMatch)
+          ? Math.max(0, Math.round(offer.deal.perMatch))
+          : 16000,
+        bonusWin: Number.isFinite(offer.deal.bonusWin)
+          ? Math.max(0, Math.round(offer.deal.bonusWin))
+          : 6000,
+        bonusDraw: Number.isFinite(offer.deal.bonusDraw)
+          ? Math.max(0, Math.round(offer.deal.bonusDraw))
+          : 3000,
+      }
+    : { name: `TV ${id}`, perMatch: 16000, bonusWin: 6000, bonusDraw: 3000 };
+  const durationSeasons = Number.isFinite(offer.durationSeasons)
+    ? Math.max(1, Math.trunc(offer.durationSeasons))
+    : undefined;
+  return {
+    id,
+    profile,
+    deal,
+    upfrontPayment,
+    reputationImpact,
+    summary,
+    clauses,
+    durationSeasons,
+  };
+}
+
 /**
  * Normaliza un club reconstruyendo plantilla y estadísticas con valores por defecto.
  * @param {ClubState} club
@@ -166,6 +291,38 @@ function normaliseClub(club) {
   const stadiumCapacity = normaliseStadiumCapacity(club.stadiumCapacity, infrastructure);
   const operatingExpenses = normaliseOperatingExpenses(club.operatingExpenses, infrastructure);
   const staffState = normaliseStaffState(club.staff ?? createExampleStaffState());
+  const sponsors = Array.isArray(club.sponsors)
+    ? club.sponsors.map((contract, index) => normaliseSponsorContract(contract, `Patrocinio ${index + 1}`))
+    : [];
+  const pendingSponsorOffers = Array.isArray(club.pendingSponsorOffers)
+    ? club.pendingSponsorOffers
+        .map((offer) => normaliseSponsorOffer(offer))
+        .filter((offer) => offer !== null)
+        .map((offer) => /** @type {import('../types.js').SponsorOffer} */ (offer))
+    : [];
+  const pendingTvDeals = Array.isArray(club.pendingTvDeals)
+    ? club.pendingTvDeals
+        .map((offer) => normaliseTvDealOffer(offer))
+        .filter((offer) => offer !== null)
+        .map((offer) => /** @type {import('../types.js').TVDealOffer} */ (offer))
+    : [];
+  const commercialNarratives = Array.isArray(club.commercialNarratives)
+    ? club.commercialNarratives
+        .map((line) => (typeof line === 'string' ? line.trim() : ''))
+        .filter((line) => line.length > 0)
+        .slice(-6)
+    : [];
+  const tvDeal = isObject(club.tvDeal)
+    ? {
+        name:
+          typeof club.tvDeal.name === 'string' && club.tvDeal.name.trim().length > 0
+            ? club.tvDeal.name.trim()
+            : 'Liga Retro TV',
+        perMatch: Number.isFinite(club.tvDeal.perMatch) ? Math.max(0, Math.round(club.tvDeal.perMatch)) : 28000,
+        bonusWin: Number.isFinite(club.tvDeal.bonusWin) ? Math.max(0, Math.round(club.tvDeal.bonusWin)) : 12000,
+        bonusDraw: Number.isFinite(club.tvDeal.bonusDraw) ? Math.max(0, Math.round(club.tvDeal.bonusDraw)) : 6000,
+      }
+    : createExampleTvDeal();
   return {
     ...club,
     name,
@@ -179,6 +336,11 @@ function normaliseClub(club) {
     operatingExpenses,
     staff: staffState,
     squad: Array.isArray(club.squad) ? club.squad.map((player) => normalisePlayer(player)) : [],
+    sponsors,
+    tvDeal,
+    pendingSponsorOffers,
+    pendingTvDeals,
+    commercialNarratives,
     seasonStats,
     cup,
   };

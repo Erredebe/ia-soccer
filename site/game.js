@@ -42,10 +42,18 @@ import {
   getStaffDefinition,
   STAFF_ROLE_INFO,
   listStaffMembers,
+  generateSponsorOffers,
+  generateTvDeals,
 } from '../src/core/data.js';
 import { resolveCanallaDecision, resolveCupReputation, tickCanallaState } from '../src/core/reputation.js';
 import { clearSavedGame, loadSavedGame, saveGame, SAVE_VERSION } from '../src/core/persistence.js';
-import { resolveCupPrize } from '../src/core/economy.js';
+import {
+  resolveCupPrize,
+  acceptSponsorOffer,
+  rejectSponsorOffer,
+  acceptTvDealOffer,
+  rejectTvDealOffer,
+} from '../src/core/economy.js';
 import { CUP_ROUND_DEFINITIONS } from '../src/core/types.js';
 
 const decisionSelect = document.querySelector('#decision-select');
@@ -148,6 +156,12 @@ const reportPanels = document.querySelectorAll('[data-report-panel]');
 const reportHistoryList = document.querySelector('#report-history-list');
 const reportHistorySeasonSelect = document.querySelector('#report-history-season');
 const reportHistoryEmptyEl = document.querySelector('#report-history-empty');
+
+let commercialModal;
+let commercialOffersList;
+let commercialHistoryList;
+let commercialEmptyMessage;
+let commercialAlertButton;
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const XLINK_NS = 'http://www.w3.org/1999/xlink';
@@ -1192,7 +1206,7 @@ function rebuildClubState(identity) {
   const resolvedIdentity = normaliseIdentity(identity ?? clubIdentity);
   clubIdentity = resolvedIdentity;
   const freshClub = createExampleClub(resolvedIdentity);
-  clubState = { ...freshClub, ...resolvedIdentity };
+  clubState = ensureCommercialOffersAvailable({ ...freshClub, ...resolvedIdentity });
   clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
   clubState.staff = normaliseStaffState(clubState.staff);
   leagueState = freshClub.league;
@@ -1216,10 +1230,11 @@ function rebuildClubState(identity) {
   activeReportTab = 'current';
   renderReportHistory();
   clearReport();
+  updateCommercialUi();
   return resolvedIdentity;
 }
 
-let clubState = createExampleClub();
+let clubState = ensureCommercialOffersAvailable(createExampleClub());
 clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
 clubState.staff = normaliseStaffState(clubState.staff);
 let leagueState = clubState.league;
@@ -1326,6 +1341,7 @@ function refreshManagementInterfaceAfterLoad() {
   updateOpponentOutput();
   switchToPlanningView();
   renderMatchVisualization(currentReportData);
+  updateCommercialUi();
 }
 
 function handleStartMenuContinue({ saved, showNotice = true } = {}) {
@@ -1530,6 +1546,442 @@ function describeInstructionEntry(key, value) {
     return `${key}: ${value}`;
   }
   return `${key}: ${String(value)}`;
+}
+
+function ensureCommercialModal() {
+  if (commercialModal) {
+    return;
+  }
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'modal-commercial';
+  modal.setAttribute('aria-hidden', 'true');
+
+  const content = document.createElement('div');
+  content.className = 'modal__content';
+  content.setAttribute('role', 'dialog');
+  content.setAttribute('aria-modal', 'true');
+  content.setAttribute('aria-labelledby', 'commercial-modal-title');
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'modal__close';
+  closeButton.setAttribute('data-modal-close', '');
+  closeButton.setAttribute('aria-label', 'Cerrar ofertas comerciales');
+  closeButton.textContent = '×';
+
+  const section = document.createElement('section');
+  section.className = 'commercial-modal';
+
+  const header = document.createElement('header');
+  header.className = 'commercial-modal__header';
+
+  const title = document.createElement('h2');
+  title.id = 'commercial-modal-title';
+  title.textContent = 'Ofertas comerciales activas';
+  const intro = document.createElement('p');
+  intro.textContent = 'Revisa patrocinadores y acuerdos televisivos que quieren sumarse al proyecto.';
+  header.append(title, intro);
+
+  const offerSection = document.createElement('section');
+  offerSection.className = 'commercial-modal__offers';
+  const offerTitle = document.createElement('h3');
+  offerTitle.textContent = 'Propuestas disponibles';
+  commercialOffersList = document.createElement('ul');
+  commercialOffersList.className = 'commercial-offer-list';
+  commercialEmptyMessage = document.createElement('p');
+  commercialEmptyMessage.className = 'commercial-empty';
+  commercialEmptyMessage.textContent = 'Sin propuestas activas por ahora.';
+  offerSection.append(offerTitle, commercialOffersList, commercialEmptyMessage);
+
+  const historySection = document.createElement('section');
+  historySection.className = 'commercial-modal__history';
+  const historyTitle = document.createElement('h3');
+  historyTitle.textContent = 'Reacciones recientes';
+  commercialHistoryList = document.createElement('ul');
+  commercialHistoryList.className = 'commercial-history';
+  historySection.append(historyTitle, commercialHistoryList);
+
+  section.append(header, offerSection, historySection);
+  content.append(closeButton, section);
+  modal.append(content);
+  document.body.append(modal);
+
+  commercialModal = modal;
+}
+
+function ensureCommercialAlertButton() {
+  if (commercialAlertButton && commercialAlertButton.isConnected) {
+    return;
+  }
+  const actions = document.querySelector('.club-actions');
+  if (!(actions instanceof HTMLElement)) {
+    return;
+  }
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'club-action commercial-alert-button';
+  button.textContent = 'Ofertas comerciales';
+  button.addEventListener('click', () => {
+    openCommercialModal();
+  });
+  actions.append(button);
+  commercialAlertButton = button;
+}
+
+function openCommercialModal() {
+  ensureCommercialModal();
+  if (commercialModal) {
+    openModal(commercialModal);
+  }
+}
+
+function updateCommercialAlertState() {
+  ensureCommercialAlertButton();
+  if (!commercialAlertButton) {
+    return;
+  }
+  const sponsorCount = Array.isArray(clubState?.pendingSponsorOffers)
+    ? clubState.pendingSponsorOffers.length
+    : 0;
+  const tvCount = Array.isArray(clubState?.pendingTvDeals) ? clubState.pendingTvDeals.length : 0;
+  const total = sponsorCount + tvCount;
+  const baseLabel = 'Ofertas comerciales';
+  commercialAlertButton.textContent = total > 0 ? `${baseLabel} (${total})` : baseLabel;
+  commercialAlertButton.disabled = total === 0;
+  commercialAlertButton.setAttribute('aria-disabled', total === 0 ? 'true' : 'false');
+  commercialAlertButton.classList.toggle('commercial-alert-button--active', total > 0);
+}
+
+function renderCommercialHistory() {
+  if (!commercialHistoryList) {
+    return;
+  }
+  commercialHistoryList.innerHTML = '';
+  const history = Array.isArray(clubState?.commercialNarratives) ? clubState.commercialNarratives : [];
+  if (history.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'commercial-history__item';
+    empty.textContent = 'Sin reacciones registradas todavía.';
+    commercialHistoryList.append(empty);
+    return;
+  }
+  [...history]
+    .slice(-6)
+    .reverse()
+    .forEach((line) => {
+      const item = document.createElement('li');
+      item.className = 'commercial-history__item';
+      item.textContent = line;
+      commercialHistoryList.append(item);
+    });
+}
+
+function describeCommercialFrequency(frequency) {
+  if (frequency === 'annual') {
+    return 'por temporada';
+  }
+  if (frequency === 'monthly') {
+    return 'al mes';
+  }
+  return 'por partido';
+}
+
+function createCommercialOfferItem(entry) {
+  const { type, offer } = entry;
+  const item = document.createElement('li');
+  item.className = 'commercial-offer';
+  const header = document.createElement('header');
+  header.className = 'commercial-offer__header';
+  const title = document.createElement('h3');
+  const tag = document.createElement('span');
+  tag.className = 'commercial-offer__tag';
+  if (type === 'sponsor') {
+    title.textContent = offer.contract.name;
+    tag.textContent = `Patrocinio · ${offer.profile}`;
+  } else {
+    title.textContent = offer.deal.name;
+    tag.textContent = `Derechos TV · ${offer.profile}`;
+  }
+  header.append(title, tag);
+  item.append(header);
+
+  const summary = document.createElement('p');
+  summary.className = 'commercial-offer__summary';
+  summary.textContent = offer.summary ?? '';
+  if (summary.textContent) {
+    item.append(summary);
+  }
+
+  const meta = document.createElement('p');
+  meta.className = 'commercial-offer__meta';
+  if (type === 'sponsor') {
+    const frequency = describeCommercialFrequency(offer.contract.frequency);
+    meta.textContent = `${numberFormatter.format(offer.contract.value)} ${frequency}. Pago inicial: ${numberFormatter.format(
+      offer.upfrontPayment
+    )}.`;
+  } else {
+    meta.textContent = `${numberFormatter.format(offer.deal.perMatch)} por partido · Bonus victoria ${numberFormatter.format(
+      offer.deal.bonusWin
+    )} · Empate ${numberFormatter.format(offer.deal.bonusDraw)}. Pago inicial: ${numberFormatter.format(
+      offer.upfrontPayment
+    )}.`;
+  }
+  item.append(meta);
+
+  if (offer.durationMatches || offer.durationSeasons) {
+    const duration = document.createElement('p');
+    duration.className = 'commercial-offer__duration';
+    if (offer.durationSeasons) {
+      duration.textContent = `Duración estimada: ${offer.durationSeasons} temporada${offer.durationSeasons === 1 ? '' : 's'}.`;
+    } else if (offer.durationMatches) {
+      duration.textContent = `Duración estimada: ${offer.durationMatches} partidos.`;
+    }
+    item.append(duration);
+  }
+
+  if (Array.isArray(offer.clauses) && offer.clauses.length > 0) {
+    const clauseList = document.createElement('ul');
+    clauseList.className = 'commercial-offer__clauses';
+    offer.clauses.forEach((clause) => {
+      const clauseItem = document.createElement('li');
+      clauseItem.textContent = clause;
+      clauseList.append(clauseItem);
+    });
+    item.append(clauseList);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'commercial-offer__actions';
+  const acceptButton = document.createElement('button');
+  acceptButton.type = 'button';
+  acceptButton.className = 'club-action club-action--primary commercial-offer__action';
+  acceptButton.textContent = type === 'sponsor' ? 'Aceptar patrocinio' : 'Aceptar TV';
+  acceptButton.addEventListener('click', () => {
+    handleCommercialOfferAction(type, offer.id, 'accept');
+  });
+  const rejectButton = document.createElement('button');
+  rejectButton.type = 'button';
+  rejectButton.className = 'club-action commercial-offer__action';
+  rejectButton.textContent = 'Rechazar';
+  rejectButton.addEventListener('click', () => {
+    handleCommercialOfferAction(type, offer.id, 'reject');
+  });
+  actions.append(acceptButton, rejectButton);
+  item.append(actions);
+  return item;
+}
+
+function renderCommercialOffers() {
+  ensureCommercialModal();
+  if (!commercialOffersList) {
+    return;
+  }
+  commercialOffersList.innerHTML = '';
+  const sponsorOffers = Array.isArray(clubState?.pendingSponsorOffers) ? clubState.pendingSponsorOffers : [];
+  const tvOffers = Array.isArray(clubState?.pendingTvDeals) ? clubState.pendingTvDeals : [];
+  const offers = [
+    ...sponsorOffers.map((offer) => ({ type: 'sponsor', offer })),
+    ...tvOffers.map((offer) => ({ type: 'tv', offer })),
+  ];
+  if (commercialEmptyMessage) {
+    commercialEmptyMessage.hidden = offers.length > 0;
+  }
+  if (offers.length === 0) {
+    return;
+  }
+  offers.forEach((entry) => {
+    const item = createCommercialOfferItem(entry);
+    commercialOffersList.append(item);
+  });
+}
+
+function updateCommercialUi() {
+  ensureCommercialModal();
+  ensureCommercialAlertButton();
+  renderCommercialOffers();
+  renderCommercialHistory();
+  updateCommercialAlertState();
+}
+
+function ensureCommercialOffersAvailable(club, options = {}) {
+  const { sponsorLimit = 3, tvLimit = 2, recentResults = [] } = options;
+  const sponsorOffers = Array.isArray(club.pendingSponsorOffers) ? [...club.pendingSponsorOffers] : [];
+  const tvOffers = Array.isArray(club.pendingTvDeals) ? [...club.pendingTvDeals] : [];
+  const sponsorNameSet = new Set(
+    sponsorOffers
+      .map((offer) => offer?.contract?.name)
+      .filter((name) => typeof name === 'string' && name.length > 0)
+  );
+  if (Array.isArray(club.sponsors)) {
+    for (const sponsor of club.sponsors) {
+      if (typeof sponsor?.name === 'string' && sponsor.name.length > 0) {
+        sponsorNameSet.add(sponsor.name);
+      }
+    }
+  }
+  const sponsorHeadroom = Math.max(0, sponsorLimit - sponsorOffers.length);
+  const additionalSponsors =
+    sponsorHeadroom > 0
+      ? generateSponsorOffers(club, recentResults, {
+          limit: sponsorHeadroom,
+          existingNames: Array.from(sponsorNameSet),
+        }).filter((offer) => {
+          const contractName = offer?.contract?.name;
+          if (typeof contractName !== 'string' || contractName.length === 0) {
+            return false;
+          }
+          if (sponsorNameSet.has(contractName)) {
+            return false;
+          }
+          sponsorNameSet.add(contractName);
+          return true;
+        })
+      : [];
+
+  const tvNameSet = new Set(
+    tvOffers
+      .map((offer) => offer?.deal?.name)
+      .filter((name) => typeof name === 'string' && name.length > 0)
+  );
+  if (typeof club.tvDeal?.name === 'string' && club.tvDeal.name.length > 0) {
+    tvNameSet.add(club.tvDeal.name);
+  }
+  const tvHeadroom = Math.max(0, tvLimit - tvOffers.length);
+  const generatedTvOffers =
+    tvHeadroom > 0 ? generateTvDeals(club, recentResults, { limit: tvHeadroom }) : [];
+  const additionalTv = [];
+  for (const offer of generatedTvOffers) {
+    const name = offer?.deal?.name;
+    if (typeof name !== 'string' || name.length === 0) {
+      continue;
+    }
+    if (tvNameSet.has(name)) {
+      continue;
+    }
+    additionalTv.push(offer);
+    tvNameSet.add(name);
+    if (additionalTv.length >= tvHeadroom) {
+      break;
+    }
+  }
+
+  return {
+    ...club,
+    pendingSponsorOffers: [...sponsorOffers, ...additionalSponsors].slice(0, sponsorLimit),
+    pendingTvDeals: [...tvOffers, ...additionalTv].slice(0, tvLimit),
+  };
+}
+
+function collectRecentResults(limit, currentMatch) {
+  const recent = [];
+  if (currentMatch) {
+    recent.push(currentMatch);
+  }
+  for (const entry of matchHistory) {
+    if (entry.report?.match) {
+      recent.push(entry.report.match);
+    }
+    if (recent.length >= limit) {
+      break;
+    }
+  }
+  return recent.slice(0, limit);
+}
+
+function computeRecentForm(results) {
+  const sample = results.slice(0, 5);
+  let points = 0;
+  let wins = 0;
+  let draws = 0;
+  let goalDelta = 0;
+  sample.forEach((match) => {
+    if (!match) {
+      return;
+    }
+    if (match.goalsFor > match.goalsAgainst) {
+      wins += 1;
+      points += 3;
+    } else if (match.goalsFor === match.goalsAgainst) {
+      draws += 1;
+      points += 1;
+    }
+    goalDelta += match.goalsFor - match.goalsAgainst;
+  });
+  return { points, wins, draws, goalDelta, matches: sample.length };
+}
+
+function handleCommercialOfferAction(type, offerId, action) {
+  if (!clubState) {
+    return;
+  }
+  let result;
+  if (type === 'sponsor') {
+    result = action === 'accept' ? acceptSponsorOffer(clubState, offerId) : rejectSponsorOffer(clubState, offerId);
+  } else {
+    result = action === 'accept' ? acceptTvDealOffer(clubState, offerId) : rejectTvDealOffer(clubState, offerId);
+  }
+  clubState = {
+    ...result.updatedClub,
+    logoUrl: resolveClubLogoUrl(result.updatedClub),
+  };
+  updateClubSummary();
+  renderFinancesModal();
+  renderCommercialOffers();
+  renderCommercialHistory();
+  updateCommercialAlertState();
+  if (result.narratives && result.narratives.length > 0) {
+    showSaveMessage(result.narratives[0]);
+  }
+  persistState('silent');
+}
+
+function evaluateCommercialOpportunities(context) {
+  if (!clubState) {
+    return false;
+  }
+  const recentResults = collectRecentResults(5, context.report?.match);
+  const form = computeRecentForm(recentResults);
+  const triggers = [];
+  if (context.seasonFinished) {
+    triggers.push('season');
+  }
+  if (context.cupOutcome === 'champion') {
+    triggers.push('cup');
+  }
+  if (form.wins >= 3 || form.points >= 9 || form.goalDelta >= 6) {
+    triggers.push('form');
+  }
+  if (clubState.reputation >= 65 && form.points >= 6) {
+    triggers.push('reputation');
+  }
+  if (triggers.length === 0) {
+    return false;
+  }
+  const sponsorLimit = 3;
+  const tvLimit = 2;
+  const previousSponsors = Array.isArray(clubState.pendingSponsorOffers) ? clubState.pendingSponsorOffers.length : 0;
+  const previousTvDeals = Array.isArray(clubState.pendingTvDeals) ? clubState.pendingTvDeals.length : 0;
+  const updatedClub = ensureCommercialOffersAvailable(clubState, {
+    sponsorLimit,
+    tvLimit,
+    recentResults,
+  });
+  const hasNewSponsors = (updatedClub.pendingSponsorOffers?.length ?? 0) > previousSponsors;
+  const hasNewTvDeals = (updatedClub.pendingTvDeals?.length ?? 0) > previousTvDeals;
+  if (!hasNewSponsors && !hasNewTvDeals) {
+    return false;
+  }
+  clubState = updatedClub;
+  updateCommercialUi();
+  const message = triggers.includes('season')
+    ? 'Fin de temporada: llegan nuevos patrocinadores a tu puerta.'
+    : triggers.includes('cup')
+      ? 'La gesta copera despierta el apetito de patrocinadores y cadenas.'
+      : 'La racha del equipo atrae nuevas propuestas comerciales.';
+  showSaveMessage(message);
+  openCommercialModal();
+  return true;
 }
 
 function findCupDefinition(roundId) {
@@ -3169,6 +3621,7 @@ function updateClubSummary() {
   applyClubThemeColors();
   updateClubLogoDisplay();
   refreshControlPanel();
+  updateCommercialUi();
 }
 
 function getUpcomingOpponent() {
@@ -4513,6 +4966,7 @@ function startNewSeason() {
     seasonStats: nextSeasonStats,
     weeklyWageBill: calculateWeeklyWageBill(refreshedSquad),
   };
+  clubState = ensureCommercialOffersAvailable(clubState, { sponsorLimit: 3, tvLimit: 2, recentResults: [] });
   clubState.staff = normaliseStaffState(clubState.staff);
   leagueState = newLeague;
   cupState = newCup;
@@ -4525,6 +4979,7 @@ function startNewSeason() {
   renderLineupBoard();
   updateMatchSummary();
   updateClubSummary();
+  updateCommercialUi();
   clearReport();
   showSaveMessage('Nueva temporada lista: plantilla puesta a tono.');
   persistState('silent');
@@ -4714,6 +5169,7 @@ form.addEventListener('submit', (event) => {
   report.competition = report.match.competition;
 
   let updatedLeague = leagueState ?? workingClub.league;
+  let previousMatchDay = !isCupMatch && updatedLeague?.matchDay ? updatedLeague.matchDay : 0;
   if (!isCupMatch) {
     updatedLeague = updateLeagueTableAfterMatch(updatedLeague, workingClub.name, report.match);
     updateSeasonHistoricalMetrics(report, opponentName, updatedLeague);
@@ -4754,6 +5210,11 @@ form.addEventListener('submit', (event) => {
     cup: cupState ?? report.updatedClub.cup,
   };
   leagueState = updatedLeague;
+
+  const totalMatchdays = getTotalMatchdays();
+  const seasonFinished = !isCupMatch && previousMatchDay < totalMatchdays && updatedLeague.matchDay >= totalMatchdays;
+  const cupOutcome = report.cupProgress?.historyEntry?.outcome;
+  evaluateCommercialOpportunities({ report, seasonFinished, cupOutcome });
 
   renderLeagueTable();
   renderTransferMarket();
@@ -5016,9 +5477,12 @@ if (sidebarToggleButton && sidebarPanel && sidebarCollapseQuery) {
 }
 
 function init() {
+  ensureCommercialModal();
+  ensureCommercialAlertButton();
   attachModalHandlers();
   populateDecisions();
   renderReportHistory();
+  updateCommercialUi();
   if (saveVersionEl) {
     saveVersionEl.textContent = `Versión guardado v${SAVE_VERSION}`;
   }

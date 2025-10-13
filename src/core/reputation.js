@@ -12,6 +12,8 @@ import { CUP_ROUND_DEFINITIONS } from './types.js';
 /** @typedef {import('../types.js').CanallaStatus} CanallaStatus */
 /** @typedef {import('../types.js').CanallaOngoingEffect} CanallaOngoingEffect */
 /** @typedef {import('./types.js').CupRoundId} CupRoundId */
+/** @typedef {import('../types.js').SponsorOffer} SponsorOffer */
+/** @typedef {import('../types.js').TVDealOffer} TVDealOffer */
 
 /**
  * Definición del tipo `DecisionResolution` utilizado en los informes canallas.
@@ -80,6 +82,92 @@ const INTENSITY_MODIFIER = {
   media: 0,
   alta: 0.12,
 };
+
+const SPONSOR_PROFILE_REACTIONS = Object.freeze({
+  purista: {
+    accept: 'La cooperativa presume del escudo en cada escaparate del barrio.',
+    reject: 'El vecindario lamenta perder un apoyo con valores de cantera.',
+  },
+  equilibrado: {
+    accept: 'La marca emergente despliega campañas digitales junto al club.',
+    reject: 'Los analistas creen que se perdió una alianza moderna interesante.',
+  },
+  canalla: {
+    accept: 'Los titulares nocturnos celebran el acuerdo más gamberro de la temporada.',
+    reject: 'El vestuario respira: se evita un socio demasiado polémico.',
+  },
+});
+
+const TV_PROFILE_REACTIONS = Object.freeze({
+  purista: {
+    accept: 'Las cámaras públicas muestran planos cuidados y alma de estadio antiguo.',
+    reject: 'Los socios clásicos suspiran por una difusión más romántica.',
+  },
+  equilibrado: {
+    accept: 'La nueva plataforma mezcla métricas en directo y clips virales en segundos.',
+    reject: 'El club apuesta por esperar un socio audiovisual más definido.',
+  },
+  canalla: {
+    accept: 'El show televisivo convierte cada jornada en una serie canalla de madrugada.',
+    reject: 'Se evita una tormenta mediática: nada de cámaras indiscretas por ahora.',
+  },
+});
+
+function buildReputationLine(delta) {
+  if (!Number.isFinite(delta) || delta === 0) {
+    return null;
+  }
+  const trend = delta > 0 ? 'sube' : 'cae';
+  return `La reputación ${trend} ${delta > 0 ? `+${delta}` : delta} puntos tras la decisión.`;
+}
+
+/**
+ * Narra la reacción tras aceptar o rechazar un patrocinador.
+ * @param {{ action: 'accept' | 'reject'; offer: SponsorOffer; upfrontPayment: number; matchDay?: number }} context
+ * @returns {string[]}
+ */
+export function describeSponsorChoice(context) {
+  const { action, offer, upfrontPayment } = context;
+  const profile = offer.profile ?? 'equilibrado';
+  const reactions = SPONSOR_PROFILE_REACTIONS[profile] ?? SPONSOR_PROFILE_REACTIONS.equilibrado;
+  const narratives = [];
+  const paymentLabel = EURO_FORMATTER.format(upfrontPayment ?? 0);
+  if (action === 'accept') {
+    narratives.push(`${reactions.accept} Entra un pago inicial de ${paymentLabel}.`);
+  } else {
+    narratives.push(reactions.reject);
+  }
+  const reputationDelta = action === 'accept' ? offer.reputationImpact?.accept ?? 0 : offer.reputationImpact?.reject ?? 0;
+  const reputationLine = buildReputationLine(reputationDelta);
+  if (reputationLine) {
+    narratives.push(reputationLine);
+  }
+  return narratives;
+}
+
+/**
+ * Narra las consecuencias de elegir un acuerdo televisivo.
+ * @param {{ action: 'accept' | 'reject'; offer: TVDealOffer; upfrontPayment: number }} context
+ * @returns {string[]}
+ */
+export function describeTvDealChoice(context) {
+  const { action, offer, upfrontPayment } = context;
+  const profile = offer.profile ?? 'equilibrado';
+  const reactions = TV_PROFILE_REACTIONS[profile] ?? TV_PROFILE_REACTIONS.equilibrado;
+  const narratives = [];
+  if (action === 'accept') {
+    const paymentLabel = EURO_FORMATTER.format(upfrontPayment ?? 0);
+    narratives.push(`${reactions.accept} El club cobra ${paymentLabel} nada más firmar.`);
+  } else {
+    narratives.push(reactions.reject);
+  }
+  const reputationDelta = action === 'accept' ? offer.reputationImpact?.accept ?? 0 : offer.reputationImpact?.reject ?? 0;
+  const reputationLine = buildReputationLine(reputationDelta);
+  if (reputationLine) {
+    narratives.push(reputationLine);
+  }
+  return narratives;
+}
 
 /** @type {Record<CanallaDecision['type'], DecisionParameters>} */
 const DECISION_MAP = {
