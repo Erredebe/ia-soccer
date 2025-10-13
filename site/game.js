@@ -259,6 +259,11 @@ const matchVisualizationState = {
   dimensions: { width: 21, height: 11 },
   autoplayId: null,
   autoplayActive: false,
+  elements: {
+    pitch: null,
+    players: new Map(),
+    ball: null,
+  },
 };
 
 function clearMatchVisualizationAutoplay() {
@@ -339,42 +344,83 @@ function getPlayerBadgeLabel(name) {
 }
 
 function renderMatchVisualizationPitch(frame) {
-  const pitch = document.createElement('div');
-  pitch.className = 'match-visualization__pitch';
-  pitch.setAttribute('role', 'presentation');
+  const { elements } = matchVisualizationState;
+  if (!elements.pitch) {
+    elements.pitch = document.createElement('div');
+    elements.pitch.className = 'match-visualization__pitch';
+    elements.pitch.setAttribute('role', 'presentation');
+  }
+
+  const pitch = elements.pitch;
+  const remainingPlayers = new Set(elements.players.keys());
 
   frame.players.forEach((player) => {
-    const token = document.createElement('div');
-    token.className = `match-visualization__player match-visualization__player--${player.team}`;
-    if (player.role === 'GK') {
-      token.classList.add('match-visualization__player--goalkeeper');
+    let token = elements.players.get(player.id);
+    if (!token) {
+      token = document.createElement('div');
+      token.dataset.playerId = player.id;
+      token.setAttribute('role', 'img');
+      const initials = document.createElement('span');
+      initials.className = 'match-visualization__player-initials';
+      token.append(initials);
+      elements.players.set(player.id, token);
+      pitch.append(token);
     }
+
+    token.className = `match-visualization__player match-visualization__player--${player.team}`;
+    token.classList.toggle('match-visualization__player--goalkeeper', player.role === 'GK');
     token.style.left = `${player.xPercent}%`;
     token.style.top = `${player.yPercent}%`;
     token.dataset.name = getPlayerBadgeLabel(player.name);
-    token.setAttribute('role', 'img');
+    token.title = player.name;
     token.setAttribute(
       'aria-label',
       `${player.name} · ${player.team === 'us' ? 'nuestro equipo' : 'rival'}${
         player.role === 'GK' ? ' · portero' : ''
       }`
     );
-    token.title = player.name;
-    const initials = document.createElement('span');
-    initials.className = 'match-visualization__player-initials';
-    initials.textContent = getPlayerInitials(player.name, player.role);
-    token.append(initials);
-    pitch.append(token);
+    const initials = token.querySelector('.match-visualization__player-initials');
+    if (initials) {
+      initials.textContent = getPlayerInitials(player.name, player.role);
+    }
+    remainingPlayers.delete(player.id);
   });
 
-  const ball = document.createElement('div');
+  remainingPlayers.forEach((playerId) => {
+    const token = elements.players.get(playerId);
+    if (token) {
+      token.remove();
+      elements.players.delete(playerId);
+    }
+  });
+
+  if (!elements.ball) {
+    elements.ball = document.createElement('div');
+    elements.ball.setAttribute('aria-hidden', 'true');
+  }
+
+  const ball = elements.ball;
   ball.className = `match-visualization__ball match-visualization__ball--${frame.ball.possession}`;
   ball.style.left = `${frame.ball.xPercent}%`;
   ball.style.top = `${frame.ball.yPercent}%`;
-  ball.setAttribute('aria-hidden', 'true');
   pitch.append(ball);
 
   return pitch;
+}
+
+function resetMatchVisualizationElements({ detachPitch = false } = {}) {
+  const { elements } = matchVisualizationState;
+  if (elements.pitch) {
+    elements.pitch.replaceChildren();
+    if (detachPitch) {
+      elements.pitch.remove();
+    }
+  }
+  elements.players = new Map();
+  if (elements.ball) {
+    elements.ball.remove();
+    elements.ball = null;
+  }
 }
 
 if (financesDeltaEl) {
@@ -3682,9 +3728,10 @@ function updateMatchVisualizationFrame(index, options = {}) {
   const frame = matchVisualizationState.frames[clamped];
 
   if (matchVisualizationScreen) {
-    matchVisualizationScreen.innerHTML = '';
     const pitch = renderMatchVisualizationPitch(frame);
-    matchVisualizationScreen.append(pitch);
+    if (!pitch.isConnected || pitch.parentElement !== matchVisualizationScreen) {
+      matchVisualizationScreen.replaceChildren(pitch);
+    }
     restartAnimation(matchVisualizationScreen, MATCH_VISUALIZATION_TRANSITION_CLASS);
   }
 
@@ -3739,6 +3786,7 @@ function renderMatchVisualization(report) {
     matchVisualizationState.dimensions = { width: 21, height: 11 };
     stopMatchVisualizationAutoplay();
     matchVisualizationSection.dataset.state = 'empty';
+    resetMatchVisualizationElements({ detachPitch: true });
     if (matchVisualizationScreen) {
       matchVisualizationScreen.textContent = '';
     }
@@ -3803,6 +3851,7 @@ function renderMatchVisualization(report) {
   }
 
   matchVisualizationSection.dataset.state = 'ready';
+  resetMatchVisualizationElements();
   if (matchVisualizationStatusEl) {
     matchVisualizationStatusEl.textContent = '';
     matchVisualizationStatusEl.hidden = true;
