@@ -7,7 +7,38 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="page">
+    <section id="start-menu" class="start-menu" aria-labelledby="start-menu-title">
+      <div class="start-menu__content">
+        <div class="start-menu__logo" aria-hidden="true">
+          <img src="assets/club-crest.svg" alt="Escudo de IA Soccer" loading="lazy" />
+        </div>
+        <h1 id="start-menu-title" class="start-menu__title">IA Soccer</h1>
+        <p class="start-menu__claim">
+          Tu despacho manager canalla siempre listo para la próxima jornada.
+        </p>
+        <div class="start-menu__actions">
+          <button
+            type="button"
+            id="start-new-game"
+            class="start-menu__button start-menu__button--primary"
+          >
+            Nueva partida
+          </button>
+          <button
+            type="button"
+            id="start-continue-game"
+            class="start-menu__button start-menu__button--secondary"
+            aria-disabled="true"
+            disabled
+          >
+            Continuar
+          </button>
+        </div>
+        <p id="start-menu-message" class="start-menu__message" aria-live="polite" hidden></p>
+      </div>
+    </section>
+
+    <main class="page is-hidden" aria-hidden="true">
       <header class="hero">
         <h1>IA Soccer</h1>
         <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
