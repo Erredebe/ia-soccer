@@ -302,14 +302,14 @@
                       >Si introduces una semilla podrás repetir exactamente este partido más adelante.</span
                     >
                   </label>
-                  <label class="field field--wide">
-                    <span class="field-label">Modo de visualización</span>
-                    <select id="view-mode-select" name="viewMode">
-                      <option value="text">Crónica clásica</option>
-                      <option value="2d">Simulación 2D (beta)</option>
-                    </select>
+                  <label class="field field--wide" for="view-mode-toggle">
+                    <span class="field-label">Simulación 2D</span>
+                    <div class="field-toggle">
+                      <input type="checkbox" id="view-mode-toggle" name="viewMode2d" />
+                      <span class="field-toggle__label">Activar pizarra retro (beta)</span>
+                    </div>
                     <span class="field-hint"
-                      >Alterna entre el relato radiofónico y la pizarra animada retro.</span
+                      >Activa la casilla para alternar entre la crónica clásica y la pizarra retro.</span
                     >
                   </label>
                 </div>
