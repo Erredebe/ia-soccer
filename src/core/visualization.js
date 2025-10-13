@@ -1,8 +1,8 @@
 // @ts-check
 /**
  * Generador de visualizaciones 2D simplificadas para el motor de partidos.
- * Representa el terreno como una cuadrícula ASCII e incluye instantáneas
- * por evento relevante.
+ * Calcula posiciones normalizadas para representar el terreno en una pizarra
+ * retro con elementos interactivos y captura instantáneas por evento relevante.
  * @module core/visualization
  */
 
@@ -141,41 +141,14 @@ function createOpponentLayout(homeLayout) {
   return opponent;
 }
 
-/**
- * Renderiza la cuadrícula ASCII del terreno.
- * @param {Array<{ id: string; name: string; team: 'us' | 'rival'; role: 'GK' | 'OUT'; x: number; y: number }>} players
- * @param {{ x: number; y: number; possession: 'us' | 'rival' | 'neutral' }} ball
- */
-function renderPitch(players, ball) {
-  const grid = Array.from({ length: PITCH_HEIGHT }, () => Array(PITCH_WIDTH).fill(' '));
-  for (let x = 0; x < PITCH_WIDTH; x += 1) {
-    grid[0][x] = x === 0 ? '┌' : x === PITCH_WIDTH - 1 ? '┐' : '─';
-    grid[PITCH_HEIGHT - 1][x] = x === 0 ? '└' : x === PITCH_WIDTH - 1 ? '┘' : '─';
+function normaliseCoordinate(value, limit) {
+  const playableLimit = Math.max(1, limit - 2);
+  const clamped = Math.max(1, Math.min(limit - 2, value));
+  if (playableLimit <= 1) {
+    return { value: clamped, percent: 50 };
   }
-  for (let y = 1; y < PITCH_HEIGHT - 1; y += 1) {
-    grid[y][0] = '│';
-    grid[y][PITCH_WIDTH - 1] = '│';
-  }
-  const mid = Math.floor(PITCH_WIDTH / 2);
-  for (let y = 1; y < PITCH_HEIGHT - 1; y += 1) {
-    grid[y][mid] = '│';
-  }
-
-  const place = (x, y, char) => {
-    if (x <= 0 || x >= PITCH_WIDTH - 1 || y <= 0 || y >= PITCH_HEIGHT - 1) {
-      return;
-    }
-    grid[y][x] = char;
-  };
-
-  for (const player of players) {
-    const char = player.team === 'us' ? (player.role === 'GK' ? 'K' : 'H') : player.role === 'GK' ? 'k' : 'V';
-    place(player.x, player.y, char);
-  }
-
-  place(ball.x, ball.y, 'o');
-
-  return grid.map((row) => row.join(''));
+  const percent = ((clamped - 1) / (playableLimit - 1)) * 100;
+  return { value: clamped, percent };
 }
 
 /**
@@ -283,26 +256,51 @@ function updateCoordinatesFromEvent(event, coordinates, playerMap) {
  * @param {Array<{ id: string; name: string; team: 'rival'; role: 'GK' | 'OUT'; x: number; y: number }>} opponentBase
  */
 function createFrame(minute, label, ball, home, opponentBase, playerMap) {
+  /** @type {Match2DPlayer[]} */
   const players = [];
   for (const [playerId, value] of home.entries()) {
     const info = playerMap.get(playerId);
+    const x = normaliseCoordinate(value.x, PITCH_WIDTH);
+    const y = normaliseCoordinate(value.y, PITCH_HEIGHT);
     players.push({
       id: playerId,
       name: info?.name ?? playerId,
       team: 'us',
       role: value.role,
-      x: value.x,
-      y: value.y,
+      x: x.value,
+      y: y.value,
+      xPercent: x.percent,
+      yPercent: y.percent,
     });
   }
-  const opponent = opponentBase.map((player) => ({ ...player }));
-  const pitch = renderPitch([...players, ...opponent], ball);
+  for (const opponentPlayer of opponentBase) {
+    const x = normaliseCoordinate(opponentPlayer.x, PITCH_WIDTH);
+    const y = normaliseCoordinate(opponentPlayer.y, PITCH_HEIGHT);
+    players.push({
+      id: opponentPlayer.id,
+      name: opponentPlayer.name,
+      team: 'rival',
+      role: opponentPlayer.role,
+      x: x.value,
+      y: y.value,
+      xPercent: x.percent,
+      yPercent: y.percent,
+    });
+  }
+  const normalisedBallX = normaliseCoordinate(ball.x, PITCH_WIDTH);
+  const normalisedBallY = normaliseCoordinate(ball.y, PITCH_HEIGHT);
+  const enhancedBall = {
+    x: normalisedBallX.value,
+    y: normalisedBallY.value,
+    possession: ball.possession,
+    xPercent: normalisedBallX.percent,
+    yPercent: normalisedBallY.percent,
+  };
   return {
     minute,
     label,
-    ball,
-    players: [...players, ...opponent],
-    pitch,
+    ball: enhancedBall,
+    players,
   };
 }
 
@@ -339,11 +337,9 @@ export function buildMatchVisualization2D({ events, lineup, playerMap, formation
   return {
     dimensions: { width: PITCH_WIDTH, height: PITCH_HEIGHT },
     legend: [
-      'K: Portero local',
-      'H: Jugador local',
-      'k: Portero rival',
-      'V: Jugador rival',
-      'o: Balón',
+      'Círculo azul: Jugador local (anillo dorado si es portero).',
+      'Círculo ámbar: Jugador rival.',
+      'Punto brillante: Balón (cambia de color según la posesión).',
     ],
     frames,
   };
