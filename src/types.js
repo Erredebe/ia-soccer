@@ -277,6 +277,8 @@
  * @property {number} x
  * @property {number} y
  * @property {'us' | 'rival' | 'neutral'} possession
+ * @property {number} xPercent
+ * @property {number} yPercent
  */
 
 /**
@@ -288,6 +290,8 @@
  * @property {'GK' | 'OUT'} role
  * @property {number} x
  * @property {number} y
+ * @property {number} xPercent
+ * @property {number} yPercent
  */
 
 /**
@@ -297,7 +301,6 @@
  * @property {string} label
  * @property {Match2DBall} ball
  * @property {Match2DPlayer[]} players
- * @property {string[]} pitch
  */
 
 /**

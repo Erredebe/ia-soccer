@@ -65,9 +65,9 @@ test('simulateMatch genera frames 2D cuando se solicita', () => {
   const viz = result.visualization2d;
   assert.ok(viz.frames.length >= 1, 'debe haber al menos un frame');
   const firstFrame = viz.frames[0];
-  assert.ok(firstFrame.pitch.length === viz.dimensions.height);
-  assert.ok(firstFrame.pitch.every((row) => row.length === viz.dimensions.width));
   assert.ok(firstFrame.players.some((player) => player.team === 'us'));
+  assert.ok(firstFrame.players.every((player) => Number.isFinite(player.xPercent)));
+  assert.ok(Number.isFinite(firstFrame.ball.xPercent));
   assert.ok(viz.legend.length > 0);
 });
 

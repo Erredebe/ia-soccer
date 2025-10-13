@@ -2237,15 +2237,146 @@ body.modal-open {
   margin: 0;
   padding: 1rem;
   min-height: 200px;
-  font-size: clamp(0.75rem, 2.3vw, 1rem);
-  letter-spacing: 0.08em;
-  line-height: 1.35;
-  white-space: pre;
-  color: #bbf7d0;
-  text-shadow:
-    0 0 4px rgba(56, 189, 248, 0.6),
-    0 0 12px rgba(56, 189, 248, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.25s ease, filter 0.25s ease;
+}
+
+.match-visualization__pitch {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 105 / 68;
+  background:
+    linear-gradient(90deg, rgba(15, 118, 110, 0.35), rgba(14, 116, 144, 0.4)),
+    repeating-linear-gradient(
+      0deg,
+      rgba(19, 78, 74, 0.35) 0%,
+      rgba(19, 78, 74, 0.35) 12%,
+      rgba(8, 47, 73, 0.25) 12%,
+      rgba(8, 47, 73, 0.25) 24%
+    );
+  border: 2px solid rgba(165, 243, 252, 0.45);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 0 25px rgba(13, 148, 136, 0.4),
+    0 12px 32px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+}
+
+.match-visualization__pitch::before,
+.match-visualization__pitch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.match-visualization__pitch::before {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(165, 243, 252, 0.5) 0%, rgba(165, 243, 252, 0.5) 24%, transparent 26%),
+    linear-gradient(90deg, rgba(224, 242, 254, 0.65) 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-size: 58% 58%, 2px 100%;
+  background-position: 50% 50%, 50% 0;
+  mix-blend-mode: screen;
+}
+
+.match-visualization__pitch::after {
+  background:
+    linear-gradient(0deg, rgba(224, 242, 254, 0.4) 1.5px, transparent 1.5px),
+    linear-gradient(180deg, rgba(59, 130, 246, 0.3) 12%, transparent 12%),
+    linear-gradient(0deg, rgba(59, 130, 246, 0.3) 12%, transparent 12%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  mix-blend-mode: screen;
+  opacity: 0.45;
+}
+
+.match-visualization__player {
+  position: absolute;
+  width: clamp(1.65rem, 4.5vw, 2.35rem);
+  height: clamp(1.65rem, 4.5vw, 2.35rem);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: clamp(0.6rem, 1.7vw, 0.85rem);
+  letter-spacing: 0.04em;
+  color: #0f172a;
+  transform: translate(-50%, -50%);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.35));
+  cursor: default;
+}
+
+.match-visualization__player::after {
+  content: attr(data-name);
+  position: absolute;
+  bottom: calc(-0.85rem - 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(0.55rem, 1.4vw, 0.75rem);
+  color: rgba(226, 232, 240, 0.85);
+  text-shadow: 0 0 6px rgba(15, 118, 110, 0.6);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.match-visualization__player--us {
+  background: radial-gradient(circle at 30% 30%, #bae6fd, #38bdf8 70%);
+  box-shadow:
+    0 0 0 2px rgba(14, 165, 233, 0.85),
+    inset 0 0 12px rgba(14, 165, 233, 0.65);
+}
+
+.match-visualization__player--rival {
+  background: radial-gradient(circle at 30% 30%, #fed7aa, #fb923c 70%);
+  box-shadow:
+    0 0 0 2px rgba(234, 88, 12, 0.8),
+    inset 0 0 12px rgba(249, 115, 22, 0.6);
+}
+
+.match-visualization__player--goalkeeper {
+  box-shadow:
+    0 0 0 2px rgba(250, 204, 21, 0.9),
+    inset 0 0 14px rgba(250, 204, 21, 0.7),
+    0 0 18px rgba(250, 204, 21, 0.35);
+}
+
+.match-visualization__player:hover,
+.match-visualization__player:focus-visible {
+  transform: translate(-50%, -52%) scale(1.05);
+}
+
+.match-visualization__player-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.match-visualization__ball {
+  position: absolute;
+  width: clamp(0.55rem, 1.6vw, 0.8rem);
+  height: clamp(0.55rem, 1.6vw, 0.8rem);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 14px rgba(248, 250, 252, 0.8);
+  filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.45));
+}
+
+.match-visualization__ball--us {
+  background: radial-gradient(circle, #ecfeff 25%, #38bdf8 90%);
+}
+
+.match-visualization__ball--rival {
+  background: radial-gradient(circle, #fff7ed 25%, #fb923c 90%);
+}
+
+.match-visualization__ball--neutral {
+  background: radial-gradient(circle, #f8fafc 20%, #cbd5f5 90%);
 }
 
 .match-visualization__screen--transition {
@@ -2856,7 +2987,10 @@ body.modal-open {
 
   .match-visualization__screen {
     min-height: 160px;
-    font-size: clamp(0.75rem, 3.8vw, 0.95rem);
+  }
+
+  .match-visualization__pitch {
+    max-width: 100%;
   }
 
   .modal__close {
@@ -2897,8 +3031,22 @@ body.modal-open {
   }
 
   .match-visualization__screen {
-    color: #bef264;
     background: rgba(2, 6, 23, 0.6);
+  }
+
+  .match-visualization__pitch {
+    border-color: rgba(148, 197, 255, 0.55);
+    box-shadow:
+      inset 0 0 28px rgba(14, 165, 233, 0.38),
+      0 14px 34px rgba(2, 6, 23, 0.55);
+  }
+
+  .match-visualization__pitch::after {
+    opacity: 0.65;
+  }
+
+  .match-visualization__player::after {
+    color: rgba(224, 242, 254, 0.85);
   }
 
   .match-visualization__button {

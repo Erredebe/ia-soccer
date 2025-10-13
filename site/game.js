@@ -252,10 +252,130 @@ const TIMELINE_EVENT_META = {
 
 const MATCH_VISUALIZATION_TRANSITION_CLASS = 'match-visualization__screen--transition';
 const MATCH_VISUALIZATION_MINUTE_CLASS = 'match-visualization__minute--pulse';
+const MATCH_VISUALIZATION_AUTOPLAY_INTERVAL = 3400;
 const matchVisualizationState = {
   frames: [],
   index: 0,
+  dimensions: { width: 21, height: 11 },
+  autoplayId: null,
+  autoplayActive: false,
 };
+
+function clearMatchVisualizationAutoplay() {
+  if (matchVisualizationState.autoplayId !== null) {
+    window.clearTimeout(matchVisualizationState.autoplayId);
+    matchVisualizationState.autoplayId = null;
+  }
+}
+
+function scheduleMatchVisualizationAutoplay() {
+  clearMatchVisualizationAutoplay();
+  if (!matchVisualizationState.autoplayActive || matchVisualizationState.frames.length <= 1) {
+    return;
+  }
+  matchVisualizationState.autoplayId = window.setTimeout(() => {
+    advanceMatchVisualizationAutoplay();
+  }, MATCH_VISUALIZATION_AUTOPLAY_INTERVAL);
+}
+
+function startMatchVisualizationAutoplay() {
+  matchVisualizationState.autoplayActive = matchVisualizationState.frames.length > 1;
+  scheduleMatchVisualizationAutoplay();
+}
+
+function stopMatchVisualizationAutoplay() {
+  matchVisualizationState.autoplayActive = false;
+  clearMatchVisualizationAutoplay();
+}
+
+function resetMatchVisualizationAutoplay() {
+  if (!matchVisualizationState.autoplayActive) {
+    return;
+  }
+  scheduleMatchVisualizationAutoplay();
+}
+
+function advanceMatchVisualizationAutoplay() {
+  if (matchVisualizationState.frames.length === 0) {
+    return;
+  }
+  const total = matchVisualizationState.frames.length;
+  const nextIndex = (matchVisualizationState.index + 1) % total;
+  updateMatchVisualizationFrame(nextIndex);
+  scheduleMatchVisualizationAutoplay();
+}
+
+function getPlayerInitials(name, role) {
+  if (typeof name !== 'string' || name.trim().length === 0) {
+    return role === 'GK' ? 'GK' : 'J';
+  }
+  const parts = name
+    .split(/\s+/)
+    .filter((part) => part.length > 0)
+    .slice(0, 2);
+  if (parts.length === 0) {
+    return role === 'GK' ? 'GK' : 'J';
+  }
+  const initials = parts.map((part) => part[0]?.toUpperCase() ?? '').join('');
+  if (initials.length === 1 && role === 'GK') {
+    return `${initials}K`;
+  }
+  return initials;
+}
+
+function getPlayerBadgeLabel(name) {
+  if (typeof name !== 'string' || name.trim().length === 0) {
+    return 'Jugador';
+  }
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0];
+  }
+  if (parts.length === 2) {
+    return parts[1];
+  }
+  const last = parts[parts.length - 1];
+  return `${parts[0]} ${last[0]?.toUpperCase() ?? ''}.`;
+}
+
+function renderMatchVisualizationPitch(frame) {
+  const pitch = document.createElement('div');
+  pitch.className = 'match-visualization__pitch';
+  pitch.setAttribute('role', 'presentation');
+
+  frame.players.forEach((player) => {
+    const token = document.createElement('div');
+    token.className = `match-visualization__player match-visualization__player--${player.team}`;
+    if (player.role === 'GK') {
+      token.classList.add('match-visualization__player--goalkeeper');
+    }
+    token.style.left = `${player.xPercent}%`;
+    token.style.top = `${player.yPercent}%`;
+    token.dataset.name = getPlayerBadgeLabel(player.name);
+    token.setAttribute('role', 'img');
+    token.setAttribute(
+      'aria-label',
+      `${player.name} · ${player.team === 'us' ? 'nuestro equipo' : 'rival'}${
+        player.role === 'GK' ? ' · portero' : ''
+      }`
+    );
+    token.title = player.name;
+    const initials = document.createElement('span');
+    initials.className = 'match-visualization__player-initials';
+    initials.textContent = getPlayerInitials(player.name, player.role);
+    token.append(initials);
+    pitch.append(token);
+  });
+
+  const ball = document.createElement('div');
+  ball.className = `match-visualization__ball match-visualization__ball--${frame.ball.possession}`;
+  ball.style.left = `${frame.ball.xPercent}%`;
+  ball.style.top = `${frame.ball.yPercent}%`;
+  ball.setAttribute('aria-hidden', 'true');
+  pitch.append(ball);
+
+  return pitch;
+}
 
 if (financesDeltaEl) {
   financesDeltaEl.setAttribute('aria-live', 'polite');
@@ -3552,7 +3672,7 @@ function resolveSelectedViewMode() {
   return configState.viewMode === '2d' ? '2d' : 'text';
 }
 
-function updateMatchVisualizationFrame(index) {
+function updateMatchVisualizationFrame(index, options = {}) {
   if (!matchVisualizationSection || matchVisualizationState.frames.length === 0) {
     return;
   }
@@ -3562,8 +3682,9 @@ function updateMatchVisualizationFrame(index) {
   const frame = matchVisualizationState.frames[clamped];
 
   if (matchVisualizationScreen) {
-    const pitch = Array.isArray(frame.pitch) ? frame.pitch.join('\n') : '';
-    matchVisualizationScreen.textContent = pitch;
+    matchVisualizationScreen.innerHTML = '';
+    const pitch = renderMatchVisualizationPitch(frame);
+    matchVisualizationScreen.append(pitch);
     restartAnimation(matchVisualizationScreen, MATCH_VISUALIZATION_TRANSITION_CLASS);
   }
 
@@ -3600,6 +3721,10 @@ function updateMatchVisualizationFrame(index) {
   if (matchVisualizationNextButton) {
     matchVisualizationNextButton.disabled = clamped >= total - 1;
   }
+
+  if (options.userInitiated) {
+    resetMatchVisualizationAutoplay();
+  }
 }
 
 function renderMatchVisualization(report) {
@@ -3611,6 +3736,8 @@ function renderMatchVisualization(report) {
   const clearVisualization = (message) => {
     matchVisualizationState.frames = [];
     matchVisualizationState.index = 0;
+    matchVisualizationState.dimensions = { width: 21, height: 11 };
+    stopMatchVisualizationAutoplay();
     matchVisualizationSection.dataset.state = 'empty';
     if (matchVisualizationScreen) {
       matchVisualizationScreen.textContent = '';
@@ -3657,9 +3784,14 @@ function renderMatchVisualization(report) {
   const visualization = report?.match?.visualization2d;
   const frames = Array.isArray(visualization?.frames) ? visualization.frames : [];
   const legend = Array.isArray(visualization?.legend) ? visualization.legend : [];
+  const dimensions = visualization?.dimensions ?? {};
+  const resolvedWidth = Number.isFinite(dimensions.width) ? dimensions.width : 21;
+  const resolvedHeight = Number.isFinite(dimensions.height) ? dimensions.height : 11;
 
+  stopMatchVisualizationAutoplay();
   matchVisualizationState.frames = frames;
   matchVisualizationState.index = 0;
+  matchVisualizationState.dimensions = { width: resolvedWidth, height: resolvedHeight };
 
   if (matchVisualizationLegendList) {
     matchVisualizationLegendList.innerHTML = '';
@@ -3707,6 +3839,7 @@ function renderMatchVisualization(report) {
   }
 
   updateMatchVisualizationFrame(0);
+  startMatchVisualizationAutoplay();
 }
 
 function stepMatchVisualization(delta) {
@@ -3714,7 +3847,7 @@ function stepMatchVisualization(delta) {
     return;
   }
   const nextIndex = matchVisualizationState.index + delta;
-  updateMatchVisualizationFrame(nextIndex);
+  updateMatchVisualizationFrame(nextIndex, { userInitiated: true });
 }
 
 
@@ -4633,7 +4766,7 @@ if (matchVisualizationSlider instanceof HTMLInputElement) {
   matchVisualizationSlider.addEventListener('input', () => {
     const nextIndex = Number.parseInt(matchVisualizationSlider.value, 10);
     if (Number.isFinite(nextIndex)) {
-      updateMatchVisualizationFrame(nextIndex);
+      updateMatchVisualizationFrame(nextIndex, { userInitiated: true });
     }
   });
 }
