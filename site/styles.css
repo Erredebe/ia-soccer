@@ -1579,7 +1579,6 @@ body.modal-open {
 }
 
 .lineup-table-wrapper {
-  overflow-x: auto;
   border-radius: 12px;
   background: rgba(248, 250, 252, 0.9);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -1587,9 +1586,9 @@ body.modal-open {
 
 .lineup-table {
   width: 100%;
-  min-width: 860px;
   border-collapse: collapse;
-  font-size: 0.92rem;
+  table-layout: fixed;
+  font-size: 0.9rem;
 }
 
 .lineup-table thead {
@@ -1598,14 +1597,14 @@ body.modal-open {
 
 .lineup-table th,
 .lineup-table td {
-  padding: 0.6rem 0.65rem;
+  padding: 0.45rem 0.5rem;
   text-align: center;
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .lineup-table th {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #1e3a8a;
 }
@@ -1674,7 +1673,8 @@ body.modal-open {
 
 .lineup-table__player {
   text-align: left;
-  min-width: 220px;
+  width: 30%;
+  min-width: 200px;
 }
 
 .lineup-table__player-name {
@@ -1714,7 +1714,7 @@ body.modal-open {
 }
 
 .lineup-table__stat {
-  min-width: 72px;
+  min-width: 56px;
 }
 
 .lineup-table__stat-meter {
@@ -1759,13 +1759,15 @@ body.modal-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 5.5rem;
-  padding: 0.3rem 0.9rem;
+  min-width: 0;
+  max-width: 5.25rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
   background: rgba(148, 163, 184, 0.25);
   color: #0f172a;
   border: 1px solid rgba(148, 163, 184, 0.4);
