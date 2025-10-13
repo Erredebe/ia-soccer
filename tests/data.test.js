@@ -16,6 +16,8 @@ import {
   normaliseStaffState,
   generateSponsorOffers,
   generateTvDeals,
+  createDefaultLineup,
+  isPlayerAvailable,
 } from '../src/core/data.js';
 
 test('createExampleClub acepta identidad personalizada', () => {
@@ -40,6 +42,35 @@ test('createExampleClub acepta identidad personalizada', () => {
   assert.ok(
     sponsorNames.some((name) => name.includes('Vallekas')),
     'Los patrocinadores reflejan la ciudad personalizada'
+  );
+});
+
+test('createDefaultLineup alinea un único guardameta disponible', () => {
+  const club = createExampleClub();
+  const lineup = createDefaultLineup(club);
+
+  const starters = lineup.starters
+    .map((id) => club.squad.find((player) => player.id === id))
+    .filter((player) => Boolean(player));
+
+  const goalkeepers = starters.filter((player) => player?.position === 'GK');
+  assert.equal(goalkeepers.length, 1, 'La alineación debe incluir un único portero titular');
+  assert.ok(
+    goalkeepers.every((player) => player && isPlayerAvailable(player)),
+    'El portero titular seleccionado debe estar disponible'
+  );
+
+  const substitutes = lineup.substitutes
+    .map((id) => club.squad.find((player) => player.id === id))
+    .filter((player) => Boolean(player));
+  const reserveGoalkeepers = substitutes.filter((player) => player?.position === 'GK');
+  assert.ok(
+    reserveGoalkeepers.length >= 1,
+    'Debe reservarse al menos un portero suplente cuando esté disponible'
+  );
+  assert.ok(
+    reserveGoalkeepers.every((player) => player && isPlayerAvailable(player)),
+    'El guardameta suplente debe estar en condiciones de jugar'
   );
 });
 

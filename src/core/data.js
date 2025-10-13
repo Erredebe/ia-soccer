@@ -2288,12 +2288,71 @@ export function createDefaultMatchConfig() {
  */
 export function createDefaultLineup(club) {
   const eligible = club.squad.filter((player) => isPlayerAvailable(player));
-  const startersPool = eligible.length >= 11 ? eligible : club.squad;
-  const starters = startersPool.slice(0, 11).map((player) => player.id);
-  const poolWithoutStarters = club.squad.filter((player) => !starters.includes(player.id));
+  const availableGoalkeepers = eligible.filter((player) => player.position === 'GK');
+  const fallbackGoalkeeper = club.squad.find((player) => player.position === 'GK' && !availableGoalkeepers.includes(player));
+  const goalkeeperCandidate =
+    availableGoalkeepers[0] ??
+    fallbackGoalkeeper ??
+    eligible[0] ??
+    club.squad[0];
+
+  const starters = [];
+  const usedIds = new Set();
+
+  if (goalkeeperCandidate) {
+    starters.push(goalkeeperCandidate.id);
+    usedIds.add(goalkeeperCandidate.id);
+  }
+
+  const remainingSlots = 11 - starters.length;
+
+  const preferredFieldPlayers = eligible.filter(
+    (player) => player.position !== 'GK' && !usedIds.has(player.id)
+  );
+  const fallbackFieldPlayers = club.squad.filter(
+    (player) =>
+      player.position !== 'GK' &&
+      !usedIds.has(player.id) &&
+      !preferredFieldPlayers.some((candidate) => candidate.id === player.id)
+  );
+  const fieldPool = [...preferredFieldPlayers, ...fallbackFieldPlayers];
+
+  if (fieldPool.length < remainingSlots) {
+    const extraPlayers = club.squad.filter(
+      (player) =>
+        !usedIds.has(player.id) &&
+        !fieldPool.some((candidate) => candidate.id === player.id)
+    );
+    fieldPool.push(...extraPlayers);
+  }
+
+  for (const player of fieldPool.slice(0, remainingSlots)) {
+    starters.push(player.id);
+    usedIds.add(player.id);
+  }
+
+  const poolWithoutStarters = club.squad.filter((player) => !usedIds.has(player.id));
   const availableSubs = poolWithoutStarters.filter((player) => isPlayerAvailable(player));
   const subsPool = availableSubs.length >= 5 ? availableSubs : poolWithoutStarters;
-  const substitutes = subsPool.slice(0, 5).map((player) => player.id);
+  const substitutes = [];
+
+  const benchGoalkeeper = poolWithoutStarters.find(
+    (player) => player.position === 'GK' && isPlayerAvailable(player)
+  );
+  if (benchGoalkeeper) {
+    substitutes.push(benchGoalkeeper.id);
+  }
+
+  for (const player of subsPool) {
+    if (substitutes.length >= 5) {
+      break;
+    }
+    if (substitutes.includes(player.id)) {
+      continue;
+    }
+    substitutes.push(player.id);
+  }
+
   return { starters, substitutes };
 }
 
