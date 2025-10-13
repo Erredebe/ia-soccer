@@ -1255,6 +1255,7 @@ let activeReportTab = 'current';
 let currentReportData = null;
 let clubIdentity = extractClubIdentity(clubState);
 let editingPlayerId = null;
+let pendingRoleSwap = null;
 let staffFeedback = '';
 let pendingSavedGame = null;
 let autoContinueTimeoutId = null;
@@ -3044,6 +3045,7 @@ function hideLineupError() {
     return;
   }
   lineupErrorEl.hidden = true;
+  lineupErrorEl.innerHTML = '';
   lineupErrorEl.textContent = '';
   if (lineupErrorEl.dataset.state) {
     delete lineupErrorEl.dataset.state;
@@ -3068,10 +3070,15 @@ function showLineupNotice(message) {
   if (!lineupErrorEl) {
     return;
   }
-  lineupErrorEl.textContent = message;
   lineupErrorEl.hidden = false;
   lineupErrorEl.dataset.state = 'notice';
   lineupErrorEl.classList.add('lineup-message');
+  lineupErrorEl.innerHTML = '';
+  if (message instanceof Node) {
+    lineupErrorEl.append(message);
+  } else {
+    lineupErrorEl.textContent = message;
+  }
 }
 
 function updateSelectionCounts() {
@@ -3095,6 +3102,9 @@ function updateSelectionCounts() {
 }
 
 function autoSortLineup() {
+  if (pendingRoleSwap) {
+    pendingRoleSwap = null;
+  }
   hideLineupError();
 
   const playersById = new Map(clubState.squad.map((player) => [player.id, player]));
@@ -3159,6 +3169,138 @@ function applyRoleChange(playerId, role, options = {}) {
 }
 
 const setPlayerRole = applyRoleChange;
+
+const ROLE_FLOW_LABELS = {
+  starter: {
+    button: 'Titular',
+    area: 'titularidad',
+    destination: 'la titularidad',
+    group: 'titulares',
+  },
+  sub: {
+    button: 'Banquillo',
+    area: 'banquillo',
+    destination: 'el banquillo',
+    group: 'suplentes',
+  },
+  none: {
+    button: 'Reserva',
+    area: 'lista de reservas',
+    destination: 'la lista de reservas',
+    group: 'reservas',
+  },
+};
+
+function getRoleConfig(role) {
+  return ROLE_FLOW_LABELS[role] ?? ROLE_FLOW_LABELS.none;
+}
+
+function getRoleGroupLabel(role) {
+  return getRoleConfig(role).group;
+}
+
+function getRoleButtonLabel(role) {
+  return getRoleConfig(role).button;
+}
+
+function formatRoleDestination(role, preposition = 'en') {
+  const destination = getRoleConfig(role).destination;
+  if (preposition === 'a') {
+    if (destination.startsWith('el ')) {
+      return `al ${destination.slice(3)}`;
+    }
+    return `a ${destination}`;
+  }
+  return `${preposition} ${destination}`;
+}
+
+function displaySwapInstructions(extraMessage) {
+  if (!pendingRoleSwap) {
+    return;
+  }
+  const swap = pendingRoleSwap;
+  const incomingPlayer = findPlayerById(swap.incomingId);
+  const fragment = document.createDocumentFragment();
+  const heading = document.createElement('strong');
+  heading.className = 'lineup-swap-message';
+  const targetDestination = formatRoleDestination(swap.targetRole, 'en');
+  const incomingName = incomingPlayer?.name ?? 'El jugador seleccionado';
+  heading.textContent = `${incomingName} está listo para entrar ${targetDestination}.`;
+  fragment.append(heading);
+
+  if (extraMessage) {
+    const reminder = document.createElement('span');
+    reminder.className = 'lineup-swap-warning';
+    reminder.textContent = extraMessage;
+    fragment.append(reminder);
+  }
+
+  const instructions = document.createElement('span');
+  instructions.className = 'lineup-swap-instructions';
+  const groupLabel = getRoleGroupLabel(swap.targetRole);
+  const buttonLabel = getRoleButtonLabel(swap.fallbackRole);
+  const areaDestination = getRoleConfig(swap.targetRole).destination;
+  instructions.textContent = `Selecciona qué ${groupLabel} cede su sitio en ${areaDestination} pulsando el botón resaltado «${buttonLabel}» o cancela la operación.`;
+  fragment.append(instructions);
+
+  const actions = document.createElement('div');
+  actions.className = 'lineup-swap-actions';
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'lineup-swap-cancel';
+  cancelButton.textContent = 'Cancelar intercambio';
+  cancelButton.addEventListener('click', () => {
+    cancelRoleSwap('Intercambio cancelado. No se realizaron cambios.');
+  });
+  actions.append(cancelButton);
+  fragment.append(actions);
+
+  showLineupNotice(fragment);
+}
+
+function beginRoleSwap(swapConfig) {
+  pendingRoleSwap = { ...swapConfig };
+  renderLineupBoard();
+}
+
+function cancelRoleSwap(message) {
+  if (!pendingRoleSwap) {
+    if (message) {
+      showLineupNotice(message);
+    }
+    return;
+  }
+  pendingRoleSwap = null;
+  renderLineupBoard();
+  if (message) {
+    showLineupNotice(message);
+  } else {
+    hideLineupError();
+  }
+}
+
+function completeRoleSwap(outgoingId) {
+  if (!pendingRoleSwap) {
+    return;
+  }
+  const swap = pendingRoleSwap;
+  applyRoleChange(outgoingId, swap.fallbackRole, { preferredIndex: swap.fallbackIndex });
+  applyRoleChange(swap.incomingId, swap.targetRole, { preferredIndex: swap.targetIndex });
+  const incomingPlayer = findPlayerById(swap.incomingId);
+  const outgoingPlayer = findPlayerById(outgoingId);
+  pendingRoleSwap = null;
+  renderLineupBoard();
+  updateSelectionCounts();
+  const targetDestination = formatRoleDestination(swap.targetRole, 'en');
+  const fallbackDestination = formatRoleDestination(swap.fallbackRole, 'a');
+  if (incomingPlayer || outgoingPlayer) {
+    const incomingName = incomingPlayer?.name ?? 'El jugador seleccionado';
+    const outgoingName = outgoingPlayer?.name ?? 'el jugador elegido';
+    showLineupNotice(`${incomingName} jugará ${targetDestination}. ${outgoingName} se moverá ${fallbackDestination}.`);
+  } else {
+    showLineupNotice('Intercambio completado.');
+  }
+}
 
 function findPlayerById(playerId) {
   return clubState.squad.find((player) => player.id === playerId);
@@ -3255,6 +3397,11 @@ function createRoleControl(player) {
   const control = document.createElement('div');
   control.className = 'lineup-role-control';
   const currentRole = getPlayerRole(player.id);
+  const swap = pendingRoleSwap;
+  const isSwapActive = Boolean(swap);
+  const isSwapIncoming = isSwapActive && swap.incomingId === player.id;
+  const isSwapEligible =
+    isSwapActive && swap.targetRole === currentRole && player.id !== swap.incomingId;
   const roles = [
     { key: 'starter', label: 'Titular' },
     { key: 'sub', label: 'Banquillo' },
@@ -3269,6 +3416,32 @@ function createRoleControl(player) {
     button.dataset.role = key;
     if (currentRole === key) {
       button.classList.add('is-active');
+    }
+    let shouldDisable = false;
+    if (isSwapActive) {
+      if (isSwapIncoming) {
+        if (key === swap.targetRole) {
+          shouldDisable = true;
+          button.dataset.swapAction = 'locked';
+        } else if (key === swap.fallbackRole) {
+          button.dataset.swapAction = 'cancel';
+          button.title = 'Cancelar intercambio';
+        } else {
+          shouldDisable = true;
+        }
+      } else if (isSwapEligible) {
+        if (key === swap.fallbackRole) {
+          button.dataset.swapAction = 'confirm';
+          button.title = `Ceder plaza ${formatRoleDestination(swap.targetRole, 'en')}`;
+        } else if (key !== currentRole) {
+          shouldDisable = true;
+        }
+      } else if (key !== currentRole) {
+        shouldDisable = true;
+      }
+    }
+    if (shouldDisable) {
+      button.disabled = true;
     }
     button.addEventListener('click', () => {
       handleRoleSelection(player.id, key);
@@ -3287,6 +3460,30 @@ function handleRoleSelection(playerId, role) {
 
   const player = findPlayerById(playerId);
   if (!player) {
+    return;
+  }
+
+  if (pendingRoleSwap) {
+    const swap = pendingRoleSwap;
+    const playerRole = getPlayerRole(playerId);
+    const isIncoming = swap.incomingId === playerId;
+
+    if (isIncoming && role === swap.targetRole) {
+      displaySwapInstructions();
+      return;
+    }
+
+    if (isIncoming && role === swap.fallbackRole) {
+      cancelRoleSwap('Intercambio cancelado. No se realizaron cambios.');
+      return;
+    }
+
+    if (!isIncoming && playerRole === swap.targetRole && role === swap.fallbackRole) {
+      completeRoleSwap(playerId);
+      return;
+    }
+
+    displaySwapInstructions('Finaliza el intercambio eligiendo quién cede el sitio o pulsa «Cancelar intercambio».');
     return;
   }
 
@@ -3313,12 +3510,23 @@ function handleRoleSelection(playerId, role) {
 
   const targetCollection = getCollectionForRole(role);
   const targetLimit = role === 'starter' ? STARTERS_LIMIT : role === 'sub' ? SUBS_LIMIT : Number.POSITIVE_INFINITY;
-
-  let noticeMessage = '';
+  const targetIndex =
+    role === 'starter'
+      ? configState.startingLineup.length
+      : role === 'sub'
+        ? configState.substitutes.length
+        : -1;
+  const fallbackRole = previousRole;
+  const fallbackIndex =
+    fallbackRole === 'starter'
+      ? configState.startingLineup.length
+      : fallbackRole === 'sub'
+        ? configState.substitutes.length
+        : -1;
 
   if (role !== previousRole && targetCollection && targetCollection.length >= targetLimit) {
-    const candidateId = targetCollection.find((id) => id !== playerId);
-    if (!candidateId) {
+    const availableCandidates = targetCollection.filter((id) => id !== playerId);
+    if (availableCandidates.length === 0) {
       if (role === 'starter') {
         showLineupError('Solo caben 11 titulares. Haz hueco antes de sumar otro.');
       } else if (role === 'sub') {
@@ -3327,44 +3535,20 @@ function handleRoleSelection(playerId, role) {
       return;
     }
 
-    const fallbackRole = previousRole;
-    const fallbackIndex =
-      fallbackRole === 'starter'
-        ? configState.startingLineup.length
-        : fallbackRole === 'sub'
-          ? configState.substitutes.length
-          : -1;
-    const displacedPlayer = findPlayerById(candidateId);
-
-    applyRoleChange(candidateId, fallbackRole, { preferredIndex: fallbackIndex });
-
-    if (displacedPlayer) {
-      const fallbackLabel =
-        fallbackRole === 'starter'
-          ? 'titularidad'
-          : fallbackRole === 'sub'
-            ? 'banquillo'
-            : 'lista de reservas';
-      noticeMessage = `${displacedPlayer.name} se movió a la ${fallbackLabel}.`;
-    }
+    beginRoleSwap({
+      incomingId: playerId,
+      targetRole: role,
+      fallbackRole,
+      targetIndex,
+      fallbackIndex,
+    });
+    return;
   }
-
-  const targetIndex =
-    role === 'starter'
-      ? configState.startingLineup.length
-      : role === 'sub'
-        ? configState.substitutes.length
-        : -1;
 
   applyRoleChange(playerId, role, { preferredIndex: targetIndex });
 
   renderLineupBoard();
-
-  if (noticeMessage) {
-    showLineupNotice(noticeMessage);
-  } else {
-    hideLineupError();
-  }
+  hideLineupError();
 }
 
 function clearPlayerEditError() {
@@ -3464,6 +3648,28 @@ function renderLineupBoard() {
   ensureLineupCompleteness();
   hideLineupError();
 
+  let swapCancelledMessage = null;
+  if (pendingRoleSwap) {
+    const incomingExists = clubState.squad.some((player) => player.id === pendingRoleSwap.incomingId);
+    const swapTargetList =
+      pendingRoleSwap.targetRole === 'starter'
+        ? configState.startingLineup
+        : pendingRoleSwap.targetRole === 'sub'
+          ? configState.substitutes
+          : null;
+    const hasEligibleTarget = swapTargetList?.some((id) => id !== pendingRoleSwap.incomingId);
+    if (!incomingExists || !hasEligibleTarget) {
+      pendingRoleSwap = null;
+      swapCancelledMessage = 'Intercambio cancelado porque la plantilla cambió durante el proceso.';
+    }
+  }
+
+  if (pendingRoleSwap) {
+    lineupBoard.dataset.swapState = 'pending';
+  } else if (lineupBoard.dataset.swapState) {
+    delete lineupBoard.dataset.swapState;
+  }
+
   const players = [...clubState.squad].sort((a, b) => {
     const roleRank = { starter: 0, sub: 1, none: 2 };
     const roleDiff = roleRank[getPlayerRole(a.id)] - roleRank[getPlayerRole(b.id)];
@@ -3494,6 +3700,17 @@ function renderLineupBoard() {
     row.dataset.playerId = player.id;
     const playerRole = getPlayerRole(player.id);
     row.dataset.role = playerRole;
+    if (pendingRoleSwap) {
+      if (pendingRoleSwap.incomingId === player.id) {
+        row.classList.add('is-pending-swap');
+        row.dataset.swapState = 'incoming';
+      } else if (pendingRoleSwap.targetRole === playerRole) {
+        row.classList.add('is-swap-option');
+        row.dataset.swapState = 'eligible';
+      } else {
+        row.dataset.swapState = 'locked';
+      }
+    }
 
     if (playerRole !== currentRole) {
       currentRole = playerRole;
@@ -3580,12 +3797,23 @@ function renderLineupBoard() {
     sellButton.addEventListener('click', () => {
       sellPlayer(player.id);
     });
+    if (pendingRoleSwap) {
+      editButton.disabled = true;
+      sellButton.disabled = true;
+      editButton.dataset.swapAction = 'locked';
+      sellButton.dataset.swapAction = 'locked';
+    }
     actionsCell.append(editButton, sellButton);
 
     row.append(indexCell, playerCell, ...cells, moraleCell, roleCell, actionsCell);
     lineupTableBody.append(row);
   });
   updateSelectionCounts();
+  if (pendingRoleSwap) {
+    displaySwapInstructions();
+  } else if (swapCancelledMessage) {
+    showLineupNotice(swapCancelledMessage);
+  }
 }
 
 function switchToPlanningView() {
