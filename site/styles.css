@@ -1639,7 +1639,8 @@ body.modal-open {
 }
 
 .lineup-table tbody tr {
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .lineup-table tbody tr:hover {
@@ -1658,25 +1659,13 @@ body.modal-open {
   background: rgba(148, 163, 184, 0.08);
 }
 
-.lineup-board[data-swap-state='pending'] .lineup-table tbody tr[data-swap-state='locked'] {
-  opacity: 0.55;
+.lineup-table tbody tr.is-selected {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.55);
 }
 
-.lineup-table tbody tr.is-pending-swap {
-  background: rgba(191, 219, 254, 0.45);
-  box-shadow: inset 0 0 0 2px rgba(14, 165, 233, 0.6);
-}
-
-.lineup-table tbody tr.is-pending-swap:hover {
-  background: rgba(191, 219, 254, 0.55);
-}
-
-.lineup-table tbody tr.is-swap-option {
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.35);
-}
-
-.lineup-table tbody tr.is-swap-option:hover {
-  background: rgba(59, 130, 246, 0.12);
+.lineup-table tbody tr.is-selected:hover {
+  background: rgba(219, 234, 254, 0.9);
 }
 
 .lineup-table tbody tr + tr {
@@ -1757,73 +1746,6 @@ body.modal-open {
   color: #1e3a8a;
 }
 
-.lineup-role-control {
-  display: inline-flex;
-  border-radius: 999px;
-  background: rgba(226, 232, 240, 0.6);
-  padding: 0.2rem;
-  gap: 0.2rem;
-}
-
-.lineup-role-button {
-  appearance: none;
-  border: none;
-  border-radius: 999px;
-  padding: 0.3rem 0.8rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #1e293b;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-.lineup-role-button:disabled:not(.is-active) {
-  cursor: not-allowed;
-  opacity: 0.45;
-  color: #64748b;
-}
-
-.lineup-role-button:hover,
-.lineup-role-button:focus-visible {
-  background: rgba(59, 130, 246, 0.18);
-  color: #1d4ed8;
-  outline: none;
-}
-
-.lineup-role-button.is-active {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(14, 165, 233, 0.85));
-  color: white;
-  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.28);
-}
-
-.lineup-role-button[data-swap-action='confirm'] {
-  background: rgba(59, 130, 246, 0.18);
-  color: #1d4ed8;
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.45);
-}
-
-.lineup-role-button[data-swap-action='confirm']:hover,
-.lineup-role-button[data-swap-action='confirm']:focus-visible {
-  background: rgba(37, 99, 235, 0.2);
-  color: #1e3a8a;
-}
-
-.lineup-role-button[data-swap-action='cancel'] {
-  background: rgba(248, 113, 113, 0.18);
-  color: #b91c1c;
-}
-
-.lineup-role-button[data-swap-action='cancel']:hover,
-.lineup-role-button[data-swap-action='cancel']:focus-visible {
-  background: rgba(248, 113, 113, 0.28);
-  color: #991b1b;
-}
-
-.lineup-role-button[data-swap-action='locked'] {
-  cursor: not-allowed;
-}
-
 .lineup-table__actions-header {
   min-width: 120px;
 }
@@ -1831,6 +1753,44 @@ body.modal-open {
 .lineup-table__actions {
   display: flex;
   justify-content: center;
+}
+
+.lineup-role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(148, 163, 184, 0.25);
+  color: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.lineup-role-badge--starter {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #1d4ed8;
+}
+
+.lineup-role-badge--sub {
+  background: rgba(14, 165, 233, 0.18);
+  border-color: rgba(14, 165, 233, 0.45);
+  color: #0f4c75;
+}
+
+.lineup-role-badge--none {
+  background: rgba(148, 163, 184, 0.25);
+  border-color: rgba(148, 163, 184, 0.45);
+  color: #334155;
+}
+
+.lineup-table tbody tr.is-selected .lineup-role-badge {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3), 0 6px 16px rgba(37, 99, 235, 0.2);
 }
 
 .lineup-sell-button {
@@ -3504,17 +3464,32 @@ body.modal-open {
     color: #cbd5f5;
   }
 
-  .lineup-role-control {
+  .lineup-role-badge {
     background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(148, 163, 184, 0.5);
+    color: #e0f2fe;
   }
 
-  .lineup-role-button {
-    color: #cbd5f5;
+  .lineup-role-badge--starter {
+    background: rgba(59, 130, 246, 0.32);
+    border-color: rgba(96, 165, 250, 0.6);
+    color: #dbeafe;
   }
 
-  .lineup-role-button.is-active {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(14, 165, 233, 0.85));
-    color: #0f172a;
+  .lineup-role-badge--sub {
+    background: rgba(14, 165, 233, 0.32);
+    border-color: rgba(125, 211, 252, 0.55);
+    color: #e0f2fe;
+  }
+
+  .lineup-role-badge--none {
+    background: rgba(71, 85, 105, 0.55);
+    border-color: rgba(148, 163, 184, 0.45);
+    color: #f8fafc;
+  }
+
+  .lineup-table tbody tr.is-selected .lineup-role-badge {
+    box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.4), 0 8px 18px rgba(15, 23, 42, 0.6);
   }
 
   .lineup-sell-button {
