@@ -388,12 +388,44 @@
  */
 
 /**
+ * Perfil narrativo asociado a socios comerciales.
+ * @typedef {"purista" | "equilibrado" | "canalla"} CommercialProfile
+ */
+
+/**
  * Definición del tipo `SponsorContract`.
  * @typedef {Object} SponsorContract
  * @property {string} name
  * @property {number} value
  * @property {"match" | "monthly" | "annual"} frequency
  * @property {number=} lastPaidMatchDay
+ */
+
+/**
+ * Oferta pendiente de patrocinio principal.
+ * @typedef {Object} SponsorOffer
+ * @property {string} id Identificador interno estable.
+ * @property {CommercialProfile} profile Sabor narrativo del patrocinador.
+ * @property {SponsorContract} contract Condiciones recurrentes del acuerdo.
+ * @property {number} upfrontPayment Pago inicial inmediato.
+ * @property {{ accept: number; reject: number }} reputationImpact Variación de reputación según la elección.
+ * @property {string} summary Descripción corta para el modal.
+ * @property {string[]} clauses Lista de condiciones extra o bonus.
+ * @property {number=} durationMatches Jornadas estimadas de vigencia.
+ * @property {number=} durationSeasons Temporadas pactadas si aplica.
+ */
+
+/**
+ * Oferta de derechos televisivos.
+ * @typedef {Object} TVDealOffer
+ * @property {string} id Identificador estable para la propuesta.
+ * @property {CommercialProfile} profile
+ * @property {TVDeal} deal Condiciones base del contrato televisivo.
+ * @property {number} upfrontPayment Pago inicial al firmar.
+ * @property {{ accept: number; reject: number }} reputationImpact Cambios reputacionales por aceptar o rechazar.
+ * @property {string} summary Mensaje explicativo del acuerdo.
+ * @property {string[]} clauses Detalle de bonus y compromisos.
+ * @property {number=} durationSeasons Duración estimada en temporadas.
  */
 
 /**
@@ -525,6 +557,9 @@
  * @property {LeagueState} league
  * @property {SponsorContract[]=} sponsors
  * @property {TVDeal=} tvDeal
+ * @property {SponsorOffer[]=} pendingSponsorOffers
+ * @property {TVDealOffer[]=} pendingTvDeals
+ * @property {string[]=} commercialNarratives
  * @property {MerchandisingPlan=} merchandising
  * @property {InfrastructureState=} infrastructure
  * @property {OperatingExpenses=} operatingExpenses

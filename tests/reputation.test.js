@@ -3,7 +3,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createExampleClub } from '../src/core/data.js';
-import { resolveCanallaDecision, resolveCupReputation, tickCanallaState } from '../src/core/reputation.js';
+import {
+  resolveCanallaDecision,
+  resolveCupReputation,
+  tickCanallaState,
+  describeSponsorChoice,
+  describeTvDealChoice,
+} from '../src/core/reputation.js';
 
 /** Retorna un valor bajo para forzar éxitos en las pruebas. */
 const alwaysSuccess = () => 0.01;
@@ -67,4 +73,35 @@ test('resolveCupReputation premia levantar el trofeo y castiga la eliminación',
   const elimination = resolveCupReputation('semiFinal', 'eliminated');
   assert.ok(elimination.reputation < 0);
   assert.ok(elimination.narrative.includes('tropiezo'));
+});
+
+test('describeSponsorChoice genera narrativa coherente con la elección', () => {
+  const offer = {
+    id: 'oferta',
+    profile: 'canalla',
+    contract: { name: 'Criptocasino', value: 25000, frequency: 'match', lastPaidMatchDay: -1 },
+    upfrontPayment: 30000,
+    reputationImpact: { accept: -3, reject: 2 },
+    summary: 'Oferta picante para financiar las noches de gloria.',
+    clauses: [],
+  };
+  const accept = describeSponsorChoice({ action: 'accept', offer, upfrontPayment: offer.upfrontPayment });
+  assert.ok(accept[0].includes('show') || accept[0].includes('nocturnos') || accept[0].includes('gamberro'));
+  const reject = describeSponsorChoice({ action: 'reject', offer, upfrontPayment: offer.upfrontPayment });
+  assert.ok(reject[0].includes('respira') || reject[0].includes('evita'));
+});
+
+test('describeTvDealChoice resume pagos y reacción mediática', () => {
+  const offer = {
+    id: 'tv',
+    profile: 'purista',
+    deal: { name: 'Televisión Pública', perMatch: 28000, bonusWin: 14000, bonusDraw: 6000 },
+    upfrontPayment: 45000,
+    reputationImpact: { accept: 3, reject: -1 },
+    summary: 'Cobertura respetuosa y cercana.',
+    clauses: [],
+  };
+  const lines = describeTvDealChoice({ action: 'accept', offer, upfrontPayment: offer.upfrontPayment });
+  assert.ok(lines[0].includes('Televisión') || lines[0].includes('cámaras'));
+  assert.ok(lines[0].includes('cobra'));
 });

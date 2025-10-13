@@ -24,6 +24,8 @@ import { CUP_ROUND_DEFINITIONS } from './types.js';
 /** @typedef {import('../types.js').ClubStaffState} ClubStaffState */
 /** @typedef {import('../types.js').StaffImpact} StaffImpact */
 /** @typedef {import('../types.js').StaffRole} StaffRole */
+/** @typedef {import('../types.js').SponsorOffer} SponsorOffer */
+/** @typedef {import('../types.js').TVDealOffer} TVDealOffer */
 /** @typedef {import('./types.js').CupState} CupState */
 /** @typedef {import('./types.js').CupRound} CupRound */
 /** @typedef {import('./types.js').CupTie} CupTie */
@@ -46,6 +48,40 @@ function clampNumber(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function generateOfferId(prefix) {
+  const random = Math.floor(Math.random() * 1_000_000);
+  return `${prefix}-${Date.now().toString(36)}-${random.toString(36)}`;
+}
+
+/**
+ * Resume el momento competitivo reciente del club.
+ * @param {MatchResult[]} results
+ */
+function summariseRecentPerformance(results) {
+  const sample = results.slice(-5);
+  let formScore = 0;
+  let goalDelta = 0;
+  for (const result of sample) {
+    if (!result) {
+      continue;
+    }
+    if (result.goalsFor > result.goalsAgainst) {
+      formScore += 3;
+    } else if (result.goalsFor === result.goalsAgainst) {
+      formScore += 1;
+    } else {
+      formScore -= 1;
+    }
+    goalDelta += result.goalsFor - result.goalsAgainst;
+  }
+  return {
+    matches: sample.length,
+    formScore,
+    goalDelta,
+    average: sample.length > 0 ? formScore / sample.length : 0,
+  };
+}
+
 const INFRASTRUCTURE_MAX_LEVEL = 5;
 const BASE_STADIUM_CAPACITY = 20000;
 const STADIUM_CAPACITY_PER_LEVEL = 1500;
@@ -55,6 +91,134 @@ const BASE_OPERATING_COSTS = Object.freeze({
   academy: 10000,
   medical: 9000,
 });
+
+const SPONSOR_NAME_CATALOG = Object.freeze({
+  purista: ['Cooperativa', 'Fundación', 'Colectivo', 'Red cultural', 'Ruta Gastronómica'],
+  equilibrado: ['Bodega Urbana', 'Startup Analítica', 'Mercado Fusión', 'Laboratorio Deportivo', 'Red Social Futbolera'],
+  canalla: ['Casa de Apuestas', 'Criptocasino', 'Marisquería Nocturna', 'After clandestino', 'Bingo 24h'],
+});
+
+const TV_BRAND_CATALOG = Object.freeze({
+  purista: ['Televisión Pública', 'Canal Cultural', 'Cadena Vecinal'],
+  equilibrado: ['Stream Fut', 'Deporte Total+', 'Canal Esférico'],
+  canalla: ['Late Night Sports', 'Canalla Prime', 'FutTube X'],
+});
+
+const COMMERCIAL_PROFILE_DATA = Object.freeze({
+  purista: {
+    clauses: (club) => [
+      `Acciones comunitarias mensuales en ${club.city}.`,
+      'Uniformes con mensaje social en la manga.',
+    ],
+  },
+  equilibrado: {
+    clauses: (club) => [
+      'Campañas cruzadas en redes emergentes.',
+      `Eventos híbridos con fans del ${club.name}.`,
+    ],
+  },
+  canalla: {
+    clauses: () => [
+      'Activaciones nocturnas antes de partidos clave.',
+      'Bonificaciones por titulares picantes en prensa.',
+    ],
+  },
+});
+
+const SPONSOR_PROFILE_DEFINITIONS = Object.freeze([
+  {
+    profile: 'purista',
+    frequency: 'annual',
+    multiplier: 0.95,
+    upfrontFactor: 0.12,
+    reputation: { accept: 4, reject: -1 },
+    durationMatches: 40,
+    summary: (club) =>
+      `Una cooperativa de ${club.city} quiere asociarse a la causa y presume de fútbol de barrio.`,
+  },
+  {
+    profile: 'equilibrado',
+    frequency: 'monthly',
+    multiplier: 1.05,
+    upfrontFactor: 0.18,
+    reputation: { accept: 1, reject: 0 },
+    durationMatches: 32,
+    summary: () => 'Marca emergente busca club valiente para explorar formatos digitales y acciones exprés.',
+  },
+  {
+    profile: 'canalla',
+    frequency: 'match',
+    multiplier: 1.18,
+    upfrontFactor: 0.26,
+    reputation: { accept: -3, reject: 2 },
+    durationMatches: 24,
+    summary: () => 'Patrocinador descarado promete ingresos suculentos... a cambio de abrazar la picardía.',
+  },
+]);
+
+const TV_DEAL_PROFILE_DEFINITIONS = Object.freeze([
+  {
+    profile: 'purista',
+    upfrontFactor: 0.15,
+    multiplier: 0.9,
+    reputation: { accept: 3, reject: -1 },
+    durationSeasons: 1,
+    summary: (club) =>
+      `La televisión pública de ${club.city} ofrece retransmisiones cuidadas y foco en la cantera.`,
+  },
+  {
+    profile: 'equilibrado',
+    upfrontFactor: 0.22,
+    multiplier: 1.05,
+    reputation: { accept: 1, reject: 0 },
+    durationSeasons: 2,
+    summary: () => 'Plataforma híbrida mezcla directos clásicos con métricas en vivo para la grada digital.',
+  },
+  {
+    profile: 'canalla',
+    upfrontFactor: 0.3,
+    multiplier: 1.18,
+    reputation: { accept: -2, reject: 2 },
+    durationSeasons: 1,
+    summary: () => 'Cadena nocturna promete audiencias globales a cambio de espectáculo y drama semanal.',
+  },
+]);
+
+function pickLabel(entries, rng) {
+  if (entries.length === 0) {
+    return '';
+  }
+  const index = Math.floor((rng?.() ?? Math.random()) * entries.length);
+  return entries[Math.max(0, Math.min(entries.length - 1, index))];
+}
+
+function buildSponsorName(profile, club, rng) {
+  const base = pickLabel(SPONSOR_NAME_CATALOG[profile] ?? [], rng);
+  if (!base) {
+    return `${club.name} Sponsor`; // fallback
+  }
+  if (profile === 'purista') {
+    return `${base} ${club.city}`;
+  }
+  if (profile === 'equilibrado') {
+    return `${base} ${club.name}`;
+  }
+  return `${base} ${club.city}`;
+}
+
+function buildTvBrand(profile, club, rng) {
+  const base = pickLabel(TV_BRAND_CATALOG[profile] ?? [], rng);
+  if (!base) {
+    return `${club.name} TV`;
+  }
+  if (profile === 'purista') {
+    return `${base} ${club.city}`;
+  }
+  if (profile === 'equilibrado') {
+    return `${base} Live`;
+  }
+  return `${base} Show`;
+}
 
 /**
  * Blueprint de mejoras de infraestructura disponibles.
@@ -1369,11 +1533,140 @@ function createExampleSponsors(options = {}) {
 }
 
 /**
+ * Genera una hornada de ofertas de patrocinio en función del estado actual del club.
+ * @param {ClubState} club
+ * @param {MatchResult[]} recentResults
+ * @param {{ limit?: number; rng?: () => number; existingNames?: string[] }} [options]
+ * @returns {SponsorOffer[]}
+ */
+export function generateSponsorOffers(club, recentResults = [], options = {}) {
+  const rng = options.rng ?? Math.random;
+  const limit = Math.max(1, Math.min(options.limit ?? SPONSOR_PROFILE_DEFINITIONS.length, SPONSOR_PROFILE_DEFINITIONS.length));
+  const reputation = clampNumber(Number.isFinite(club.reputation) ? club.reputation : 50, 5, 95);
+  const performance = summariseRecentPerformance(recentResults);
+  const momentumFactor = 1 + Math.max(-0.4, Math.min(0.6, performance.average * 0.2));
+  const goalFactor = 1 + Math.max(-0.2, Math.min(0.3, performance.goalDelta * 0.03));
+  const annualBaseline = Math.max(120000, Math.round((180000 + reputation * 4200) * momentumFactor * goalFactor));
+  const usedNames = new Set(options.existingNames ?? []);
+  (club.sponsors ?? []).forEach((sponsor) => usedNames.add(sponsor.name));
+
+  const offers = [];
+  for (const definition of SPONSOR_PROFILE_DEFINITIONS) {
+    if (offers.length >= limit) {
+      break;
+    }
+    const name = buildSponsorName(definition.profile, club, rng);
+    if (usedNames.has(name)) {
+      continue;
+    }
+    usedNames.add(name);
+    const annualValue = Math.max(90000, Math.round(annualBaseline * definition.multiplier));
+    let contractValue = annualValue;
+    if (definition.frequency === 'monthly') {
+      contractValue = Math.max(18000, Math.round(annualValue / 10));
+    } else if (definition.frequency === 'match') {
+      contractValue = Math.max(9000, Math.round(annualValue / 40));
+    }
+    const upfrontBase = Math.round(annualValue * definition.upfrontFactor);
+    const momentumBonus = performance.formScore > 0 ? Math.round(performance.formScore * 2500) : 0;
+    const upfrontPayment = Math.max(15000, upfrontBase + momentumBonus);
+    const clausesFactory = COMMERCIAL_PROFILE_DATA[definition.profile]?.clauses;
+    const clauses = clausesFactory ? clausesFactory(club) : [];
+    /** @type {SponsorOffer} */
+    const offer = {
+      id: generateOfferId('sponsor'),
+      profile: /** @type {"purista" | "equilibrado" | "canalla"} */ (definition.profile),
+      contract: {
+        name,
+        value: contractValue,
+        frequency: /** @type {SponsorContract['frequency']} */ (definition.frequency),
+        lastPaidMatchDay: (club.league?.matchDay ?? 0) - 1,
+      },
+      upfrontPayment,
+      reputationImpact: definition.reputation,
+      summary: definition.summary(club),
+      clauses,
+      durationMatches: definition.durationMatches,
+    };
+    offers.push(offer);
+  }
+  return offers;
+}
+
+/**
  * Crea un acuerdo televisivo base para los clubes ejemplo.
  * @returns {TVDeal}
  */
-function createExampleTvDeal() {
+export function createExampleTvDeal() {
   return { name: 'Liga Retro TV', perMatch: 28000, bonusWin: 12000, bonusDraw: 6000 };
+}
+
+/**
+ * Sugiere nuevos contratos televisivos basándose en reputación y resultados.
+ * @param {ClubState} club
+ * @param {MatchResult[]} recentResults
+ * @param {{ limit?: number; rng?: () => number }} [options]
+ * @returns {TVDealOffer[]}
+ */
+export function generateTvDeals(club, recentResults = [], options = {}) {
+  const rng = options.rng ?? Math.random;
+  const limit = Math.max(1, Math.min(options.limit ?? 2, TV_DEAL_PROFILE_DEFINITIONS.length));
+  const reputation = clampNumber(Number.isFinite(club.reputation) ? club.reputation : 45, 5, 95);
+  const performance = summariseRecentPerformance(recentResults);
+  const formBoost = 1 + Math.max(-0.35, Math.min(0.45, performance.average * 0.22));
+  const excitementFactor = 1 + Math.max(-0.25, Math.min(0.35, performance.goalDelta * 0.05));
+  const basePerMatch = Math.max(18000, Math.round((22000 + reputation * 260) * formBoost * excitementFactor));
+  const usedNames = new Set(club.tvDeal?.name ? [club.tvDeal.name] : []);
+  const offers = [];
+  const tvClauses = {
+    purista: [
+      'Retransmisión con comentaristas clásicos y espacios para cantera.',
+      'Cobertura abierta de entrenos solidarios.',
+    ],
+    equilibrado: [
+      'Panel de datos interactivo durante los partidos.',
+      'Mini-documentales mensuales sobre la táctica del equipo.',
+    ],
+    canalla: [
+      'Reality semanal con acceso al vestuario.',
+      'Programas nocturnos con debate sin filtros.',
+    ],
+  };
+
+  for (const definition of TV_DEAL_PROFILE_DEFINITIONS) {
+    if (offers.length >= limit) {
+      break;
+    }
+    const name = buildTvBrand(definition.profile, club, rng);
+    if (usedNames.has(name)) {
+      continue;
+    }
+    usedNames.add(name);
+    const perMatch = Math.max(16000, Math.round(basePerMatch * definition.multiplier));
+    const bonusWin = Math.max(6000, Math.round(perMatch * 0.45));
+    const bonusDraw = Math.max(3200, Math.round(perMatch * 0.22));
+    const upfrontBase = Math.round(perMatch * 4 * definition.upfrontFactor);
+    const flareBonus = performance.formScore > 0 ? Math.round(performance.formScore * 3000) : 0;
+    const upfrontPayment = Math.max(25000, upfrontBase + flareBonus);
+    /** @type {TVDealOffer} */
+    const offer = {
+      id: generateOfferId('tv'),
+      profile: /** @type {"purista" | "equilibrado" | "canalla"} */ (definition.profile),
+      deal: {
+        name,
+        perMatch,
+        bonusWin,
+        bonusDraw,
+      },
+      upfrontPayment,
+      reputationImpact: definition.reputation,
+      summary: definition.summary(club),
+      clauses: tvClauses[definition.profile] ?? [],
+      durationSeasons: definition.durationSeasons,
+    };
+    offers.push(offer);
+  }
+  return offers;
 }
 
 /**
@@ -1952,6 +2245,9 @@ export function createExampleClub(options = {}) {
     cup,
     sponsors: createExampleSponsors({ city, stadiumName }),
     tvDeal: createExampleTvDeal(),
+    pendingSponsorOffers: [],
+    pendingTvDeals: [],
+    commercialNarratives: [],
     merchandising: createExampleMerchandising(),
     infrastructure,
     operatingExpenses,

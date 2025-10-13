@@ -5,6 +5,7 @@
  */
 
 import { calculateStaffWeeklyCost, resolveStaffMatchImpact } from './data.js';
+import { describeSponsorChoice, describeTvDealChoice } from './reputation.js';
 import { CUP_ROUND_DEFINITIONS } from './types.js';
 
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -14,10 +15,23 @@ import { CUP_ROUND_DEFINITIONS } from './types.js';
 /** @typedef {import('../types.js').MatchdayFinancials} MatchdayFinancials */
 /** @typedef {import('../types.js').SponsorContract} SponsorContract */
 /** @typedef {import('../types.js').StaffImpact} StaffImpact */
+/** @typedef {import('../types.js').SponsorOffer} SponsorOffer */
+/** @typedef {import('../types.js').TVDealOffer} TVDealOffer */
 /** @typedef {import('./types.js').CupRoundId} CupRoundId */
 
 const MONTHLY_MATCHES = 4;
 const CUP_DEFINITION_MAP = new Map(CUP_ROUND_DEFINITIONS.map((definition) => [definition.id, definition]));
+
+function clampReputation(value) {
+  return Math.max(-100, Math.min(100, value));
+}
+
+function appendCommercialNarratives(club, narratives) {
+  const history = Array.isArray(club.commercialNarratives) ? [...club.commercialNarratives] : [];
+  const combined = [...history, ...narratives].filter((line) => typeof line === 'string' && line.length > 0);
+  const MAX_LINES = 6;
+  return combined.slice(Math.max(0, combined.length - MAX_LINES));
+}
 
 function resolveInjuryMitigation(infrastructure) {
   const medicalLevel = Math.max(0, infrastructure?.medicalLevel ?? 0);
@@ -314,4 +328,145 @@ export function adjustBudgetAfterMatch(club, financesDelta) {
     ...club,
     budget: club.budget + financesDelta,
   };
+}
+
+function removeOfferById(offers, offerId) {
+  const list = Array.isArray(offers) ? [...offers] : [];
+  const index = list.findIndex((item) => item.id === offerId);
+  if (index === -1) {
+    return { removed: null, remaining: list };
+  }
+  const [removed] = list.splice(index, 1);
+  return { removed, remaining: list };
+}
+
+/**
+ * Acepta un patrocinador pendiente y actualiza la economía del club.
+ * @param {ClubState} club
+ * @param {string} offerId
+ * @returns {{ updatedClub: ClubState; narratives: string[]; offer?: SponsorOffer }}
+ */
+export function acceptSponsorOffer(club, offerId) {
+  const { removed: offer, remaining } = removeOfferById(club.pendingSponsorOffers, offerId);
+  if (!offer) {
+    return {
+      updatedClub: club,
+      narratives: ['La oferta de patrocinio ya no estaba disponible.'],
+    };
+  }
+  const sponsors = Array.isArray(club.sponsors) ? [...club.sponsors] : [];
+  const currentMatchDay = club.league?.matchDay ?? 0;
+  sponsors.push({ ...offer.contract, lastPaidMatchDay: currentMatchDay });
+  const budget = club.budget + offer.upfrontPayment;
+  const reputation = clampReputation(club.reputation + (offer.reputationImpact?.accept ?? 0));
+  const narratives = describeSponsorChoice({
+    action: 'accept',
+    offer,
+    upfrontPayment: offer.upfrontPayment,
+    matchDay: currentMatchDay,
+  });
+  const commercialNarratives = appendCommercialNarratives(club, narratives);
+  const updatedClub = {
+    ...club,
+    sponsors,
+    pendingSponsorOffers: remaining,
+    budget,
+    reputation,
+    commercialNarratives,
+  };
+  return { updatedClub, narratives, offer };
+}
+
+/**
+ * Rechaza un patrocinador pendiente y actualiza reputación y bitácora.
+ * @param {ClubState} club
+ * @param {string} offerId
+ * @returns {{ updatedClub: ClubState; narratives: string[]; offer?: SponsorOffer }}
+ */
+export function rejectSponsorOffer(club, offerId) {
+  const { removed: offer, remaining } = removeOfferById(club.pendingSponsorOffers, offerId);
+  if (!offer) {
+    return {
+      updatedClub: club,
+      narratives: ['La propuesta de patrocinio ya había expirado.'],
+    };
+  }
+  const reputation = clampReputation(club.reputation + (offer.reputationImpact?.reject ?? 0));
+  const narratives = describeSponsorChoice({
+    action: 'reject',
+    offer,
+    upfrontPayment: offer.upfrontPayment,
+    matchDay: club.league?.matchDay ?? 0,
+  });
+  const commercialNarratives = appendCommercialNarratives(club, narratives);
+  const updatedClub = {
+    ...club,
+    pendingSponsorOffers: remaining,
+    reputation,
+    commercialNarratives,
+  };
+  return { updatedClub, narratives, offer };
+}
+
+/**
+ * Acepta una oferta televisiva y reemplaza el contrato vigente.
+ * @param {ClubState} club
+ * @param {string} offerId
+ * @returns {{ updatedClub: ClubState; narratives: string[]; offer?: TVDealOffer }}
+ */
+export function acceptTvDealOffer(club, offerId) {
+  const { removed: offer, remaining } = removeOfferById(club.pendingTvDeals, offerId);
+  if (!offer) {
+    return {
+      updatedClub: club,
+      narratives: ['La cadena ya retiró su propuesta televisiva.'],
+    };
+  }
+  const budget = club.budget + offer.upfrontPayment;
+  const reputation = clampReputation(club.reputation + (offer.reputationImpact?.accept ?? 0));
+  const narratives = describeTvDealChoice({
+    action: 'accept',
+    offer,
+    upfrontPayment: offer.upfrontPayment,
+  });
+  const commercialNarratives = appendCommercialNarratives(club, narratives);
+  const updatedClub = {
+    ...club,
+    tvDeal: { ...offer.deal },
+    pendingTvDeals: remaining,
+    budget,
+    reputation,
+    commercialNarratives,
+  };
+  return { updatedClub, narratives, offer };
+}
+
+/**
+ * Rechaza una propuesta televisiva.
+ * @param {ClubState} club
+ * @param {string} offerId
+ * @returns {{ updatedClub: ClubState; narratives: string[]; offer?: TVDealOffer }}
+ */
+export function rejectTvDealOffer(club, offerId) {
+  const { removed: offer, remaining } = removeOfferById(club.pendingTvDeals, offerId);
+  if (!offer) {
+    return {
+      updatedClub: club,
+      narratives: ['La propuesta televisiva ya no estaba disponible.'],
+    };
+  }
+  const reputation = clampReputation(club.reputation + (offer.reputationImpact?.reject ?? 0));
+  const narratives = describeTvDealChoice({
+    action: 'reject',
+    offer,
+    upfrontPayment: offer.upfrontPayment,
+  });
+  const commercialNarratives = appendCommercialNarratives(club, narratives);
+  const updatedClub = {
+    ...club,
+    pendingTvDeals: remaining,
+    reputation,
+    commercialNarratives,
+  };
+  return { updatedClub, narratives, offer };
 }

@@ -14,6 +14,8 @@ import {
   resolveStaffMatchImpact,
   calculateStaffWeeklyCost,
   normaliseStaffState,
+  generateSponsorOffers,
+  generateTvDeals,
 } from '../src/core/data.js';
 
 test('createExampleClub acepta identidad personalizada', () => {
@@ -97,4 +99,58 @@ test('el staff aporta bonus y costes recurrentes', () => {
   assert.ok(impact.narratives.length > 0, 'Los técnicos generan narrativa propia cada jornada');
   const weeklyCost = calculateStaffWeeklyCost(staffState);
   assert.ok(weeklyCost > 0, 'El coste semanal del staff debe ser mayor que cero');
+});
+
+test('generateSponsorOffers limita resultados y refleja perfil narrativo', () => {
+  const club = createExampleClub();
+  club.reputation = 68;
+  const baseStats = {
+    possession: { for: 60, against: 40 },
+    shots: { for: 9, against: 4, onTargetFor: 6, onTargetAgainst: 2 },
+    expectedGoals: { for: 2.1, against: 0.8 },
+    passes: { completedFor: 220, attemptedFor: 260, completedAgainst: 120, attemptedAgainst: 180 },
+    fouls: { for: 11, against: 9 },
+    cards: { yellowFor: 1, yellowAgainst: 2, redFor: 0, redAgainst: 0 },
+    injuries: { for: 0, against: 0 },
+    saves: { for: 2, against: 3 },
+  };
+  const matchTemplate = { events: [], narrative: [], contributions: [], statistics: baseStats, commentary: [], viewMode: 'text' };
+  const recent = [
+    { ...matchTemplate, goalsFor: 3, goalsAgainst: 0 },
+    { ...matchTemplate, goalsFor: 2, goalsAgainst: 1 },
+    { ...matchTemplate, goalsFor: 1, goalsAgainst: 1 },
+  ];
+  const offers = generateSponsorOffers(club, recent, { rng: () => 0.42 });
+  assert.ok(offers.length <= 3, 'Debe ofrecer como máximo tres alternativas a la vez');
+  assert.ok(offers.some((offer) => offer.profile === 'purista'), 'Incluye perfiles variados');
+  offers.forEach((offer) => {
+    assert.ok(offer.upfrontPayment > 0, 'Cada oferta promete un pago inicial');
+    assert.ok(offer.contract.value > 0, 'Las cantidades periódicas deben ser positivas');
+  });
+});
+
+test('generateTvDeals ajusta pagos base y respeta límite', () => {
+  const club = createExampleClub();
+  club.reputation = 55;
+  const baseStats = {
+    possession: { for: 52, against: 48 },
+    shots: { for: 7, against: 6, onTargetFor: 3, onTargetAgainst: 2 },
+    expectedGoals: { for: 1.4, against: 1.1 },
+    passes: { completedFor: 210, attemptedFor: 250, completedAgainst: 180, attemptedAgainst: 220 },
+    fouls: { for: 12, against: 10 },
+    cards: { yellowFor: 2, yellowAgainst: 2, redFor: 0, redAgainst: 0 },
+    injuries: { for: 0, against: 0 },
+    saves: { for: 4, against: 3 },
+  };
+  const matchTemplate = { events: [], narrative: [], contributions: [], statistics: baseStats, commentary: [], viewMode: 'text' };
+  const recent = [
+    { ...matchTemplate, goalsFor: 2, goalsAgainst: 0 },
+    { ...matchTemplate, goalsFor: 4, goalsAgainst: 1 },
+  ];
+  const deals = generateTvDeals(club, recent, { rng: () => 0.11 });
+  assert.ok(deals.length <= 2, 'Las ofertas televisivas deben limitarse a dos propuestas');
+  deals.forEach((offer) => {
+    assert.ok(offer.deal.perMatch >= 16000, 'El pago por partido mantiene mínimos razonables');
+    assert.ok(offer.upfrontPayment >= 25000, 'El pago inicial televisivo debe ser significativo');
+  });
 });
