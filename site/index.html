@@ -302,8 +302,18 @@
                       >Si introduces una semilla podrás repetir exactamente este partido más adelante.</span
                     >
                   </label>
+                  <label class="field field--wide">
+                    <span class="field-label">Modo de visualización</span>
+                    <select id="view-mode-select" name="viewMode">
+                      <option value="text">Crónica clásica</option>
+                      <option value="2d">Simulación 2D (beta)</option>
+                    </select>
+                    <span class="field-hint"
+                      >Alterna entre el relato radiofónico y la pizarra animada retro.</span
+                    >
+                  </label>
                 </div>
-  
+
                 <div class="match-form__actions">
                   <p id="match-lineup-status" class="match-lineup-status"></p>
                   <div class="match-actions">
@@ -995,6 +1005,66 @@
                     <span id="mvp-badge" class="mvp-badge" hidden></span>
                   </div>
                 </div>
+
+                <section
+                  id="match-visualization"
+                  class="match-visualization"
+                  aria-label="Visualización 2D del partido"
+                  tabindex="0"
+                  data-state="empty"
+                >
+                  <div class="match-visualization__header">
+                    <h3>Visualización 2D retro</h3>
+                    <span id="match-visualization-frame" class="match-visualization__frame">—</span>
+                  </div>
+                  <p id="match-visualization-status" class="match-visualization__status">
+                    Activa el modo 2D para recrear las jugadas en la pizarra luminosa.
+                  </p>
+                  <div class="match-visualization__screen-wrapper">
+                    <pre
+                      id="match-visualization-screen"
+                      class="match-visualization__screen"
+                      aria-live="polite"
+                    ></pre>
+                  </div>
+                  <div class="match-visualization__meta">
+                    <span id="match-visualization-minute" class="match-visualization__minute">—</span>
+                    <span id="match-visualization-label" class="match-visualization__label"></span>
+                  </div>
+                  <div
+                    class="match-visualization__controls"
+                    role="group"
+                    aria-label="Controles de la simulación 2D"
+                  >
+                    <button
+                      type="button"
+                      id="match-visualization-prev"
+                      class="match-visualization__button"
+                      aria-label="Fotograma anterior"
+                    >
+                      &lt;&lt;
+                    </button>
+                    <input
+                      type="range"
+                      id="match-visualization-slider"
+                      class="match-visualization__slider"
+                      min="0"
+                      max="0"
+                      value="0"
+                      step="1"
+                      aria-label="Fotograma del partido"
+                    />
+                    <button
+                      type="button"
+                      id="match-visualization-next"
+                      class="match-visualization__button"
+                      aria-label="Fotograma siguiente"
+                    >
+                      &gt;&gt;
+                    </button>
+                  </div>
+                  <ul id="match-visualization-legend" class="match-visualization__legend"></ul>
+                </section>
 
                 <div class="finances-breakdown">
                   <div class="finances-panel finances-panel--income">
