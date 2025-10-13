@@ -55,6 +55,7 @@ const homeCheckbox = document.querySelector('#home-checkbox');
 const opponentStrength = document.querySelector('#opponent-strength');
 const opponentOutput = document.querySelector('#opponent-output');
 const seedInput = document.querySelector('#seed-input');
+const viewModeSelect = document.querySelector('#view-mode-select');
 const form = document.querySelector('#game-form');
 const resetButton = document.querySelector('#reset-club');
 const lineupBoard = document.querySelector('#lineup-board');
@@ -127,6 +128,16 @@ const postBudgetEl = document.querySelector('#post-budget');
 const postReputationEl = document.querySelector('#post-reputation');
 const postMoraleEl = document.querySelector('#post-morale');
 const mvpBadge = document.querySelector('#mvp-badge');
+const matchVisualizationSection = document.querySelector('#match-visualization');
+const matchVisualizationScreen = document.querySelector('#match-visualization-screen');
+const matchVisualizationPrevButton = document.querySelector('#match-visualization-prev');
+const matchVisualizationNextButton = document.querySelector('#match-visualization-next');
+const matchVisualizationSlider = document.querySelector('#match-visualization-slider');
+const matchVisualizationLegendList = document.querySelector('#match-visualization-legend');
+const matchVisualizationMinuteEl = document.querySelector('#match-visualization-minute');
+const matchVisualizationLabelEl = document.querySelector('#match-visualization-label');
+const matchVisualizationStatusEl = document.querySelector('#match-visualization-status');
+const matchVisualizationFrameEl = document.querySelector('#match-visualization-frame');
 const reportTabButtons = document.querySelectorAll('[data-report-tab]');
 const reportPanels = document.querySelectorAll('[data-report-panel]');
 const reportHistoryList = document.querySelector('#report-history-list');
@@ -237,6 +248,13 @@ const TIMELINE_EVENT_META = {
     label: 'Momento destacado',
     className: 'timeline-event--generic',
   },
+};
+
+const MATCH_VISUALIZATION_TRANSITION_CLASS = 'match-visualization__screen--transition';
+const MATCH_VISUALIZATION_MINUTE_CLASS = 'match-visualization__minute--pulse';
+const matchVisualizationState = {
+  frames: [],
+  index: 0,
 };
 
 if (financesDeltaEl) {
@@ -918,6 +936,7 @@ function buildInitialConfig(club) {
     instructions,
     seed: typeof baseConfig.seed === 'string' ? baseConfig.seed : '',
     difficultyMultiplier: leagueInfo.difficultyMultiplier,
+    viewMode: baseConfig.viewMode ?? 'text',
   };
 }
 
@@ -1047,6 +1066,7 @@ let matchHistory = [];
 let currentHistoryEntryId = null;
 let reportHistoryFilterSeason = 'all';
 let activeReportTab = 'current';
+let currentReportData = null;
 let clubIdentity = extractClubIdentity(clubState);
 let editingPlayerId = null;
 let staffFeedback = '';
@@ -2264,6 +2284,9 @@ function updateFormDefaults() {
   if (seedInput) {
     seedInput.value = typeof configState.seed === 'string' ? configState.seed : '';
   }
+  if (viewModeSelect instanceof HTMLSelectElement) {
+    viewModeSelect.value = configState.viewMode === '2d' ? '2d' : 'text';
+  }
   updateOpponentOutput();
   refreshControlPanel();
 }
@@ -3300,6 +3323,8 @@ function clearReport() {
   closeModal(reportModal);
   scorelineEl.textContent = '';
   financesDeltaEl.textContent = '';
+  currentReportData = null;
+  renderMatchVisualization(null);
   if (financesAttendanceEl) {
     financesAttendanceEl.textContent = '';
   }
@@ -3519,6 +3544,180 @@ function renderFinancialBreakdown(finances) {
   renderBreakdownList(financesExpenseList, expenseEntries, 'expense', totalExpenses);
 }
 
+
+function resolveSelectedViewMode() {
+  if (viewModeSelect instanceof HTMLSelectElement) {
+    return viewModeSelect.value === '2d' ? '2d' : 'text';
+  }
+  return configState.viewMode === '2d' ? '2d' : 'text';
+}
+
+function updateMatchVisualizationFrame(index) {
+  if (!matchVisualizationSection || matchVisualizationState.frames.length === 0) {
+    return;
+  }
+  const total = matchVisualizationState.frames.length;
+  const clamped = Math.max(0, Math.min(total - 1, index));
+  matchVisualizationState.index = clamped;
+  const frame = matchVisualizationState.frames[clamped];
+
+  if (matchVisualizationScreen) {
+    const pitch = Array.isArray(frame.pitch) ? frame.pitch.join('\n') : '';
+    matchVisualizationScreen.textContent = pitch;
+    restartAnimation(matchVisualizationScreen, MATCH_VISUALIZATION_TRANSITION_CLASS);
+  }
+
+  if (matchVisualizationMinuteEl) {
+    const hasMinute = typeof frame.minute === 'number' && Number.isFinite(frame.minute);
+    matchVisualizationMinuteEl.textContent = hasMinute ? `Minuto ${frame.minute}'` : 'Minuto —';
+    restartAnimation(matchVisualizationMinuteEl, MATCH_VISUALIZATION_MINUTE_CLASS);
+  }
+
+  if (matchVisualizationLabelEl) {
+    matchVisualizationLabelEl.textContent = frame.label ?? '';
+  }
+
+  if (matchVisualizationSlider) {
+    matchVisualizationSlider.value = String(clamped);
+    matchVisualizationSlider.setAttribute('aria-valuemin', '0');
+    matchVisualizationSlider.setAttribute('aria-valuemax', String(total - 1));
+    matchVisualizationSlider.setAttribute('aria-valuenow', String(clamped));
+    const hasMinute = typeof frame.minute === 'number' && Number.isFinite(frame.minute);
+    const valuetext = hasMinute
+      ? `Fotograma ${clamped + 1} · minuto ${frame.minute}`
+      : `Fotograma ${clamped + 1}`;
+    matchVisualizationSlider.setAttribute('aria-valuetext', valuetext);
+    matchVisualizationSlider.disabled = total <= 1;
+  }
+
+  if (matchVisualizationFrameEl) {
+    matchVisualizationFrameEl.textContent = `Fotograma ${clamped + 1} / ${total}`;
+  }
+
+  if (matchVisualizationPrevButton) {
+    matchVisualizationPrevButton.disabled = clamped <= 0;
+  }
+  if (matchVisualizationNextButton) {
+    matchVisualizationNextButton.disabled = clamped >= total - 1;
+  }
+}
+
+function renderMatchVisualization(report) {
+  if (!matchVisualizationSection) {
+    return;
+  }
+
+  const selectedViewMode = resolveSelectedViewMode();
+  const clearVisualization = (message) => {
+    matchVisualizationState.frames = [];
+    matchVisualizationState.index = 0;
+    matchVisualizationSection.dataset.state = 'empty';
+    if (matchVisualizationScreen) {
+      matchVisualizationScreen.textContent = '';
+    }
+    if (matchVisualizationMinuteEl) {
+      matchVisualizationMinuteEl.textContent = '—';
+    }
+    if (matchVisualizationLabelEl) {
+      matchVisualizationLabelEl.textContent = '';
+    }
+    if (matchVisualizationFrameEl) {
+      matchVisualizationFrameEl.textContent = '—';
+    }
+    if (matchVisualizationStatusEl) {
+      matchVisualizationStatusEl.textContent = message;
+      matchVisualizationStatusEl.hidden = false;
+    }
+    if (matchVisualizationLegendList) {
+      matchVisualizationLegendList.innerHTML = '';
+    }
+    if (matchVisualizationSlider) {
+      matchVisualizationSlider.value = '0';
+      matchVisualizationSlider.min = '0';
+      matchVisualizationSlider.max = '0';
+      matchVisualizationSlider.disabled = true;
+      matchVisualizationSlider.setAttribute('aria-valuemin', '0');
+      matchVisualizationSlider.setAttribute('aria-valuemax', '0');
+      matchVisualizationSlider.setAttribute('aria-valuenow', '0');
+      matchVisualizationSlider.setAttribute('aria-valuetext', 'Sin fotogramas disponibles');
+    }
+    if (matchVisualizationPrevButton) {
+      matchVisualizationPrevButton.disabled = true;
+    }
+    if (matchVisualizationNextButton) {
+      matchVisualizationNextButton.disabled = true;
+    }
+  };
+
+  if (selectedViewMode !== '2d') {
+    clearVisualization('Activa el modo 2D para proyectar la simulación en la pantalla luminosa.');
+    return;
+  }
+
+  const visualization = report?.match?.visualization2d;
+  const frames = Array.isArray(visualization?.frames) ? visualization.frames : [];
+  const legend = Array.isArray(visualization?.legend) ? visualization.legend : [];
+
+  matchVisualizationState.frames = frames;
+  matchVisualizationState.index = 0;
+
+  if (matchVisualizationLegendList) {
+    matchVisualizationLegendList.innerHTML = '';
+  }
+
+  if (!frames.length) {
+    clearVisualization('Juega una jornada para generar los fotogramas retro.');
+    return;
+  }
+
+  matchVisualizationSection.dataset.state = 'ready';
+  if (matchVisualizationStatusEl) {
+    matchVisualizationStatusEl.textContent = '';
+    matchVisualizationStatusEl.hidden = true;
+  }
+
+  if (matchVisualizationLegendList) {
+    const fragment = document.createDocumentFragment();
+    legend.forEach((entry) => {
+      const item = document.createElement('li');
+      item.textContent = entry;
+      fragment.append(item);
+    });
+    matchVisualizationLegendList.append(fragment);
+  }
+
+  if (matchVisualizationSlider) {
+    matchVisualizationSlider.disabled = frames.length <= 1;
+    matchVisualizationSlider.min = '0';
+    matchVisualizationSlider.max = String(frames.length - 1);
+    matchVisualizationSlider.value = '0';
+    matchVisualizationSlider.setAttribute('aria-valuemin', '0');
+    matchVisualizationSlider.setAttribute('aria-valuemax', String(frames.length - 1));
+    const first = frames[0];
+    const hasMinute = typeof first.minute === 'number' && Number.isFinite(first.minute);
+    matchVisualizationSlider.setAttribute(
+      'aria-valuetext',
+      hasMinute ? `Fotograma 1 · minuto ${first.minute}` : 'Fotograma 1'
+    );
+    matchVisualizationSlider.setAttribute('aria-valuenow', '0');
+  }
+
+  if (matchVisualizationFrameEl) {
+    matchVisualizationFrameEl.textContent = `Fotograma 1 / ${frames.length}`;
+  }
+
+  updateMatchVisualizationFrame(0);
+}
+
+function stepMatchVisualization(delta) {
+  if (matchVisualizationState.frames.length === 0) {
+    return;
+  }
+  const nextIndex = matchVisualizationState.index + delta;
+  updateMatchVisualizationFrame(nextIndex);
+}
+
+
 function switchReportTab(targetTab = 'current') {
   activeReportTab = targetTab;
   reportTabButtons.forEach((button) => {
@@ -3722,6 +3921,8 @@ function showHistoryEntry(entryId) {
 }
 
 function renderMatchReport(report, decisionOutcome, opponentName = 'Rival misterioso', metadata = {}) {
+  currentReportData = report ?? null;
+  renderMatchVisualization(report ?? null);
   const clubName = clubState.name;
   const scoreline = `${clubName} ${report.match.goalsFor} - ${report.match.goalsAgainst} ${opponentName}`;
   scorelineEl.textContent = scoreline;
@@ -4072,12 +4273,14 @@ function applyLoadedState(saved) {
       : typeof loadedSeed === 'number'
         ? String(loadedSeed)
         : baseConfig.seed ?? '';
+  const savedViewMode = saved.config?.viewMode === '2d' ? '2d' : 'text';
   configState = {
     ...baseConfig,
     ...saved.config,
     instructions: { ...createDefaultInstructions(), ...(saved.config.instructions ?? {}) },
     seed: seedValue,
     difficultyMultiplier: leagueSettings.difficultyMultiplier,
+    viewMode: savedViewMode,
   };
   opponentRotation = computeOpponentRotation(leagueState, clubState.name);
   ensureLineupCompleteness();
@@ -4167,6 +4370,8 @@ form.addEventListener('submit', (event) => {
   }
 
   const seedValue = seedInput ? seedInput.value.trim() : '';
+  const selectedViewMode =
+    viewModeSelect instanceof HTMLSelectElement && viewModeSelect.value === '2d' ? '2d' : 'text';
   configState = {
     ...configState,
     home: isCupMatch && nextEvent.type === 'cup-match' && nextEvent.fixture
@@ -4177,6 +4382,7 @@ form.addEventListener('submit', (event) => {
     formation: formationSelect.value,
     seed: seedValue,
     difficultyMultiplier: getDifficultyMultiplier(),
+    viewMode: selectedViewMode,
   };
 
   const simulationOptions = { decision, decisionOutcome };
@@ -4403,6 +4609,53 @@ if (planNextButton) {
   });
 }
 
+if (viewModeSelect instanceof HTMLSelectElement) {
+  viewModeSelect.addEventListener('change', () => {
+    const mode = viewModeSelect.value === '2d' ? '2d' : 'text';
+    configState = { ...configState, viewMode: mode };
+    renderMatchVisualization(currentReportData);
+  });
+}
+
+if (matchVisualizationPrevButton) {
+  matchVisualizationPrevButton.addEventListener('click', () => {
+    stepMatchVisualization(-1);
+  });
+}
+
+if (matchVisualizationNextButton) {
+  matchVisualizationNextButton.addEventListener('click', () => {
+    stepMatchVisualization(1);
+  });
+}
+
+if (matchVisualizationSlider instanceof HTMLInputElement) {
+  matchVisualizationSlider.addEventListener('input', () => {
+    const nextIndex = Number.parseInt(matchVisualizationSlider.value, 10);
+    if (Number.isFinite(nextIndex)) {
+      updateMatchVisualizationFrame(nextIndex);
+    }
+  });
+}
+
+if (matchVisualizationSection instanceof HTMLElement) {
+  matchVisualizationSection.addEventListener('keydown', (event) => {
+    if (event.target !== matchVisualizationSection) {
+      return;
+    }
+    if (matchVisualizationState.frames.length === 0) {
+      return;
+    }
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      stepMatchVisualization(-1);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      stepMatchVisualization(1);
+    }
+  });
+}
+
 if (reportTabButtons.length > 0) {
   reportTabButtons.forEach((button) => {
     button.addEventListener('click', () => {
@@ -4462,6 +4715,7 @@ function init() {
   renderTransferMarket();
   updateOpponentOutput();
   switchToPlanningView();
+  renderMatchVisualization(currentReportData);
   if (!saved && clubIdentityModal) {
     prefillClubIdentityForm();
     openModal(clubIdentityModal);
