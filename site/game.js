@@ -2591,9 +2591,20 @@ function renderDecisionsModal() {
 
   decisions.forEach((decision, index) => {
     const item = document.createElement('li');
-    if (decisionSelect && String(index) === decisionSelect.value) {
+    const isActive = decisionSelect && String(index) === decisionSelect.value;
+    if (isActive) {
       item.classList.add('is-active');
     }
+
+    const optionButton = document.createElement('button');
+    optionButton.type = 'button';
+    optionButton.className = 'control-decision__option';
+    optionButton.setAttribute('data-decision-index', String(index));
+    optionButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    if (isActive) {
+      optionButton.classList.add('is-active');
+    }
+
     const header = document.createElement('div');
     header.className = 'control-decision__header';
     const label = document.createElement('span');
@@ -2610,7 +2621,8 @@ function renderDecisionsModal() {
     details.className = 'control-decision__details';
     const detailParts = [];
     const cooldownRemaining = status.cooldowns?.[decision.type] ?? 0;
-    if (cooldownRemaining > 0) {
+    const isOnCooldown = cooldownRemaining > 0;
+    if (isOnCooldown) {
       detailParts.push(`En enfriamiento: ${cooldownRemaining} jornada${cooldownRemaining === 1 ? '' : 's'}.`);
     } else if (decision.cooldownMatches) {
       detailParts.push(`Cooldown base: ${decision.cooldownMatches} jornada${decision.cooldownMatches === 1 ? '' : 's'}.`);
@@ -2630,8 +2642,26 @@ function renderDecisionsModal() {
     });
     details.textContent = detailParts.length > 0 ? detailParts.join(' ') : 'Sin consecuencias activas registradas.';
 
-    item.append(header, description, details);
+    if (isOnCooldown) {
+      optionButton.disabled = true;
+      optionButton.setAttribute('aria-disabled', 'true');
+      item.classList.add('is-disabled');
+    } else {
+      optionButton.removeAttribute('aria-disabled');
+    }
+
+    optionButton.append(header, description, details);
+    item.append(optionButton);
     decisionsListEl.append(item);
+
+    optionButton.addEventListener('click', () => {
+      if (!decisionSelect || optionButton.disabled) {
+        return;
+      }
+      decisionSelect.value = String(index);
+      populateDecisions();
+      renderDecisionsModal();
+    });
   });
 
   if (decisions.length === 0) {
