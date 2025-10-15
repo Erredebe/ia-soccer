@@ -98,11 +98,14 @@ const sidebarCollapseQuery =
     : null;
 
 const matchdayBadgeEl = document.querySelector('#matchday-badge');
+const heroMatchdayBadgeEl = document.querySelector('#hero-matchday-badge');
 const matchOpponentNameEl = document.querySelector('#match-opponent-name');
+const heroMatchOpponentNameEl = document.querySelector('#hero-match-opponent-name');
 const matchOpponentStrengthEl = document.querySelector('#match-opponent-strength');
 const matchOpponentRecordEl = document.querySelector('#match-opponent-record');
 const matchLocationEl = document.querySelector('#match-location');
 const matchLineupStatusEl = document.querySelector('#match-lineup-status');
+const heroMatchStatusEl = document.querySelector('#hero-match-status');
 const matchSeedEl = document.querySelector('#match-seed');
 
 const clubNameEl = document.querySelector('#club-name');
@@ -158,6 +161,25 @@ const reportHistorySeasonSelect = document.querySelector('#report-history-season
 const reportHistoryEmptyEl = document.querySelector('#report-history-empty');
 
 let commercialModal;
+
+const syncHeroMatchday = (text) => {
+  if (heroMatchdayBadgeEl) {
+    heroMatchdayBadgeEl.textContent = text;
+  }
+};
+
+const syncHeroOpponent = (text) => {
+  if (heroMatchOpponentNameEl) {
+    heroMatchOpponentNameEl.textContent = text;
+  }
+};
+
+const syncHeroStatus = (text, highlight = false) => {
+  if (heroMatchStatusEl) {
+    heroMatchStatusEl.textContent = text;
+    heroMatchStatusEl.classList.toggle('is-warning', highlight);
+  }
+};
 let commercialOffersList;
 let commercialHistoryList;
 let commercialEmptyMessage;
@@ -3121,15 +3143,18 @@ function updateSelectionCounts() {
     subsCountEl.textContent = `Suplentes: ${configState.substitutes.length} / ${SUBS_LIMIT}`;
     subsCountEl.classList.toggle('warning', configState.substitutes.length > SUBS_LIMIT);
   }
+  const starters = configState.startingLineup.length;
+  const substitutes = configState.substitutes.length;
+  const startersOk = starters === STARTERS_LIMIT;
+  const subsOk = substitutes <= SUBS_LIMIT;
+  const summary = [`Titulares ${starters}/${STARTERS_LIMIT}`, `Suplentes ${substitutes}/${SUBS_LIMIT}`];
+  const statusSummary = summary.join(' · ');
+  const showWarning = !startersOk || !subsOk;
   if (matchLineupStatusEl) {
-    const starters = configState.startingLineup.length;
-    const substitutes = configState.substitutes.length;
-    const startersOk = starters === STARTERS_LIMIT;
-    const subsOk = substitutes <= SUBS_LIMIT;
-    const summary = [`Titulares ${starters}/${STARTERS_LIMIT}`, `Suplentes ${substitutes}/${SUBS_LIMIT}`];
-    matchLineupStatusEl.textContent = `Estado de la convocatoria: ${summary.join(' · ')}`;
-    matchLineupStatusEl.classList.toggle('warning', !startersOk || !subsOk);
+    matchLineupStatusEl.textContent = `Estado de la convocatoria: ${statusSummary}`;
+    matchLineupStatusEl.classList.toggle('warning', showWarning);
   }
+  syncHeroStatus(statusSummary, showWarning);
 }
 
 function autoSortLineup() {
@@ -3841,26 +3866,32 @@ function formatOpponentRecord(standing) {
 function updateMatchSummary() {
   const event = determineNextEvent();
   const totalMatchdays = getTotalMatchdays();
-  if (matchdayBadgeEl) {
-    if (event.type === 'cup-draw') {
-      const roundName = getCupRoundName(event.round.id);
-      matchdayBadgeEl.textContent = `Copa · Sorteo ${roundName}`;
-    } else if (event.type === 'cup-match') {
-      const roundName = getCupRoundName(event.round.id);
-      matchdayBadgeEl.textContent = `Copa · ${roundName}`;
-    } else if (leagueState && leagueState.matchDay >= totalMatchdays) {
-      matchdayBadgeEl.textContent = `Temporada ${clubState.season} completada`;
-    } else {
-      const nextMatchday = leagueState ? leagueState.matchDay + 1 : 1;
-      matchdayBadgeEl.textContent = `Jornada ${nextMatchday} de ${totalMatchdays}`;
-    }
+  let matchdayLabel;
+  if (event.type === 'cup-draw') {
+    const roundName = getCupRoundName(event.round.id);
+    matchdayLabel = `Copa · Sorteo ${roundName}`;
+  } else if (event.type === 'cup-match') {
+    const roundName = getCupRoundName(event.round.id);
+    matchdayLabel = `Copa · ${roundName}`;
+  } else if (leagueState && leagueState.matchDay >= totalMatchdays) {
+    matchdayLabel = `Temporada ${clubState.season} completada`;
+  } else {
+    const nextMatchday = leagueState ? leagueState.matchDay + 1 : 1;
+    matchdayLabel = `Jornada ${nextMatchday} de ${totalMatchdays}`;
   }
+  if (matchdayBadgeEl) {
+    matchdayBadgeEl.textContent = matchdayLabel;
+  }
+  syncHeroMatchday(matchdayLabel);
 
   const opponent = getUpcomingOpponent();
+  const opponentName =
+    event.type === 'cup-draw' ? 'Pendiente de sorteo' : opponent?.club ?? 'Rival misterioso';
+  if (matchOpponentNameEl) {
+    matchOpponentNameEl.textContent = opponentName;
+  }
+  syncHeroOpponent(opponentName);
   if (event.type === 'cup-draw') {
-    if (matchOpponentNameEl) {
-      matchOpponentNameEl.textContent = 'Pendiente de sorteo';
-    }
     if (matchOpponentRecordEl) {
       matchOpponentRecordEl.textContent = 'El bombo aún no ha hablado.';
     }
@@ -3879,9 +3910,6 @@ function updateMatchSummary() {
       homeCheckbox.disabled = true;
     }
   } else {
-    if (matchOpponentNameEl) {
-      matchOpponentNameEl.textContent = opponent?.club ?? 'Rival misterioso';
-    }
     if (matchOpponentRecordEl) {
       matchOpponentRecordEl.textContent = formatOpponentRecord(opponent);
     }

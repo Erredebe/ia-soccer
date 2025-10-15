@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 160" role="img" aria-labelledby="title desc">
+  <title id="title">Trofeo retro IA Soccer</title>
+  <desc id="desc">Trofeo metálico estilo pixelado con asas laterales.</desc>
+  <defs>
+    <linearGradient id="cupBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0" stop-color="#f7f7f7" />
+      <stop offset="0.5" stop-color="#d0d6e5" />
+      <stop offset="1" stop-color="#aab4c7" />
+    </linearGradient>
+    <linearGradient id="cupBase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0" stop-color="#091528" />
+      <stop offset="1" stop-color="#233a63" />
+    </linearGradient>
+    <linearGradient id="handles" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0" stop-color="#f7f7f7" />
+      <stop offset="0.35" stop-color="#dfe4f2" />
+      <stop offset="1" stop-color="#b7c2d8" />
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="#030712" stroke-width="4" stroke-linejoin="round">
+    <path fill="url(#handles)" d="M20 42h16l6 18-6 18H20c-8 0-14-8-14-18s6-18 14-18z" />
+    <path fill="url(#handles)" d="M92 42h16c8 0 14 8 14 18s-6 18-14 18H92l-6-18z" />
+    <path fill="url(#cupBody)" d="M32 20h64l-6 52c-2 18-12 32-26 32s-24-14-26-32z" />
+    <path fill="url(#cupBody)" d="M46 104h36l-4 16c-2 8-6 12-14 12s-12-4-14-12z" />
+    <rect x="36" y="132" width="56" height="14" rx="3" fill="url(#cupBase)" />
+    <rect x="24" y="146" width="80" height="12" rx="3" fill="url(#cupBase)" />
+  </g>
+  <g fill="#ffffff" opacity="0.35">
+    <path d="M40 26h16l-2 42c-1 12-6 20-10 20s-8-8-8-20z" />
+    <path d="M72 26h12l-3 42c-1 12-4 20-9 20-4 0-7-8-7-20z" />
+  </g>
+</svg>

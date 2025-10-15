@@ -8,40 +8,87 @@
   </head>
   <body>
     <section id="start-menu" class="start-menu" aria-labelledby="start-menu-title">
-      <div class="start-menu__content">
-        <div class="start-menu__logo" aria-hidden="true">
-          <img src="assets/club-crest.svg" alt="Escudo de IA Soccer" loading="lazy" />
+      <div class="start-menu__frame">
+        <div class="start-menu__content">
+          <div class="start-menu__column start-menu__column--trophy" aria-hidden="true">
+            <div class="start-menu__badge">
+              <img src="assets/club-crest.svg" alt="Escudo de IA Soccer" loading="lazy" />
+            </div>
+            <figure class="start-menu__trophy" role="presentation">
+              <img src="assets/trophy.svg" alt="Trofeo retro" loading="lazy" />
+              <figcaption>La gloria espera a los managers audaces.</figcaption>
+            </figure>
+          </div>
+          <div class="start-menu__column start-menu__column--actions">
+            <h1 id="start-menu-title" class="start-menu__title">IA Soccer</h1>
+            <p class="start-menu__claim">
+              Tu despacho manager canalla siempre listo para la próxima jornada.
+            </p>
+            <div class="start-menu__actions" role="group" aria-label="Acciones principales">
+              <button
+                type="button"
+                id="start-new-game"
+                class="start-menu__button start-menu__button--primary"
+              >
+                Nueva partida
+              </button>
+              <button
+                type="button"
+                id="start-continue-game"
+                class="start-menu__button start-menu__button--secondary"
+                aria-disabled="true"
+                disabled
+              >
+                Continuar
+              </button>
+            </div>
+            <p id="start-menu-message" class="start-menu__message" aria-live="polite" hidden></p>
+          </div>
         </div>
-        <h1 id="start-menu-title" class="start-menu__title">IA Soccer</h1>
-        <p class="start-menu__claim">
-          Tu despacho manager canalla siempre listo para la próxima jornada.
-        </p>
-        <div class="start-menu__actions">
-          <button
-            type="button"
-            id="start-new-game"
-            class="start-menu__button start-menu__button--primary"
-          >
-            Nueva partida
-          </button>
-          <button
-            type="button"
-            id="start-continue-game"
-            class="start-menu__button start-menu__button--secondary"
-            aria-disabled="true"
-            disabled
-          >
-            Continuar
-          </button>
-        </div>
-        <p id="start-menu-message" class="start-menu__message" aria-live="polite" hidden></p>
       </div>
     </section>
 
     <main class="page is-hidden" aria-hidden="true">
       <header class="hero">
-        <h1>IA Soccer</h1>
-        <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
+        <div class="hero__heading">
+          <h1>IA Soccer</h1>
+          <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
+        </div>
+        <div class="hero__scoreboard" role="region" aria-label="Panel de jornada">
+          <div class="hero__scoreboard-main">
+            <span class="hero__scoreboard-badge" id="hero-matchday-badge" aria-live="polite">Jornada 1</span>
+            <div class="hero__scoreboard-field">
+              <span class="hero__scoreboard-label">Rival</span>
+              <span class="hero__scoreboard-value" id="hero-match-opponent-name" aria-live="polite"
+                >Rival misterioso</span
+              >
+            </div>
+            <div class="hero__scoreboard-field">
+              <span class="hero__scoreboard-label">Estado</span>
+              <span class="hero__scoreboard-value" id="hero-match-status" aria-live="polite"
+                >Convocatoria por definir</span
+              >
+            </div>
+          </div>
+          <div class="hero__scoreboard-panels" role="navigation" aria-label="Accesos rápidos retro">
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-report">
+              <span class="hero__scoreboard-panel-title">Resultados</span>
+              <span class="hero__scoreboard-panel-subtitle">Crónica al instante</span>
+            </button>
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-league">
+              <span class="hero__scoreboard-panel-title">Clasificación</span>
+              <span class="hero__scoreboard-panel-subtitle">Tabla y tendencias</span>
+            </button>
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-calendar">
+              <span class="hero__scoreboard-panel-title">Calendario</span>
+              <span class="hero__scoreboard-panel-subtitle">Planificación</span>
+            </button>
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-finances">
+              <span class="hero__scoreboard-panel-title">Economía</span>
+              <span class="hero__scoreboard-panel-subtitle">Caja del club</span>
+            </button>
+          </div>
+        </div>
       </header>
 
       <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
