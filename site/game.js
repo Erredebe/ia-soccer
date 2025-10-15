@@ -3318,6 +3318,24 @@ function handleLineupRowClick(event) {
     return;
   }
 
+  processLineupSelection(row);
+}
+
+function handleLineupRowKeydown(event) {
+  const row = event.currentTarget;
+  if (!(row instanceof HTMLElement)) {
+    return;
+  }
+
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
+  }
+
+  event.preventDefault();
+  processLineupSelection(row);
+}
+
+function processLineupSelection(row) {
   const playerId = row.dataset.playerId;
   if (!playerId) {
     return;
@@ -3327,36 +3345,81 @@ function handleLineupRowClick(event) {
   if (!player) {
     selectedLineupPlayerId = null;
     renderLineupBoard();
-    showLineupNotice('La selección se canceló porque el jugador dejó de estar disponible.');
+    showLineupNotice(createLineupSelectionClearedNotice('La selección se canceló porque el jugador dejó de estar disponible.'));
     return;
   }
 
   if (!selectedLineupPlayerId) {
     selectedLineupPlayerId = playerId;
     renderLineupBoard();
-    showLineupNotice(`Has seleccionado a ${player.name}. Elige a otra persona para intercambiar roles.`);
-    hideLineupError();
+    showLineupNotice(createLineupSelectionNotice(player, row.dataset.availability));
     return;
   }
 
   if (selectedLineupPlayerId === playerId) {
     selectedLineupPlayerId = null;
     renderLineupBoard();
-    showLineupNotice('Selección cancelada. No se realizaron cambios.');
-    hideLineupError();
+    showLineupNotice(createLineupSelectionClearedNotice('Selección cancelada. No se realizaron cambios.'));
     return;
   }
 
   const swapResult = swapPlayerRoles(selectedLineupPlayerId, playerId);
   selectedLineupPlayerId = null;
   renderLineupBoard();
-  if (swapResult.success) {
-    showLineupNotice(swapResult.message);
-    hideLineupError();
-  } else if (swapResult.message) {
-    showLineupNotice(swapResult.message);
-    hideLineupError();
+  if (swapResult.message) {
+    showLineupNotice(createLineupSelectionClearedNotice(swapResult.message));
   }
+}
+
+function createLineupSelectionNotice(player, availabilityState) {
+  const fragment = document.createDocumentFragment();
+  const summary = document.createElement('span');
+  summary.className = 'lineup-swap-message';
+  summary.textContent = `Seleccionaste a ${player.name}.`;
+  fragment.append(summary);
+
+  const roleLabels = {
+    starter: 'titular',
+    sub: 'suplente',
+    none: 'reserva',
+  };
+  const currentRole = roleLabels[getPlayerRole(player.id)] ?? roleLabels.none;
+  const status = document.createElement('span');
+  status.className = 'lineup-swap-instructions';
+  status.textContent = `Ahora mismo figura como ${currentRole}. Pulsa en otra fila para intercambiar roles o usa el botón para cancelar.`;
+  fragment.append(status);
+
+  if (availabilityState && availabilityState !== 'available') {
+    const availability = document.createElement('span');
+    availability.className = 'lineup-swap-warning';
+    availability.textContent = `Aviso: ${availabilityState}.`;
+    fragment.append(availability);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'lineup-swap-actions';
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'lineup-swap-cancel';
+  cancelButton.textContent = 'Cancelar selección';
+  cancelButton.addEventListener('click', () => {
+    selectedLineupPlayerId = null;
+    renderLineupBoard();
+    showLineupNotice(createLineupSelectionClearedNotice('Selección cancelada. No se realizaron cambios.'));
+  });
+  actions.append(cancelButton);
+  fragment.append(actions);
+
+  return fragment;
+}
+
+function createLineupSelectionClearedNotice(message) {
+  const fragment = document.createDocumentFragment();
+  const summary = document.createElement('span');
+  summary.className = 'lineup-swap-message';
+  summary.textContent = message;
+  fragment.append(summary);
+  return fragment;
 }
 
 function swapPlayerRoles(primaryId, secondaryId) {
@@ -3583,7 +3646,9 @@ function renderLineupBoard() {
       row.classList.add('is-selected');
       row.setAttribute('aria-selected', 'true');
     }
+    row.tabIndex = 0;
     row.addEventListener('click', handleLineupRowClick);
+    row.addEventListener('keydown', handleLineupRowKeydown);
 
     if (playerRole !== currentRole) {
       currentRole = playerRole;

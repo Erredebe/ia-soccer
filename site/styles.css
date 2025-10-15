@@ -1305,6 +1305,9 @@ body.modal-open {
 }
 
 .form-error.lineup-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
   background: rgba(191, 219, 254, 0.35);
   border-color: rgba(59, 130, 246, 0.4);
   color: #1d4ed8;
@@ -1314,12 +1317,12 @@ body.modal-open {
   display: block;
   font-size: 0.95rem;
   font-weight: 700;
-  margin-bottom: 0.4rem;
+  margin: 0;
 }
 
 .lineup-swap-warning {
   display: block;
-  margin-bottom: 0.35rem;
+  margin: 0;
   color: #b45309;
   font-weight: 600;
 }
@@ -1328,13 +1331,15 @@ body.modal-open {
   display: block;
   font-size: 0.88rem;
   line-height: 1.4;
-  margin-bottom: 0.7rem;
+  margin: 0;
 }
 
 .lineup-swap-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.35rem;
 }
 
 .lineup-swap-cancel {
@@ -1638,7 +1643,8 @@ body.modal-open {
 }
 
 .lineup-table tbody tr {
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.18s ease;
   cursor: pointer;
 }
 
@@ -1646,25 +1652,35 @@ body.modal-open {
   background: rgba(37, 99, 235, 0.08);
 }
 
-.lineup-table tbody tr[data-role='starter'] {
+.lineup-table tbody tr[data-role='starter']:not(.is-selected) {
   background: rgba(59, 130, 246, 0.08);
 }
 
-.lineup-table tbody tr[data-role='sub'] {
+.lineup-table tbody tr[data-role='sub']:not(.is-selected) {
   background: rgba(14, 165, 233, 0.06);
 }
 
-.lineup-table tbody tr[data-role='none'] {
+.lineup-table tbody tr[data-role='none']:not(.is-selected) {
   background: rgba(148, 163, 184, 0.08);
 }
 
 .lineup-table tbody tr.is-selected {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.55);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.18));
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.55), 0 10px 24px rgba(15, 23, 42, 0.15);
+  transform: translateY(-1px);
 }
 
 .lineup-table tbody tr.is-selected:hover {
-  background: rgba(219, 234, 254, 0.9);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(14, 165, 233, 0.22));
+}
+
+.lineup-table tbody tr:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, 0.6);
+  outline-offset: -2px;
+}
+
+.lineup-table tbody tr.is-selected:focus-visible {
+  outline-color: rgba(37, 99, 235, 0.8);
 }
 
 .lineup-table tbody tr + tr {
@@ -1672,6 +1688,10 @@ body.modal-open {
 }
 
 .lineup-table__player {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
   text-align: left;
   width: 30%;
   min-width: 200px;
@@ -1681,6 +1701,12 @@ body.modal-open {
   display: block;
   font-weight: 700;
   color: #0f172a;
+}
+
+.lineup-table__player-nickname {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: #1f2937;
 }
 
 .lineup-table__player-meta {
