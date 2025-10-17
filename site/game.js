@@ -554,7 +554,9 @@ const clubPrimaryColorErrorEl = document.querySelector('#club-primary-color-erro
 const clubSecondaryColorErrorEl = document.querySelector('#club-secondary-color-error');
 const clubLogoInput = document.querySelector('#club-logo-input');
 
-const resultsControlButton = document.querySelector('[data-panel-action="results"]');
+const resultsControlButton = document.querySelector(
+  '.control-panel__section-options [data-panel-action="results"]'
+);
 const calendarList = document.querySelector('#calendar-list');
 const calendarNoteEl = document.querySelector('#calendar-note');
 const tacticPlanEl = document.querySelector('#tactic-plan');
