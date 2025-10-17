@@ -3294,19 +3294,7 @@ function clampStat(value) {
 function createStatCell(value) {
   const cell = document.createElement('td');
   cell.className = 'lineup-table__stat';
-  const meter = document.createElement('div');
-  meter.className = 'lineup-table__stat-meter';
-  const bar = document.createElement('div');
-  bar.className = 'lineup-table__stat-meter-bar';
-  const fill = document.createElement('div');
-  fill.className = 'lineup-table__stat-meter-fill';
-  fill.style.setProperty('--value', String(clampStat(value)));
-  bar.append(fill);
-  const label = document.createElement('span');
-  label.className = 'lineup-table__stat-value';
-  label.textContent = String(clampStat(value));
-  meter.append(bar, label);
-  cell.append(meter);
+  cell.textContent = String(clampStat(value));
   return cell;
 }
 
