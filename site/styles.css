@@ -2163,7 +2163,7 @@ body.modal-open {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
 }
 
 .lineup-table thead {
@@ -2172,7 +2172,7 @@ body.modal-open {
 
 .lineup-table th,
 .lineup-table td {
-  padding: 0.45rem 0.5rem;
+  padding: 0.3rem 0.4rem;
   text-align: center;
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
 }
@@ -2274,8 +2274,8 @@ body.modal-open {
   align-items: flex-start;
   gap: 0.35rem;
   text-align: left;
-  width: 30%;
-  min-width: 200px;
+  width: 26%;
+  min-width: 160px;
 }
 
 .lineup-table__player-name {
@@ -2321,7 +2321,7 @@ body.modal-open {
 }
 
 .lineup-table__stat {
-  min-width: 56px;
+  min-width: 44px;
   text-align: center;
   font-weight: 700;
   color: #1e3a8a;
