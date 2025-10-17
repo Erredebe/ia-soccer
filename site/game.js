@@ -63,7 +63,7 @@ const homeCheckbox = document.querySelector('#home-checkbox');
 const opponentStrength = document.querySelector('#opponent-strength');
 const opponentOutput = document.querySelector('#opponent-output');
 const seedInput = document.querySelector('#seed-input');
-const viewModeToggle = document.querySelector('#view-mode-toggle');
+const viewModeInputs = document.querySelectorAll("input[name='viewMode']");
 const form = document.querySelector('#game-form');
 const resetButton = document.querySelector('#reset-club');
 const lineupBoard = document.querySelector('#lineup-board');
@@ -129,6 +129,11 @@ const transferListEl = document.querySelector('#transfer-list');
 const transferMessageEl = document.querySelector('#transfer-message');
 
 const scorelineEl = document.querySelector('#scoreline');
+const scorelineState = {
+  finalText: '',
+  clubName: '',
+  opponentName: '',
+};
 const financesDeltaEl = document.querySelector('#finances-delta');
 const financesAttendanceEl = document.querySelector('#finances-attendance');
 const financesIncomeList = document.querySelector('#finances-income');
@@ -156,6 +161,10 @@ const matchVisualizationMinuteEl = document.querySelector('#match-visualization-
 const matchVisualizationLabelEl = document.querySelector('#match-visualization-label');
 const matchVisualizationStatusEl = document.querySelector('#match-visualization-status');
 const matchVisualizationFrameEl = document.querySelector('#match-visualization-frame');
+const matchDuelsSection = document.querySelector('#match-duels');
+const matchDuelsStatusEl = document.querySelector('#match-duels-status');
+const matchDuelsListEl = document.querySelector('#match-duels-list');
+const matchDuelsScoreEl = document.querySelector('#match-duels-score');
 const reportTabButtons = document.querySelectorAll('[data-report-tab]');
 const reportPanels = document.querySelectorAll('[data-report-panel]');
 const reportHistoryList = document.querySelector('#report-history-list');
@@ -326,6 +335,7 @@ const TIMELINE_EVENT_META = {
 const MATCH_VISUALIZATION_TRANSITION_CLASS = 'match-visualization__screen--transition';
 const MATCH_VISUALIZATION_MINUTE_CLASS = 'match-visualization__minute--pulse';
 const MATCH_VISUALIZATION_AUTOPLAY_INTERVAL = 3400;
+const MATCH_DUELS_REVEAL_DELAY = 520;
 const matchVisualizationState = {
   frames: [],
   index: 0,
@@ -337,6 +347,9 @@ const matchVisualizationState = {
     players: new Map(),
     ball: null,
   },
+};
+const matchDuelsState = {
+  timeouts: [],
 };
 
 function clearMatchVisualizationAutoplay() {
@@ -1245,7 +1258,7 @@ function buildInitialConfig(club) {
     instructions,
     seed: typeof baseConfig.seed === 'string' ? baseConfig.seed : '',
     difficultyMultiplier: leagueInfo.difficultyMultiplier,
-    viewMode: baseConfig.viewMode ?? 'text',
+    viewMode: normaliseViewMode(baseConfig.viewMode ?? 'text'),
   };
 }
 
@@ -3185,9 +3198,25 @@ function updateFormDefaults() {
   if (seedInput) {
     seedInput.value = typeof configState.seed === 'string' ? configState.seed : '';
   }
-  if (viewModeToggle instanceof HTMLInputElement) {
-    viewModeToggle.checked = configState.viewMode === '2d';
+  const desiredViewMode = normaliseViewMode(configState.viewMode);
+  let hasSelection = false;
+  Array.from(viewModeInputs).forEach((input) => {
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    const shouldCheck = normaliseViewMode(input.value) === desiredViewMode;
+    input.checked = shouldCheck;
+    hasSelection = hasSelection || shouldCheck;
+  });
+  if (!hasSelection) {
+    const fallback = Array.from(viewModeInputs).find(
+      (input) => input instanceof HTMLInputElement && normaliseViewMode(input.value) === 'text'
+    );
+    if (fallback instanceof HTMLInputElement) {
+      fallback.checked = true;
+    }
   }
+  syncViewModeSelector();
   refreshControlPanel();
 }
 
@@ -4339,7 +4368,10 @@ function sellPlayer(playerId) {
 
 function clearReport() {
   closeModal(reportModal);
-  scorelineEl.textContent = '';
+  scorelineState.finalText = '';
+  scorelineState.clubName = '';
+  scorelineState.opponentName = '';
+  applyScoreline('');
   financesDeltaEl.textContent = '';
   currentReportData = null;
   renderMatchVisualization(null);
@@ -4563,11 +4595,291 @@ function renderFinancialBreakdown(finances) {
 }
 
 
-function resolveSelectedViewMode() {
-  if (viewModeToggle instanceof HTMLInputElement) {
-    return viewModeToggle.checked ? '2d' : 'text';
+function normaliseViewMode(value) {
+  return value === '2d' || value === 'duels' || value === 'text' ? value : 'text';
+}
+
+function syncViewModeSelector() {
+  Array.from(viewModeInputs).forEach((input) => {
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    const option = input.closest('.view-mode-selector__option');
+    if (option) {
+      option.classList.toggle('is-selected', input.checked);
+    }
+  });
+}
+
+function clearDuelsAnimation() {
+  matchDuelsState.timeouts.forEach((timeoutId) => {
+    window.clearTimeout(timeoutId);
+  });
+  matchDuelsState.timeouts = [];
+}
+
+function formatSignedDifference(value) {
+  const rounded = Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+  const normalised = Object.is(rounded, -0) ? 0 : rounded;
+  const base = normalised.toFixed(2);
+  return normalised > 0 ? `+${base}` : base;
+}
+
+function formatAverage(value) {
+  if (!Number.isFinite(value)) {
+    return '0.00';
   }
-  return configState.viewMode === '2d' ? '2d' : 'text';
+  const rounded = Number(value.toFixed(2));
+  return (Object.is(rounded, -0) ? 0 : rounded).toFixed(2);
+}
+
+function updateMatchDuelsScore(value, options = {}) {
+  if (!matchDuelsScoreEl) {
+    return;
+  }
+  const settings = { final: false, ...options };
+  matchDuelsScoreEl.classList.remove('match-duels__score--positive', 'match-duels__score--negative');
+  if (!Number.isFinite(value)) {
+    matchDuelsScoreEl.textContent = 'Marcador cartas: —';
+    return;
+  }
+  const text = formatSignedDifference(value);
+  matchDuelsScoreEl.textContent = settings.final
+    ? `Marcador cartas: ${text} (final)`
+    : `Marcador cartas: ${text}`;
+  if (value > 0) {
+    matchDuelsScoreEl.classList.add('match-duels__score--positive');
+  } else if (value < 0) {
+    matchDuelsScoreEl.classList.add('match-duels__score--negative');
+  }
+}
+
+function applyScoreline(text, { animate = false } = {}) {
+  if (!scorelineEl) {
+    return;
+  }
+  scorelineEl.textContent = text;
+  if (animate) {
+    restartAnimation(scorelineEl, 'scoreline--flash');
+  }
+}
+
+function restoreScoreline(animate = false) {
+  if (!scorelineEl) {
+    return;
+  }
+  if (scorelineState.finalText) {
+    applyScoreline(scorelineState.finalText, { animate });
+  } else {
+    applyScoreline('', { animate: false });
+  }
+}
+
+function applyDuelsScoreline(value) {
+  if (!scorelineEl) {
+    return;
+  }
+  const clubLabel = scorelineState.clubName || clubState.name || 'Nuestro club';
+  const opponentLabel = scorelineState.opponentName || 'Rival misterioso';
+  scorelineEl.textContent = `${clubLabel} vs ${opponentLabel} · Cartas ${formatSignedDifference(value)}`;
+}
+
+function createMatchDuelParticipant(participant, side) {
+  const container = document.createElement('div');
+  container.className = `match-duel-card__participant match-duel-card__participant--${side}`;
+  const name = document.createElement('span');
+  name.className = 'match-duel-card__name';
+  name.textContent = participant?.name ?? (side === 'home' ? 'Jugador canalla' : 'Rival proyectado');
+  const meta = document.createElement('span');
+  meta.className = 'match-duel-card__meta';
+  const role = document.createElement('span');
+  role.textContent = participant?.position ?? '—';
+  const average = document.createElement('span');
+  average.textContent = `Media ${formatAverage(participant?.average)}`;
+  meta.append(role, average);
+  container.append(name, meta);
+  return { container, name, role, average, raw: participant };
+}
+
+function createMatchDuelCard(entry, index) {
+  const card = document.createElement('article');
+  card.className = 'match-duel-card';
+  card.setAttribute('role', 'listitem');
+  card.tabIndex = -1;
+  const badge = document.createElement('span');
+  badge.className = 'match-duel-card__badge';
+  badge.textContent = `Duelo ${index + 1}`;
+
+  const participants = document.createElement('div');
+  participants.className = 'match-duel-card__participants';
+  const homeParticipant = createMatchDuelParticipant(entry?.home ?? null, 'home');
+  const awayParticipant = createMatchDuelParticipant(entry?.away ?? null, 'away');
+  participants.append(homeParticipant.container, awayParticipant.container);
+
+  const difference = document.createElement('p');
+  difference.className = 'match-duel-card__difference';
+  const rawDifference = Number.isFinite(entry?.difference) ? entry.difference : 0;
+  difference.textContent = formatSignedDifference(rawDifference);
+  const duelOutcome = rawDifference > 0 ? 'positive' : rawDifference < 0 ? 'negative' : 'neutral';
+  card.dataset.outcome = duelOutcome;
+
+  const winner = document.createElement('span');
+  winner.className = 'match-duel-card__winner';
+  winner.textContent = 'Duelo en preparación';
+
+  const partial = document.createElement('p');
+  partial.className = 'match-duel-card__partial';
+  partial.textContent = 'Acumulado: —';
+
+  card.append(badge, participants, difference, winner, partial);
+
+  return {
+    element: card,
+    entry: {
+      home: entry?.home ?? null,
+      away: entry?.away ?? null,
+      difference: rawDifference,
+    },
+    partialEl: partial,
+    winnerEl: winner,
+  };
+}
+
+function revealMatchDuelCard(cardData, runningTotal) {
+  const { element, entry, partialEl, winnerEl } = cardData;
+  const difference = entry.difference;
+  let winner = 'draw';
+  let winnerLabel = 'Empate vibrante';
+  if (difference > 0.01) {
+    winner = 'home';
+    winnerLabel = 'Ventaja canalla';
+  } else if (difference < -0.01) {
+    winner = 'away';
+    winnerLabel = 'Golpe rival';
+  }
+  element.dataset.winner = winner;
+  winnerEl.textContent = winnerLabel;
+  partialEl.innerHTML = `Acumulado: <strong>${formatSignedDifference(runningTotal)}</strong>`;
+  element.classList.add('match-duel-card--visible');
+  element.tabIndex = 0;
+  const homeName = entry.home?.name ?? 'Jugador canalla';
+  const awayName = entry.away?.name ?? 'Rival proyectado';
+  const homeAverage = formatAverage(entry.home?.average);
+  const awayAverage = formatAverage(entry.away?.average);
+  const contextLabel =
+    winner === 'home'
+      ? `${scorelineState.clubName || clubState.name || 'Nuestro club'} domina`
+      : winner === 'away'
+      ? `${scorelineState.opponentName || 'El rival'} se adelanta`
+      : 'Duelo equilibrado';
+  element.setAttribute(
+    'aria-label',
+    `${homeName} (${homeAverage}) vs ${awayName} (${awayAverage}). ${contextLabel}. Acumulado ${formatSignedDifference(
+      runningTotal
+    )}.`
+  );
+}
+
+function resolveSelectedViewMode() {
+  const selectedInput = Array.from(viewModeInputs).find(
+    (input) => input instanceof HTMLInputElement && input.checked
+  );
+  if (selectedInput instanceof HTMLInputElement) {
+    return normaliseViewMode(selectedInput.value);
+  }
+  return normaliseViewMode(configState.viewMode);
+}
+
+function renderMatchDuels(summary) {
+  if (!matchDuelsSection) {
+    return;
+  }
+
+  clearDuelsAnimation();
+
+  const isActive = resolveSelectedViewMode() === 'duels';
+  matchDuelsSection.hidden = !isActive;
+  matchDuelsSection.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+
+  if (!isActive) {
+    matchDuelsSection.dataset.state = 'empty';
+    if (matchDuelsListEl) {
+      matchDuelsListEl.innerHTML = '';
+      matchDuelsListEl.setAttribute('aria-busy', 'false');
+    }
+    if (matchDuelsStatusEl) {
+      matchDuelsStatusEl.textContent = 'Selecciona el modo cartas para comparar jugador a jugador.';
+    }
+    updateMatchDuelsScore(Number.NaN);
+    restoreScoreline();
+    return;
+  }
+
+  const breakdown = Array.isArray(summary?.breakdown) ? summary.breakdown : [];
+  const totalDifference = Number.isFinite(summary?.totalDifference) ? summary.totalDifference : 0;
+
+  if (!breakdown.length) {
+    matchDuelsSection.dataset.state = 'empty';
+    if (matchDuelsStatusEl) {
+      matchDuelsStatusEl.textContent =
+        'Juega una jornada con el modo cartas para ver el enfrentamiento completo.';
+    }
+    if (matchDuelsListEl) {
+      matchDuelsListEl.innerHTML = '';
+      matchDuelsListEl.setAttribute('aria-busy', 'false');
+    }
+    updateMatchDuelsScore(Number.NaN);
+    restoreScoreline();
+    return;
+  }
+
+  matchDuelsSection.dataset.state = 'playing';
+  if (matchDuelsStatusEl) {
+    matchDuelsStatusEl.textContent = 'Reproduciendo duelos carta a carta.';
+  }
+
+  const cards = breakdown.map((entry, index) => createMatchDuelCard(entry, index));
+
+  if (matchDuelsListEl) {
+    matchDuelsListEl.innerHTML = '';
+    matchDuelsListEl.setAttribute('aria-busy', 'true');
+    const fragment = document.createDocumentFragment();
+    cards.forEach((card) => {
+      fragment.append(card.element);
+    });
+    matchDuelsListEl.append(fragment);
+  }
+
+  updateMatchDuelsScore(0);
+  applyDuelsScoreline(0);
+
+  let runningTotal = 0;
+
+  cards.forEach((cardData, index) => {
+    const revealDelay = index * MATCH_DUELS_REVEAL_DELAY + 120;
+    const revealTimeout = window.setTimeout(() => {
+      runningTotal = Number((runningTotal + cardData.entry.difference).toFixed(2));
+      revealMatchDuelCard(cardData, runningTotal);
+      updateMatchDuelsScore(runningTotal);
+      applyDuelsScoreline(runningTotal);
+
+      if (index === cards.length - 1) {
+        if (matchDuelsListEl) {
+          matchDuelsListEl.setAttribute('aria-busy', 'false');
+        }
+        const finalizeTimeout = window.setTimeout(() => {
+          matchDuelsSection.dataset.state = 'ready';
+          if (matchDuelsStatusEl) {
+            matchDuelsStatusEl.textContent = 'Cartas completadas. Repasa el acumulado final.';
+          }
+          updateMatchDuelsScore(totalDifference, { final: true });
+          restoreScoreline(true);
+        }, MATCH_DUELS_REVEAL_DELAY);
+        matchDuelsState.timeouts.push(finalizeTimeout);
+      }
+    }, revealDelay);
+    matchDuelsState.timeouts.push(revealTimeout);
+  });
 }
 
 function updateMatchVisualizationFrame(index, options = {}) {
@@ -4632,6 +4944,10 @@ function renderMatchVisualization(report) {
   }
 
   const selectedViewMode = resolveSelectedViewMode();
+  renderMatchDuels(selectedViewMode === 'duels' ? report?.match?.duels ?? null : null);
+  const is2dActive = selectedViewMode === '2d';
+  matchVisualizationSection.hidden = !is2dActive;
+  matchVisualizationSection.setAttribute('aria-hidden', is2dActive ? 'false' : 'true');
   const clearVisualization = (message) => {
     matchVisualizationState.frames = [];
     matchVisualizationState.index = 0;
@@ -4676,8 +4992,8 @@ function renderMatchVisualization(report) {
     }
   };
 
-  if (selectedViewMode !== '2d') {
-    clearVisualization('Activa la casilla de simulación 2D para proyectar la pizarra retro.');
+  if (!is2dActive) {
+    clearVisualization('Selecciona la vista 2D en el selector para proyectar la pizarra retro.');
     return;
   }
 
@@ -4956,11 +5272,13 @@ function showHistoryEntry(entryId) {
 
 function renderMatchReport(report, decisionOutcome, opponentName = 'Rival misterioso', metadata = {}) {
   currentReportData = report ?? null;
-  renderMatchVisualization(report ?? null);
   const clubName = clubState.name;
   const scoreline = `${clubName} ${report.match.goalsFor} - ${report.match.goalsAgainst} ${opponentName}`;
-  scorelineEl.textContent = scoreline;
-  restartAnimation(scorelineEl, 'scoreline--flash');
+  scorelineState.finalText = scoreline;
+  scorelineState.clubName = clubName;
+  scorelineState.opponentName = opponentName;
+  applyScoreline(scoreline, { animate: true });
+  renderMatchVisualization(report ?? null);
 
   const isPositiveFinances = report.financesDelta >= 0;
   const financesPrefix = isPositiveFinances ? '+' : '−';
@@ -5309,7 +5627,7 @@ function applyLoadedState(saved) {
       : typeof loadedSeed === 'number'
         ? String(loadedSeed)
         : baseConfig.seed ?? '';
-  const savedViewMode = saved.config?.viewMode === '2d' ? '2d' : 'text';
+  const savedViewMode = normaliseViewMode(saved.config?.viewMode);
   configState = {
     ...baseConfig,
     ...saved.config,
@@ -5424,8 +5742,7 @@ form.addEventListener('submit', (event) => {
   }
 
   const seedValue = seedInput ? seedInput.value.trim() : '';
-  const selectedViewMode =
-    viewModeToggle instanceof HTMLInputElement && viewModeToggle.checked ? '2d' : 'text';
+  const selectedViewMode = resolveSelectedViewMode();
   const resolvedHome = resolveNextMatchHome(nextEvent);
   const resolvedStrength = resolveNextMatchStrength(nextEvent);
   configState = {
@@ -5667,11 +5984,20 @@ if (planNextButton) {
   });
 }
 
-if (viewModeToggle instanceof HTMLInputElement) {
-  viewModeToggle.addEventListener('change', () => {
-    const mode = viewModeToggle.checked ? '2d' : 'text';
-    configState = { ...configState, viewMode: mode };
-    renderMatchVisualization(currentReportData);
+if (viewModeInputs.length > 0) {
+  Array.from(viewModeInputs).forEach((input) => {
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    input.addEventListener('change', () => {
+      if (!input.checked) {
+        return;
+      }
+      const mode = normaliseViewMode(input.value);
+      configState = { ...configState, viewMode: mode };
+      syncViewModeSelector();
+      renderMatchVisualization(currentReportData);
+    });
   });
 }
 

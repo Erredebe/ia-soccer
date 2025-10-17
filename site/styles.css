@@ -1912,6 +1912,85 @@ body.modal-open {
   color: #0f172a;
 }
 
+.view-mode-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.view-mode-selector__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.view-mode-selector__option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.1);
+}
+
+.view-mode-selector__option:focus-within {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  border-color: rgba(37, 99, 235, 0.85);
+}
+
+.view-mode-selector__option input[type='radio'] {
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 2px solid rgba(37, 99, 235, 0.6);
+  display: grid;
+  place-items: center;
+  background: #fff;
+  margin: 0;
+  position: relative;
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.view-mode-selector__option input[type='radio']::before {
+  content: '';
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: #2563eb;
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.view-mode-selector__option input[type='radio']:checked::before {
+  transform: scale(1);
+}
+
+.view-mode-selector__option input[type='radio']:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.65);
+  outline-offset: 2px;
+}
+
+.view-mode-selector__option.is-selected {
+  border-color: rgba(37, 99, 235, 0.85);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.18));
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18);
+}
+
+.view-mode-selector__label {
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.view-mode-selector__option.is-selected .view-mode-selector__label {
+  color: #1d4ed8;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -3325,6 +3404,257 @@ body.modal-open {
   font-size: 0.9rem;
 }
 
+.match-duels {
+  margin-top: 1.75rem;
+  padding: 1.5rem;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: linear-gradient(140deg, rgba(15, 23, 42, 0.03), rgba(30, 64, 175, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: opacity 0.3s ease;
+}
+
+.match-duels[hidden] {
+  display: none;
+}
+
+.match-duels__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.match-duels__header h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.match-duels__score {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1d4ed8;
+}
+
+.match-duels__score--positive {
+  color: #15803d;
+}
+
+.match-duels__score--negative {
+  color: #dc2626;
+}
+
+.match-duels__status {
+  margin: 0;
+  font-size: 0.96rem;
+  color: #475569;
+}
+
+.match-duels[data-state='empty'] .match-duels__list {
+  display: none;
+}
+
+.match-duels[data-state='empty'] .match-duels__score {
+  color: #475569;
+}
+
+.match-duels:not([data-state='empty']) .match-duels__status {
+  display: block;
+}
+
+.match-duels[data-state='playing'] .match-duels__status {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.match-duels[data-state='ready'] .match-duels__status {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.match-duels__list {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.match-duels__list[aria-busy='true'] {
+  opacity: 0.85;
+}
+
+.match-duel-card {
+  position: relative;
+  padding: 1rem 1.15rem;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  opacity: 0;
+  transform: rotateX(-24deg) translateY(24px);
+  transform-origin: top center;
+}
+
+.match-duel-card--visible {
+  animation: match-duel-reveal 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes match-duel-reveal {
+  from {
+    opacity: 0;
+    transform: rotateX(-45deg) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0deg) translateY(0);
+  }
+}
+
+.match-duel-card[data-winner='home'] {
+  border-color: rgba(22, 163, 74, 0.75);
+  box-shadow: 0 16px 32px rgba(22, 163, 74, 0.22);
+}
+
+.match-duel-card[data-winner='away'] {
+  border-color: rgba(239, 68, 68, 0.75);
+  box-shadow: 0 16px 32px rgba(239, 68, 68, 0.22);
+}
+
+.match-duel-card[data-winner='draw'] {
+  border-color: rgba(37, 99, 235, 0.45);
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.16);
+}
+
+.match-duel-card:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.65);
+  outline-offset: 4px;
+}
+
+.match-duel-card__badge {
+  align-self: flex-start;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+
+.match-duel-card__participants {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.match-duel-card__participant {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.match-duel-card__participant--home {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.match-duel-card[data-winner='away'] .match-duel-card__participant--home {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.match-duel-card__participant--away {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.match-duel-card[data-winner='home'] .match-duel-card__participant--away {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.match-duel-card[data-winner='draw'] .match-duel-card__participant {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.match-duel-card__name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.match-duel-card__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.match-duel-card__difference {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.match-duel-card[data-outcome='positive'] .match-duel-card__difference {
+  color: #15803d;
+}
+
+.match-duel-card[data-outcome='negative'] .match-duel-card__difference {
+  color: #dc2626;
+}
+
+.match-duel-card__winner {
+  align-self: flex-start;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.match-duel-card[data-winner='home'] .match-duel-card__winner {
+  background: rgba(22, 163, 74, 0.18);
+  color: #14532d;
+}
+
+.match-duel-card[data-winner='away'] .match-duel-card__winner {
+  background: rgba(239, 68, 68, 0.18);
+  color: #7f1d1d;
+}
+
+.match-duel-card[data-winner='draw'] .match-duel-card__winner {
+  background: rgba(37, 99, 235, 0.18);
+  color: #1e3a8a;
+}
+
+.match-duel-card__partial {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.match-duel-card[data-outcome='positive'] .match-duel-card__partial {
+  color: #166534;
+}
+
+.match-duel-card[data-outcome='negative'] .match-duel-card__partial {
+  color: #b91c1c;
+}
+
+.match-duel-card__partial strong {
+  font-weight: 700;
+}
+
 .match-visualization[data-state='empty'] .match-visualization__controls,
 .match-visualization[data-state='empty'] .match-visualization__legend {
   opacity: 0.5;
@@ -3793,6 +4123,24 @@ body.modal-open {
 
   .match-visualization__pitch {
     max-width: 100%;
+  }
+
+  .match-duels {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+
+  .match-duels__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .match-duels__list {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .match-duel-card {
+    padding: 0.9rem;
   }
 
   .modal__close {
