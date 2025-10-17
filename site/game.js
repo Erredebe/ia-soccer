@@ -546,6 +546,12 @@ const clubCityInput = document.querySelector('#club-city-input');
 const clubStadiumInput = document.querySelector('#club-stadium-input');
 const clubPrimaryColorInput = document.querySelector('#club-primary-color');
 const clubSecondaryColorInput = document.querySelector('#club-secondary-color');
+const clubPrimaryColorHexInput = document.querySelector('#club-primary-color-hex');
+const clubSecondaryColorHexInput = document.querySelector('#club-secondary-color-hex');
+const clubPrimaryColorPreview = document.querySelector('#club-primary-color-preview');
+const clubSecondaryColorPreview = document.querySelector('#club-secondary-color-preview');
+const clubPrimaryColorErrorEl = document.querySelector('#club-primary-color-error');
+const clubSecondaryColorErrorEl = document.querySelector('#club-secondary-color-error');
 const clubLogoInput = document.querySelector('#club-logo-input');
 
 const resultsControlButton = document.querySelector('[data-panel-action="results"]');
@@ -1102,6 +1108,129 @@ function getReadableTextColor(hexColor) {
   return luminance > 0.55 ? '#111827' : '#ffffff';
 }
 
+function sanitiseHexCandidate(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return '';
+  }
+  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+}
+
+function updateColorPreview(previewEl, color) {
+  if (!previewEl) {
+    return;
+  }
+  previewEl.style.backgroundColor = color;
+  previewEl.style.color = getReadableTextColor(color);
+  previewEl.textContent = color.toUpperCase();
+}
+
+function createColorFieldController({
+  colorInput,
+  hexInput,
+  previewEl,
+  errorEl,
+  fallbackColor,
+  invalidMessage,
+}) {
+  if (!colorInput || !hexInput || !previewEl) {
+    return null;
+  }
+
+  let currentColor = normaliseColorValue(colorInput.value, fallbackColor);
+
+  function setColor(color) {
+    currentColor = normaliseColorValue(color, currentColor || fallbackColor);
+    colorInput.value = currentColor;
+    hexInput.value = currentColor.toUpperCase();
+    updateColorPreview(previewEl, currentColor);
+  }
+
+  function clearError() {
+    if (!errorEl) {
+      return;
+    }
+    errorEl.textContent = '';
+    errorEl.hidden = true;
+    hexInput.removeAttribute('aria-invalid');
+  }
+
+  function showError(message) {
+    if (!errorEl) {
+      return;
+    }
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+    hexInput.setAttribute('aria-invalid', 'true');
+  }
+
+  function validateHexInput() {
+    const candidate = sanitiseHexCandidate(hexInput.value);
+    if (candidate.length === 0) {
+      showError('Introduce un código hex con seis dígitos.');
+      hexInput.value = currentColor.toUpperCase();
+      return;
+    }
+    if (!HEX_COLOR_PATTERN.test(candidate)) {
+      showError(invalidMessage);
+      return;
+    }
+    setColor(candidate);
+    clearError();
+  }
+
+  setColor(currentColor);
+  clearError();
+
+  colorInput.addEventListener('input', () => {
+    setColor(colorInput.value);
+    clearError();
+  });
+
+  hexInput.addEventListener('input', () => {
+    const candidate = sanitiseHexCandidate(hexInput.value);
+    if (HEX_COLOR_PATTERN.test(candidate)) {
+      setColor(candidate);
+      clearError();
+    }
+  });
+
+  hexInput.addEventListener('change', validateHexInput);
+  hexInput.addEventListener('blur', validateHexInput);
+
+  return {
+    setColor,
+    clearError,
+    getColor() {
+      return currentColor;
+    },
+  };
+}
+
+const colorFieldControllers = {
+  primary: createColorFieldController({
+    colorInput: clubPrimaryColorInput,
+    hexInput: clubPrimaryColorHexInput,
+    previewEl: clubPrimaryColorPreview,
+    errorEl: clubPrimaryColorErrorEl,
+    fallbackColor: DEFAULT_PRIMARY_COLOR,
+    invalidMessage:
+      'Usa un formato #RRGGBB para definir el color principal y mantener la estética retro legible.',
+  }),
+  secondary: createColorFieldController({
+    colorInput: clubSecondaryColorInput,
+    hexInput: clubSecondaryColorHexInput,
+    previewEl: clubSecondaryColorPreview,
+    errorEl: clubSecondaryColorErrorEl,
+    fallbackColor: DEFAULT_SECONDARY_COLOR,
+    invalidMessage:
+      'Introduce un tono #RRGGBB válido para el color secundario y reforzar los paneles informativos.',
+  }),
+};
+
 function resolveClubLogoUrl(club) {
   if (!club || typeof club.logoUrl !== 'string') {
     return DEFAULT_CLUB_LOGO;
@@ -1283,10 +1412,16 @@ function prefillClubIdentityForm() {
   if (clubStadiumInput) {
     clubStadiumInput.value = identity.stadiumName;
   }
-  if (clubPrimaryColorInput) {
+  if (colorFieldControllers.primary) {
+    colorFieldControllers.primary.setColor(identity.primaryColor);
+    colorFieldControllers.primary.clearError();
+  } else if (clubPrimaryColorInput) {
     clubPrimaryColorInput.value = identity.primaryColor;
   }
-  if (clubSecondaryColorInput) {
+  if (colorFieldControllers.secondary) {
+    colorFieldControllers.secondary.setColor(identity.secondaryColor);
+    colorFieldControllers.secondary.clearError();
+  } else if (clubSecondaryColorInput) {
     clubSecondaryColorInput.value = identity.secondaryColor;
   }
   if (clubLogoInput) {

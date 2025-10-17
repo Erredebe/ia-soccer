@@ -533,14 +533,86 @@
                 </fieldset>
                 <fieldset class="identity-section">
                   <legend class="identity-section__legend">Colores y escudo</legend>
-                  <label class="field">
-                    <span class="field-label">Color principal</span>
-                    <input type="color" id="club-primary-color" name="clubPrimaryColor" value="#1d4ed8" />
-                  </label>
-                  <label class="field">
-                    <span class="field-label">Color secundario</span>
-                    <input type="color" id="club-secondary-color" name="clubSecondaryColor" value="#bfdbfe" />
-                  </label>
+                  <div class="field color-field" data-color-role="primary">
+                    <div class="color-field__header">
+                      <label class="field-label" for="club-primary-color">Color principal</label>
+                      <span class="field-hint" id="club-primary-color-hint"
+                        >Tiñe los botones canallas, la cabecera retro y la camiseta local. Elígelo como el tono protagonista del
+                        club.</span
+                      >
+                    </div>
+                    <div class="color-field__body">
+                      <span
+                        class="color-preview"
+                        id="club-primary-color-preview"
+                        aria-hidden="true"
+                        style="background: #1d4ed8; color: #ffffff"
+                      >#1D4ED8</span>
+                      <input
+                        type="color"
+                        id="club-primary-color"
+                        name="clubPrimaryColor"
+                        class="color-picker"
+                        value="#1d4ed8"
+                        aria-describedby="club-primary-color-hint club-primary-color-error"
+                      />
+                      <input
+                        type="text"
+                        id="club-primary-color-hex"
+                        name="clubPrimaryColorHex"
+                        class="color-hex-input"
+                        inputmode="text"
+                        pattern="^#?[0-9a-fA-F]{6}$"
+                        maxlength="7"
+                        spellcheck="false"
+                        autocapitalize="off"
+                        aria-label="Código hex del color principal"
+                        aria-describedby="club-primary-color-hint club-primary-color-error"
+                        value="#1D4ED8"
+                      />
+                    </div>
+                    <p class="color-field__error" id="club-primary-color-error" aria-live="polite" hidden></p>
+                  </div>
+                  <div class="field color-field" data-color-role="secondary">
+                    <div class="color-field__header">
+                      <label class="field-label" for="club-secondary-color">Color secundario</label>
+                      <span class="field-hint" id="club-secondary-color-hint"
+                        >Colorea paneles informativos, resaltados suaves y detalles del estadio. Úsalo para equilibrar el tono
+                        principal y mantener la lectura clara.</span
+                      >
+                    </div>
+                    <div class="color-field__body">
+                      <span
+                        class="color-preview"
+                        id="club-secondary-color-preview"
+                        aria-hidden="true"
+                        style="background: #bfdbfe; color: #0f172a"
+                      >#BFDBFE</span>
+                      <input
+                        type="color"
+                        id="club-secondary-color"
+                        name="clubSecondaryColor"
+                        class="color-picker"
+                        value="#bfdbfe"
+                        aria-describedby="club-secondary-color-hint club-secondary-color-error"
+                      />
+                      <input
+                        type="text"
+                        id="club-secondary-color-hex"
+                        name="clubSecondaryColorHex"
+                        class="color-hex-input"
+                        inputmode="text"
+                        pattern="^#?[0-9a-fA-F]{6}$"
+                        maxlength="7"
+                        spellcheck="false"
+                        autocapitalize="off"
+                        aria-label="Código hex del color secundario"
+                        aria-describedby="club-secondary-color-hint club-secondary-color-error"
+                        value="#BFDBFE"
+                      />
+                    </div>
+                    <p class="color-field__error" id="club-secondary-color-error" aria-live="polite" hidden></p>
+                  </div>
                   <label class="field identity-section--wide">
                     <span class="field-label">Escudo personalizado</span>
                     <input
