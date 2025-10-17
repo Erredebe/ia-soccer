@@ -167,7 +167,7 @@
 
 /**
  * Definición del tipo `MatchViewMode`.
- * @typedef {"quick" | "text" | "2d"} MatchViewMode
+ * @typedef {"quick" | "text" | "2d" | "duels"} MatchViewMode
  */
 
 /**
@@ -229,6 +229,30 @@
  * @property {MatchAdjustment[]=} inMatchAdjustments
  * @property {MatchViewMode=} viewMode
  * @property {(number | string)=} seed
+ */
+
+/**
+ * Participante en un duelo posicional para el modo cartas.
+ * @typedef {Object} MatchDuelParticipant
+ * @property {PlayerId=} id Identificador interno si corresponde al club local.
+ * @property {string} name Nombre mostrado en la carta.
+ * @property {Position=} position Demarcación deportiva cuando aplica.
+ * @property {number} average Media estimada de rendimiento (0-100).
+ */
+
+/**
+ * Carta que resume el enfrentamiento entre dos futbolistas.
+ * @typedef {Object} MatchDuelBreakdown
+ * @property {MatchDuelParticipant} home Jugador del club propio enfrentado.
+ * @property {MatchDuelParticipant} away Rival estimado para el duelo.
+ * @property {number} difference Diferencia de medias (home - away) redondeada a dos decimales.
+ */
+
+/**
+ * Paquete completo del modo duelo con las once cartas y el acumulado.
+ * @typedef {Object} MatchDuelSummary
+ * @property {MatchDuelBreakdown[]} breakdown Listado ordenado de enfrentamientos individuales.
+ * @property {number} totalDifference Diferencia total agregada de todos los duelos.
  */
 
 /**
@@ -325,6 +349,7 @@
  * @property {string[]} commentary
  * @property {MatchViewMode} viewMode
  * @property {Match2DVisualization=} visualization2d
+ * @property {MatchDuelSummary=} duels Resumen posicional cuando se solicita el modo "duels".
  * @property {'league' | 'cup'=} competition
  * @property {CupRoundId=} cupRoundId
  * @property {number=} seed

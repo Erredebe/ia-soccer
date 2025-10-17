@@ -20,6 +20,8 @@ import { buildMatchVisualization2D } from './visualization.js';
 /** @typedef {import('../types.js').Player} Player */
 /** @typedef {import('../types.js').TacticalInstructions} TacticalInstructions */
 /** @typedef {import('../types.js').MatchAdjustment} MatchAdjustment */
+/** @typedef {import('../types.js').MatchDuelSummary} MatchDuelSummary */
+/** @typedef {import('../types.js').MatchDuelBreakdown} MatchDuelBreakdown */
 
 /**
  * Definición del tipo `MatchSimulationOptions`.
@@ -125,6 +127,19 @@ function averageMorale(players) {
   }
   const total = players.reduce((sum, player) => sum + player.morale, 0);
   return total / players.length;
+}
+
+/**
+ * Calcula una nota resumida para comparar futbolistas en el modo duelos.
+ * @param {Player} player Integrante del once inicial.
+ */
+function playerDuelAverage(player) {
+  const attributes = player.attributes;
+  const keys = ['pace', 'stamina', 'dribbling', 'passing', 'shooting', 'defending', 'leadership'];
+  const base = keys.reduce((sum, key) => sum + (attributes[key] ?? 0), 0) / keys.length;
+  const morale = clamp(((player.morale ?? 0) + 100) / 2, 0, 100);
+  const fitness = clamp(player.fitness ?? 50, 0, 100);
+  return base * 0.7 + morale * 0.15 + fitness * 0.15;
 }
 
 /**
@@ -1067,6 +1082,54 @@ export function simulateMatch(club, config, options = {}) {
   statistics.expectedGoals.for = Number(statistics.expectedGoals.for.toFixed(2));
   statistics.expectedGoals.against = Number(statistics.expectedGoals.against.toFixed(2));
 
+  /** @type {MatchDuelSummary | undefined} */
+  let duelsSummary;
+  if ((config.viewMode ?? 'quick') === 'duels') {
+    const opponentLabel = finalOpponentName;
+    const requiredPlayers = 11;
+    const duelPlayers = [...initialLineup];
+    const seen = new Set(duelPlayers.map((player) => player.id));
+    for (const candidate of club.squad) {
+      if (duelPlayers.length >= requiredPlayers) {
+        break;
+      }
+      if (seen.has(candidate.id)) {
+        continue;
+      }
+      duelPlayers.push(candidate);
+      seen.add(candidate.id);
+    }
+    const filledLineup = duelPlayers.slice(0, Math.max(requiredPlayers, duelPlayers.length));
+    const baseStrength = clamp(config.opponentStrength ?? 60, 25, 99);
+    /** @type {MatchDuelBreakdown[]} */
+    const breakdown = filledLineup.slice(0, requiredPlayers).map((player, index) => {
+      const homeAverage = Number(playerDuelAverage(player).toFixed(2));
+      const positionBias =
+        player.position === 'GK' ? -3 : player.position === 'DEF' ? -1.5 : player.position === 'MID' ? 0 : 1.5;
+      const distributionBias = (index - (requiredPlayers - 1) / 2) * 0.6;
+      const awayAverage = Number(clamp(baseStrength + positionBias + distributionBias, 20, 99).toFixed(2));
+      const difference = Number((homeAverage - awayAverage).toFixed(2));
+      return {
+        home: {
+          id: player.id,
+          name: player.name,
+          position: player.position,
+          average: homeAverage,
+        },
+        away: {
+          name: `${opponentLabel} ${index + 1}`,
+          position: player.position,
+          average: awayAverage,
+        },
+        difference,
+      };
+    });
+    const totalDifference = Number(
+      breakdown.reduce((sum, card) => sum + (card?.difference ?? 0), 0).toFixed(2)
+    );
+    duelsSummary = { breakdown, totalDifference };
+  }
+
   const matchEvents = events.filter((event) => event.type !== 'intro');
   const visualization2d = (config.viewMode ?? 'quick') === '2d'
     ? buildMatchVisualization2D({
@@ -1089,6 +1152,7 @@ export function simulateMatch(club, config, options = {}) {
     viewMode: config.viewMode ?? 'quick',
     seed: seedValue,
     visualization2d,
+    duels: duelsSummary,
   };
 }
 
