@@ -160,6 +160,18 @@ const reportHistoryList = document.querySelector('#report-history-list');
 const reportHistorySeasonSelect = document.querySelector('#report-history-season');
 const reportHistoryEmptyEl = document.querySelector('#report-history-empty');
 
+const { home: defaultHomeSetting, opponentStrength: defaultOpponentStrength } = createDefaultMatchConfig();
+
+if (homeCheckbox) {
+  homeCheckbox.disabled = true;
+  homeCheckbox.setAttribute('aria-disabled', 'true');
+}
+
+if (opponentStrength instanceof HTMLInputElement) {
+  opponentStrength.disabled = true;
+  opponentStrength.setAttribute('aria-disabled', 'true');
+}
+
 let commercialModal;
 
 const syncHeroMatchday = (text) => {
@@ -1129,6 +1141,75 @@ function getHomeVenueLabel() {
   }
   const identity = extractClubIdentity(clubState);
   return identity.stadiumName;
+}
+
+function resolveNextMatchHome(nextEvent = determineNextEvent()) {
+  if (nextEvent.type === 'cup-match' && nextEvent.fixture) {
+    return Boolean(nextEvent.fixture.home);
+  }
+  if (nextEvent.type === 'cup-draw') {
+    return false;
+  }
+  if (leagueState && Number.isFinite(leagueState.matchDay)) {
+    return leagueState.matchDay % 2 === 0;
+  }
+  return configState?.home ?? defaultHomeSetting;
+}
+
+function clampOpponentStrengthValue(value) {
+  if (!Number.isFinite(value)) {
+    return configState?.opponentStrength ?? defaultOpponentStrength;
+  }
+  return Math.max(40, Math.min(95, Math.round(value)));
+}
+
+function inferStrengthFromStanding(standing) {
+  if (!standing) {
+    return configState?.opponentStrength ?? defaultOpponentStrength;
+  }
+  if (standing.played === 0 && standing.points === 0) {
+    return configState?.opponentStrength ?? defaultOpponentStrength;
+  }
+  const table = Array.isArray(leagueState?.table) ? leagueState.table : [];
+  const positionIndex = table.findIndex((entry) => entry.club === standing.club);
+  let rankScore = null;
+  if (positionIndex !== -1 && table.length > 0) {
+    const denominator = Math.max(table.length - 1, 1);
+    rankScore = 1 - positionIndex / denominator;
+  }
+  let pointsScore = null;
+  if (standing.played > 0) {
+    pointsScore = Math.max(0, Math.min(1, standing.points / (standing.played * 3)));
+  }
+  const compositeScore =
+    rankScore !== null && pointsScore !== null
+      ? (rankScore + pointsScore) / 2
+      : rankScore ?? pointsScore;
+  if (compositeScore === null || Number.isNaN(compositeScore)) {
+    return configState?.opponentStrength ?? defaultOpponentStrength;
+  }
+  const baseStrength = 55 + compositeScore * 35;
+  return clampOpponentStrengthValue(baseStrength);
+}
+
+function resolveNextMatchStrength(nextEvent = determineNextEvent()) {
+  const fallbackStrength = Number.isFinite(configState?.opponentStrength)
+    ? configState.opponentStrength
+    : defaultOpponentStrength;
+  if (nextEvent.type === 'cup-match' && nextEvent.fixture) {
+    const leagueStanding = Array.isArray(leagueState?.table)
+      ? leagueState.table.find((entry) => entry.club === nextEvent.fixture.opponent)
+      : undefined;
+    return leagueStanding ? inferStrengthFromStanding(leagueStanding) : fallbackStrength;
+  }
+  if (nextEvent.type === 'cup-draw') {
+    return fallbackStrength;
+  }
+  const opponentStanding = getUpcomingOpponent();
+  if (opponentStanding && !('competition' in opponentStanding)) {
+    return inferStrengthFromStanding(opponentStanding);
+  }
+  return fallbackStrength;
 }
 
 function buildInitialConfig(club) {
@@ -2218,6 +2299,8 @@ function renderCalendarModal() {
 
   const remaining = Math.max(0, totalMatchdays - leagueState.matchDay);
   const itemsToShow = Math.min(6, remaining);
+  const upcomingEvent = determineNextEvent();
+  const nextMatchHome = resolveNextMatchHome(upcomingEvent);
 
   for (let offset = 0; offset < itemsToShow; offset += 1) {
     const listItem = document.createElement('li');
@@ -2227,7 +2310,7 @@ function renderCalendarModal() {
     const matchDayNumber = leagueState.matchDay + offset + 1;
     const rotationIndex = (leagueState.matchDay + offset) % rotation.length;
     const opponentName = rotation[rotationIndex];
-    const isHome = offset === 0 ? homeCheckbox.checked : (leagueState.matchDay + offset) % 2 === 0;
+    const isHome = offset === 0 ? nextMatchHome : (leagueState.matchDay + offset) % 2 === 0;
     const opponentSpan = document.createElement('span');
     opponentSpan.className = 'control-calendar__opponent';
     opponentSpan.textContent = `${isHome ? 'vs' : '@'} ${opponentName}`;
@@ -2281,19 +2364,20 @@ function renderOpponentModal() {
     return;
   }
 
+  const nextEvent = determineNextEvent();
   const opponent = getUpcomingOpponent();
   const opponentName = opponent?.club ?? 'Rival misterioso';
   opponentModalNameEl.textContent = opponentName;
   opponentModalRecordEl.textContent = formatOpponentRecord(opponent);
 
-  const strengthValue = Number.parseInt(opponentStrength.value, 10) || configState.opponentStrength;
+  const strengthValue = resolveNextMatchStrength(nextEvent);
   opponentModalStrengthEl.textContent = `${strengthValue} (${describeOpponentStrength(strengthValue)})`;
 
-  const nextEvent = determineNextEvent();
-  if (nextEvent.type === 'cup-match' && nextEvent.fixture) {
-    opponentModalLocationEl.textContent = nextEvent.fixture.home ? getHomeVenueLabel() : 'Fuera de casa';
+  if (nextEvent.type === 'cup-draw') {
+    opponentModalLocationEl.textContent = 'Sede de la federación';
   } else {
-    opponentModalLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
+    const isHome = resolveNextMatchHome(nextEvent);
+    opponentModalLocationEl.textContent = isHome ? getHomeVenueLabel() : 'Fuera de casa';
   }
 
   let comment = 'Aún no hay informes detallados del rival.';
@@ -2930,6 +3014,7 @@ function refreshControlPanel() {
   renderStadiumModal();
   renderCupModal();
   updateResultsButtonState();
+  updateOpponentOutput();
 }
 
 function getCurrentLeagueRivals() {
@@ -3072,15 +3157,17 @@ function updateFormDefaults() {
   if (formationSelect) {
     formationSelect.value = configState.formation ?? '4-4-2';
   }
-  homeCheckbox.checked = configState.home;
-  opponentStrength.value = String(configState.opponentStrength);
+  if (homeCheckbox) {
+    homeCheckbox.checked = configState.home;
+    homeCheckbox.disabled = true;
+    homeCheckbox.setAttribute('aria-disabled', 'true');
+  }
   if (seedInput) {
     seedInput.value = typeof configState.seed === 'string' ? configState.seed : '';
   }
   if (viewModeToggle instanceof HTMLInputElement) {
     viewModeToggle.checked = configState.viewMode === '2d';
   }
-  updateOpponentOutput();
   refreshControlPanel();
 }
 
@@ -3844,6 +3931,16 @@ function formatOpponentRecord(standing) {
 function updateMatchSummary() {
   const event = determineNextEvent();
   const totalMatchdays = getTotalMatchdays();
+  const resolvedHome = resolveNextMatchHome(event);
+  const resolvedStrength = resolveNextMatchStrength(event);
+  if (configState.home !== resolvedHome || configState.opponentStrength !== resolvedStrength) {
+    configState = { ...configState, home: resolvedHome, opponentStrength: resolvedStrength };
+  }
+  if (homeCheckbox) {
+    homeCheckbox.checked = resolvedHome;
+    homeCheckbox.disabled = true;
+    homeCheckbox.setAttribute('aria-disabled', 'true');
+  }
   let matchdayLabel;
   if (event.type === 'cup-draw') {
     const roundName = getCupRoundName(event.round.id);
@@ -3883,10 +3980,6 @@ function updateMatchSummary() {
       playMatchButton.disabled = false;
       playMatchButton.textContent = 'Celebrar sorteo';
     }
-    if (homeCheckbox) {
-      homeCheckbox.checked = false;
-      homeCheckbox.disabled = true;
-    }
   } else {
     if (matchOpponentRecordEl) {
       matchOpponentRecordEl.textContent = formatOpponentRecord(opponent);
@@ -3896,32 +3989,20 @@ function updateMatchSummary() {
       configState = { ...configState, difficultyMultiplier };
     }
     if (matchOpponentStrengthEl) {
-      const baseStrength = opponentStrength instanceof HTMLInputElement
-        ? Number.parseInt(opponentStrength.value, 10)
-        : configState.opponentStrength;
-      const numericBase = Number.isFinite(baseStrength) ? baseStrength : configState.opponentStrength;
-      const adjustedStrength = Math.min(100, Math.round(numericBase * difficultyMultiplier));
+      const adjustedStrength = Math.min(100, Math.round(resolvedStrength * difficultyMultiplier));
       matchOpponentStrengthEl.textContent = `${adjustedStrength}/100 · ${getDifficultyLabel()}`;
     }
     if (event.type === 'cup-match' && event.fixture) {
-      if (homeCheckbox) {
-        homeCheckbox.checked = event.fixture.home;
-        homeCheckbox.disabled = true;
-      }
-      configState = { ...configState, home: event.fixture.home };
       if (matchLocationEl) {
-        matchLocationEl.textContent = event.fixture.home ? getHomeVenueLabel() : 'Fuera de casa';
+        matchLocationEl.textContent = resolvedHome ? getHomeVenueLabel() : 'Fuera de casa';
       }
       if (playMatchButton) {
         playMatchButton.disabled = false;
         playMatchButton.textContent = 'Jugar eliminatoria';
       }
     } else {
-      if (homeCheckbox) {
-        homeCheckbox.disabled = false;
-      }
       if (matchLocationEl) {
-        matchLocationEl.textContent = homeCheckbox.checked ? getHomeVenueLabel() : 'Fuera de casa';
+        matchLocationEl.textContent = resolvedHome ? getHomeVenueLabel() : 'Fuera de casa';
       }
       if (playMatchButton) {
         playMatchButton.disabled = false;
@@ -3946,14 +4027,21 @@ function describeOpponentStrength(value) {
 }
 
 function updateOpponentOutput() {
-  const rawValue = Number.parseInt(opponentStrength.value, 10);
-  const numericValue = Number.isFinite(rawValue) ? rawValue : configState.opponentStrength;
+  const baseStrength = Number.isFinite(configState?.opponentStrength)
+    ? configState.opponentStrength
+    : defaultOpponentStrength;
   const multiplier = getDifficultyMultiplier();
-  const adjustedValue = Math.min(100, Math.round(numericValue * multiplier));
-  opponentOutput.value = String(numericValue);
-  opponentOutput.textContent = `${numericValue} base · ${adjustedValue} real (${describeOpponentStrength(adjustedValue)})`;
-  opponentStrength.title = `Fortaleza rival con dificultad ${getDifficultyLabel()}: ${adjustedValue}/100`;
-  updateMatchSummary();
+  const adjustedValue = Math.min(100, Math.round(baseStrength * multiplier));
+  if (opponentOutput) {
+    opponentOutput.value = String(baseStrength);
+    opponentOutput.textContent = `${baseStrength} base · ${adjustedValue} real (${describeOpponentStrength(adjustedValue)})`;
+  }
+  if (opponentStrength instanceof HTMLInputElement) {
+    opponentStrength.value = String(baseStrength);
+    opponentStrength.disabled = true;
+    opponentStrength.setAttribute('aria-disabled', 'true');
+    opponentStrength.title = `Fortaleza rival con dificultad ${getDifficultyLabel()}: ${adjustedValue}/100`;
+  }
 }
 
 function renderLeagueTable() {
@@ -5312,12 +5400,12 @@ form.addEventListener('submit', (event) => {
   const seedValue = seedInput ? seedInput.value.trim() : '';
   const selectedViewMode =
     viewModeToggle instanceof HTMLInputElement && viewModeToggle.checked ? '2d' : 'text';
+  const resolvedHome = resolveNextMatchHome(nextEvent);
+  const resolvedStrength = resolveNextMatchStrength(nextEvent);
   configState = {
     ...configState,
-    home: isCupMatch && nextEvent.type === 'cup-match' && nextEvent.fixture
-      ? nextEvent.fixture.home
-      : homeCheckbox.checked,
-    opponentStrength: Number.parseInt(opponentStrength.value, 10),
+    home: resolvedHome,
+    opponentStrength: resolvedStrength,
     opponentName,
     tactic: tacticSelect.value,
     formation: formationSelect.value,
@@ -5439,9 +5527,6 @@ resetButton.addEventListener('click', () => {
   rebuildClubState(identity);
   showLoadNotice('Club reiniciado. Guardado anterior eliminado.');
 });
-
-opponentStrength.addEventListener('input', updateOpponentOutput);
-homeCheckbox.addEventListener('change', updateMatchSummary);
 if (seedInput) {
   seedInput.addEventListener('input', () => {
     const value = seedInput.value.trim();
