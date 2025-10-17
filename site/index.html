@@ -492,9 +492,8 @@
               <div>
                 <h2 id="club-identity-title">Configura la identidad del club</h2>
                 <p>
-                  Personaliza el nombre, la ciudad y el estadio antes de lanzarte a la temporada. Al
-                  guardar los cambios se reiniciará el progreso actual para aplicar la nueva
-                  identidad.
+                  Personaliza el nombre, la ciudad y el estadio antes de lanzarte a la temporada y
+                  asegúrate de que el club proyecte la imagen que deseas.
                 </p>
               </div>
               <div class="identity-sections">
@@ -625,9 +624,50 @@
                   </label>
                 </fieldset>
               </div>
+              <div
+                id="club-identity-preview"
+                class="club-identity-preview"
+                aria-live="polite"
+              >
+                <div class="club-identity-preview__body">
+                  <div class="club-identity-preview__badge" aria-hidden="true">
+                    <img
+                      id="club-identity-preview-logo"
+                      src="assets/club-crest.svg"
+                      alt="Escudo provisional del club"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="club-identity-preview__details">
+                    <p class="club-identity-preview__name" data-preview-field="name">
+                      IA Soccer Club
+                    </p>
+                    <p class="club-identity-preview__meta">
+                      <span data-preview-field="city">Ciudad Canalla</span>
+                      <span class="club-identity-preview__separator" aria-hidden="true">·</span>
+                      <span data-preview-field="stadium">Estadio Retro</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="club-identity-preview__stripes" aria-hidden="true">
+                  <span class="club-identity-preview__stripe club-identity-preview__stripe--primary"></span>
+                  <span class="club-identity-preview__stripe club-identity-preview__stripe--secondary"></span>
+                  <span class="club-identity-preview__stripe club-identity-preview__stripe--primary"></span>
+                </div>
+              </div>
               <div class="match-form__actions">
-                <button type="submit" class="play-button">Guardar identidad</button>
-                <button type="button" class="club-action" data-modal-close>Cancelar</button>
+                <div class="match-actions">
+                  <button type="submit" class="play-button">Guardar identidad</button>
+                  <button type="button" class="club-action" id="preview-club-identity">
+                    Vista previa
+                  </button>
+                  <button type="button" class="club-action" data-modal-close>Cancelar</button>
+                </div>
+                <div class="form-warning" role="alert">
+                  <strong>Atención:</strong>
+                  Al guardar los cambios se reiniciará el progreso actual para aplicar la nueva
+                  identidad.
+                </div>
               </div>
             </form>
           </div>

@@ -553,6 +553,13 @@ const clubSecondaryColorPreview = document.querySelector('#club-secondary-color-
 const clubPrimaryColorErrorEl = document.querySelector('#club-primary-color-error');
 const clubSecondaryColorErrorEl = document.querySelector('#club-secondary-color-error');
 const clubLogoInput = document.querySelector('#club-logo-input');
+const previewClubIdentityButton = document.querySelector('#preview-club-identity');
+const clubIdentityPreview = document.querySelector('#club-identity-preview');
+const clubIdentityPreviewName = clubIdentityPreview?.querySelector('[data-preview-field="name"]');
+const clubIdentityPreviewCity = clubIdentityPreview?.querySelector('[data-preview-field="city"]');
+const clubIdentityPreviewStadium = clubIdentityPreview?.querySelector('[data-preview-field="stadium"]');
+const clubIdentityPreviewSeparator = clubIdentityPreview?.querySelector('.club-identity-preview__separator');
+const clubIdentityPreviewLogo = document.querySelector('#club-identity-preview-logo');
 
 const resultsControlButton = document.querySelector('[data-panel-action="results"]');
 const calendarList = document.querySelector('#calendar-list');
@@ -1474,6 +1481,74 @@ async function collectIdentityFromForm() {
   });
 }
 
+function revokePreviewLogoObjectUrl() {
+  if (previewLogoObjectUrl && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+    URL.revokeObjectURL(previewLogoObjectUrl);
+    previewLogoObjectUrl = null;
+  }
+}
+
+async function handleClubIdentityPreview(event) {
+  if (event?.preventDefault) {
+    event.preventDefault();
+  }
+  if (!clubIdentityPreview) {
+    return;
+  }
+  let identity;
+  try {
+    identity = await collectIdentityFromForm();
+  } catch (error) {
+    console.warn('No se pudo generar la vista previa de la identidad del club.', error);
+    return;
+  }
+  const onPrimary = getReadableTextColor(identity.primaryColor);
+  const onSecondary = getReadableTextColor(identity.secondaryColor);
+  clubIdentityPreview.style.setProperty('--preview-primary', identity.primaryColor);
+  clubIdentityPreview.style.setProperty('--preview-secondary', identity.secondaryColor);
+  clubIdentityPreview.style.setProperty('--preview-on-primary', onPrimary);
+  clubIdentityPreview.style.setProperty('--preview-on-secondary', onSecondary);
+  if (clubIdentityPreviewName instanceof HTMLElement) {
+    clubIdentityPreviewName.textContent = identity.name;
+  }
+  if (clubIdentityPreviewCity instanceof HTMLElement) {
+    clubIdentityPreviewCity.textContent = identity.city;
+  }
+  if (clubIdentityPreviewStadium instanceof HTMLElement) {
+    clubIdentityPreviewStadium.textContent = identity.stadiumName;
+  }
+  if (clubIdentityPreviewSeparator instanceof HTMLElement) {
+    const hasCity = typeof identity.city === 'string' && identity.city.trim().length > 0;
+    const hasStadium = typeof identity.stadiumName === 'string' && identity.stadiumName.trim().length > 0;
+    clubIdentityPreviewSeparator.classList.toggle('is-hidden', !(hasCity && hasStadium));
+  }
+  let previewLogoUrl = identity.logoUrl;
+  const logoFile = clubLogoInput instanceof HTMLInputElement && clubLogoInput.files?.[0];
+  if (logoFile && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    revokePreviewLogoObjectUrl();
+    const objectUrl = URL.createObjectURL(logoFile);
+    previewLogoObjectUrl = objectUrl;
+    if (clubIdentityPreviewLogo instanceof HTMLImageElement) {
+      const urlToRevoke = objectUrl;
+      clubIdentityPreviewLogo.addEventListener(
+        'load',
+        () => {
+          if (previewLogoObjectUrl === urlToRevoke) {
+            URL.revokeObjectURL(urlToRevoke);
+            previewLogoObjectUrl = null;
+          }
+        },
+        { once: true }
+      );
+    }
+    previewLogoUrl = objectUrl;
+  }
+  if (clubIdentityPreviewLogo instanceof HTMLImageElement) {
+    clubIdentityPreviewLogo.src = previewLogoUrl;
+    clubIdentityPreviewLogo.alt = `Vista previa del escudo de ${identity.name}`;
+  }
+}
+
 function rebuildClubState(identity) {
   const resolvedIdentity = normaliseIdentity(identity ?? clubIdentity);
   clubIdentity = resolvedIdentity;
@@ -1518,6 +1593,7 @@ let transferMessageTimeout;
 let modalHandlersAttached = false;
 let opponentRotation = computeOpponentRotation(leagueState, clubState.name);
 let saveMessageTimeout;
+let previewLogoObjectUrl = null;
 let loadNoticeTimeout;
 let hasLatestReport = false;
 let matchHistory = [];
@@ -6011,6 +6087,7 @@ if (seedInput) {
 if (configureClubButton && clubIdentityModal) {
   configureClubButton.addEventListener('click', () => {
     prefillClubIdentityForm();
+    handleClubIdentityPreview();
     openModal(clubIdentityModal);
   });
 }
@@ -6020,6 +6097,10 @@ if (configureLeagueButton && leagueConfigModal) {
     prepareLeagueConfigModal();
     openModal(leagueConfigModal);
   });
+}
+
+if (previewClubIdentityButton) {
+  previewClubIdentityButton.addEventListener('click', handleClubIdentityPreview);
 }
 
 if (clubIdentityForm) {
