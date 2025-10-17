@@ -3844,11 +3844,7 @@ function renderLineupBoard() {
     }
     const meta = document.createElement('div');
     meta.className = 'lineup-table__player-meta';
-    meta.append(
-      createMetaSpan(player.position),
-      createMetaSpan(`${player.age} años`),
-      createMetaSpan(`Valor ${numberFormatter.format(estimatePlayerValue(player))}`)
-    );
+    meta.append(createMetaSpan(player.position));
     const availabilityLabel = describeAvailability(player);
     if (availabilityLabel) {
       const availabilityTag = document.createElement('span');
