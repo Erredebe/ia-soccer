@@ -1088,6 +1088,63 @@ body.start-menu-active {
   color: #0f172a;
 }
 
+.dashboard-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dashboard-tabs__tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.dashboard-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(226, 232, 240, 0.6);
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-tabs__tab:hover {
+  background: rgba(226, 232, 240, 0.85);
+}
+
+.dashboard-tabs__tab:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.dashboard-tabs__tab.is-active,
+.dashboard-tabs__tab[aria-selected='true'] {
+  background: #1d4ed8;
+  color: #f8fafc;
+  border-color: #1e3a8a;
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.25);
+}
+
+.dashboard-tabs__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dashboard-tabs__panel[hidden] {
+  display: none;
+}
+
 .club-card {
   --club-primary-color: var(--club-theme-primary);
   --club-secondary-color: var(--club-theme-secondary);

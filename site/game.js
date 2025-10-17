@@ -117,6 +117,8 @@ const clubMoraleEl = document.querySelector('#club-morale');
 const clubCupStatusEl = document.querySelector('#club-cup-status');
 const clubLogoEl = document.querySelector('#club-logo');
 const clubCardEl = document.querySelector('.club-card');
+const dashboardTabButtons = document.querySelectorAll('[data-dashboard-tab]');
+const dashboardPanels = document.querySelectorAll('[data-dashboard-panel]');
 
 const leagueMatchdayEl = document.querySelector('#league-matchday');
 const leagueTableBody = document.querySelector('#league-table-body');
@@ -191,6 +193,24 @@ const syncHeroStatus = (text, highlight = false) => {
     heroMatchStatusEl.textContent = text;
     heroMatchStatusEl.classList.toggle('is-warning', highlight);
   }
+};
+
+const switchDashboardTab = (targetTab) => {
+  if (!targetTab) {
+    return;
+  }
+
+  dashboardTabButtons.forEach((button) => {
+    const isActive = button.dataset.dashboardTab === targetTab;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    button.setAttribute('tabindex', isActive ? '0' : '-1');
+  });
+
+  dashboardPanels.forEach((panel) => {
+    const isActive = panel.dataset.dashboardPanel === targetTab;
+    panel.toggleAttribute('hidden', !isActive);
+  });
 };
 let commercialOffersList;
 let commercialHistoryList;
@@ -5685,6 +5705,26 @@ if (matchVisualizationSection instanceof HTMLElement) {
       event.preventDefault();
       stepMatchVisualization(1);
     }
+  });
+}
+
+if (dashboardTabButtons.length > 0 && dashboardPanels.length > 0) {
+  const initialButton = Array.from(dashboardTabButtons).find((button) =>
+    button.classList.contains('is-active')
+  );
+  const initialTab = (initialButton ?? dashboardTabButtons[0])?.dataset.dashboardTab;
+
+  if (typeof initialTab === 'string' && initialTab.length > 0) {
+    switchDashboardTab(initialTab);
+  }
+
+  dashboardTabButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const targetTab = button.dataset.dashboardTab;
+      if (typeof targetTab === 'string' && targetTab.length > 0) {
+        switchDashboardTab(targetTab);
+      }
+    });
   });
 }
 
