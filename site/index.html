@@ -427,16 +427,31 @@
                         >Si introduces una semilla podrás repetir exactamente este partido más adelante.</span
                       >
                     </label>
-                    <label class="field field--wide" for="view-mode-toggle">
-                      <span class="field-label">Simulación 2D</span>
-                      <div class="field-toggle">
-                        <input type="checkbox" id="view-mode-toggle" name="viewMode2d" />
-                        <span class="field-toggle__label">Activar pizarra retro (beta)</span>
+                    <fieldset class="field field--wide" id="view-mode-fieldset">
+                      <legend id="view-mode-label" class="field-label">Modo de la crónica</legend>
+                      <div
+                        class="view-mode-selector"
+                        role="radiogroup"
+                        aria-labelledby="view-mode-label"
+                      >
+                        <label class="view-mode-selector__option">
+                          <input type="radio" name="viewMode" value="text" />
+                          <span class="view-mode-selector__label">Relato clásico</span>
+                        </label>
+                        <label class="view-mode-selector__option">
+                          <input type="radio" name="viewMode" value="duels" />
+                          <span class="view-mode-selector__label">Cartas duelo a duelo</span>
+                        </label>
+                        <label class="view-mode-selector__option">
+                          <input type="radio" name="viewMode" value="2d" />
+                          <span class="view-mode-selector__label">Pizarra retro 2D</span>
+                        </label>
                       </div>
                       <span class="field-hint"
-                        >Activa la casilla para alternar entre la crónica clásica y la pizarra retro.</span
+                        >Elige cómo revivir el partido: lectura clásica, enfrentamientos carta a carta o la
+                        pizarra retro animada.</span
                       >
-                    </label>
+                    </fieldset>
                   </div>
 
                   <div class="match-form__actions">
@@ -1122,7 +1137,7 @@
                 <div class="report-top">
                   <div>
                     <h3>Marcador</h3>
-                    <p id="scoreline" class="scoreline"></p>
+                    <p id="scoreline" class="scoreline" aria-live="polite"></p>
                     <p id="finances-delta" class="finances"></p>
                     <p id="finances-attendance" class="finances-attendance"></p>
                     <p id="match-seed" class="match-seed" hidden></p>
@@ -1143,6 +1158,8 @@
                   aria-label="Visualización 2D del partido"
                   tabindex="0"
                   data-state="empty"
+                  aria-hidden="true"
+                  hidden
                 >
                   <div class="match-visualization__header">
                     <h3>Visualización 2D retro</h3>
@@ -1194,11 +1211,37 @@
                       &gt;&gt;
                     </button>
                   </div>
-                  <ul id="match-visualization-legend" class="match-visualization__legend"></ul>
-                </section>
+                <ul id="match-visualization-legend" class="match-visualization__legend"></ul>
+              </section>
 
-                <div class="finances-breakdown">
-                  <div class="finances-panel finances-panel--income">
+              <section
+                id="match-duels"
+                class="match-duels"
+                aria-label="Cartas duelo por duelo"
+                data-state="empty"
+                hidden
+                aria-hidden="true"
+              >
+                <div class="match-duels__header">
+                  <h3>Cartas duelo por duelo</h3>
+                  <span id="match-duels-score" class="match-duels__score" aria-live="polite"
+                    >Marcador cartas: —</span
+                  >
+                </div>
+                <p id="match-duels-status" class="match-duels__status" aria-live="polite">
+                  Selecciona el modo cartas para comparar jugador a jugador.
+                </p>
+                <div
+                  id="match-duels-list"
+                  class="match-duels__list"
+                  role="list"
+                  aria-live="polite"
+                  aria-busy="false"
+                ></div>
+              </section>
+
+              <div class="finances-breakdown">
+                <div class="finances-panel finances-panel--income">
                     <header class="finances-panel__header">
                       <h3>Ingresos</h3>
                       <p id="finances-income-total" class="finances-total"></p>
@@ -1302,8 +1345,9 @@
                   <ol id="report-history-list" class="report-history__list" aria-live="polite"></ol>
                 </section>
               </div>
-            </div>
-          </section>
+                  </div>
+                </section>
+
       </div>
       </div>
 
