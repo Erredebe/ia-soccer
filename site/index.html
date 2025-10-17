@@ -581,6 +581,31 @@
                   Autoordenar por posición
                 </button>
               </div>
+              <p id="lineup-error" class="form-error" hidden></p>
+              <div id="lineup-board" class="lineup-board">
+                <div class="lineup-table-wrapper">
+                  <table class="lineup-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">N.º</th>
+                        <th scope="col">Jugador</th>
+                        <th scope="col"><abbr title="Energía">EN</abbr></th>
+                        <th scope="col"><abbr title="Velocidad">VE</abbr></th>
+                        <th scope="col"><abbr title="Resistencia">RE</abbr></th>
+                        <th scope="col"><abbr title="Ataque">AT</abbr></th>
+                        <th scope="col"><abbr title="Defensa">DE</abbr></th>
+                        <th scope="col"><abbr title="Visión de pase">MI</abbr></th>
+                        <th scope="col"><abbr title="Control y regate">CO</abbr></th>
+                        <th scope="col"><abbr title="Liderazgo">LI</abbr></th>
+                        <th scope="col"><abbr title="Moral">MO</abbr></th>
+                        <th scope="col">Rol (clic para intercambiar)</th>
+                        <th scope="col" class="lineup-table__actions-header">Gestión</th>
+                      </tr>
+                    </thead>
+                    <tbody id="lineup-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
               <div class="lineup-help">
                 <p>Consejos rápidos para mimar tu once:</p>
                 <ul>
@@ -631,31 +656,6 @@
                   </div>
                 </dl>
               </section>
-              <p id="lineup-error" class="form-error" hidden></p>
-              <div id="lineup-board" class="lineup-board">
-                <div class="lineup-table-wrapper">
-                  <table class="lineup-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">N.º</th>
-                        <th scope="col">Jugador</th>
-                        <th scope="col"><abbr title="Energía">EN</abbr></th>
-                        <th scope="col"><abbr title="Velocidad">VE</abbr></th>
-                        <th scope="col"><abbr title="Resistencia">RE</abbr></th>
-                        <th scope="col"><abbr title="Ataque">AT</abbr></th>
-                        <th scope="col"><abbr title="Defensa">DE</abbr></th>
-                        <th scope="col"><abbr title="Visión de pase">MI</abbr></th>
-                        <th scope="col"><abbr title="Control y regate">CO</abbr></th>
-                        <th scope="col"><abbr title="Liderazgo">LI</abbr></th>
-                        <th scope="col"><abbr title="Moral">MO</abbr></th>
-                        <th scope="col">Rol (clic para intercambiar)</th>
-                        <th scope="col" class="lineup-table__actions-header">Gestión</th>
-                      </tr>
-                    </thead>
-                    <tbody id="lineup-table-body"></tbody>
-                  </table>
-                </div>
-              </div>
             </section>
         </div>
       </div>
