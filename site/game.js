@@ -3304,22 +3304,6 @@ function createMetaSpan(text) {
   return span;
 }
 
-function createRoleControl(player) {
-  const cell = document.createElement('td');
-  const badge = document.createElement('span');
-  const currentRole = getPlayerRole(player.id);
-  const roleLabels = {
-    starter: 'Titular',
-    sub: 'Banquillo',
-    none: 'Reserva',
-  };
-  badge.className = `lineup-role-badge lineup-role-badge--${currentRole}`;
-  badge.textContent = roleLabels[currentRole] ?? roleLabels.none;
-  badge.setAttribute('aria-label', `Rol actual: ${badge.textContent}`);
-  cell.append(badge);
-  return cell;
-}
-
 function handleLineupRowClick(event) {
   const row = event.currentTarget;
   if (!(row instanceof HTMLElement)) {
@@ -3646,7 +3630,7 @@ function renderLineupBoard() {
     none: 'Reservas',
   };
   const columnCount =
-    lineupTableBody.closest('table')?.tHead?.rows?.[0]?.cells.length ?? 13;
+    lineupTableBody.closest('table')?.tHead?.rows?.[0]?.cells.length ?? 11;
   let currentRole = null;
   let playerIndex = 0;
 
@@ -3729,28 +3713,7 @@ function renderLineupBoard() {
     const cells = statValues.map((value) => createStatCell(value));
     const moraleCell = createStatCell(player.morale);
 
-    const roleCell = createRoleControl(player);
-
-    const actionsCell = document.createElement('td');
-    actionsCell.className = 'lineup-table__actions';
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'lineup-edit-button';
-    editButton.textContent = 'Editar';
-    editButton.setAttribute('aria-label', `Editar identidad de ${player.name}`);
-    editButton.addEventListener('click', () => {
-      openPlayerIdentityEditor(player.id);
-    });
-    const sellButton = document.createElement('button');
-    sellButton.type = 'button';
-    sellButton.className = 'lineup-sell-button';
-    sellButton.textContent = 'Vender';
-    sellButton.addEventListener('click', () => {
-      sellPlayer(player.id);
-    });
-    actionsCell.append(editButton, sellButton);
-
-    row.append(indexCell, playerCell, ...cells, moraleCell, roleCell, actionsCell);
+    row.append(indexCell, playerCell, ...cells, moraleCell);
     lineupTableBody.append(row);
   });
   updateSelectionCounts();
