@@ -3609,18 +3609,39 @@ function renderLineupBoard() {
     }
   }
 
-  const players = [...clubState.squad].sort((a, b) => {
-    const roleRank = { starter: 0, sub: 1, none: 2 };
-    const roleDiff = roleRank[getPlayerRole(a.id)] - roleRank[getPlayerRole(b.id)];
-    if (roleDiff !== 0) {
-      return roleDiff;
+  const playersById = new Map(clubState.squad.map((player) => [player.id, player]));
+  const usedPlayers = new Set();
+  const orderedPlayers = [];
+
+  const appendPlayer = (player, role) => {
+    if (!player || usedPlayers.has(player.id)) {
+      return;
     }
-    const positionDiff = (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99);
-    if (positionDiff !== 0) {
-      return positionDiff;
-    }
-    return a.name.localeCompare(b.name);
-  });
+    usedPlayers.add(player.id);
+    orderedPlayers.push({ player, role });
+  };
+
+  for (const playerId of configState.startingLineup) {
+    appendPlayer(playersById.get(playerId), 'starter');
+  }
+
+  for (const playerId of configState.substitutes) {
+    appendPlayer(playersById.get(playerId), 'sub');
+  }
+
+  const reservePlayers = clubState.squad
+    .filter((player) => !usedPlayers.has(player.id))
+    .sort((a, b) => {
+      const positionDiff = (POSITION_ORDER[a.position] ?? 99) - (POSITION_ORDER[b.position] ?? 99);
+      if (positionDiff !== 0) {
+        return positionDiff;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+  for (const player of reservePlayers) {
+    orderedPlayers.push({ player, role: 'none' });
+  }
 
   lineupTableBody.innerHTML = '';
 
@@ -3634,10 +3655,10 @@ function renderLineupBoard() {
   let currentRole = null;
   let playerIndex = 0;
 
-  players.forEach((player) => {
+  orderedPlayers.forEach(({ player, role }) => {
     const row = document.createElement('tr');
     row.dataset.playerId = player.id;
-    const playerRole = getPlayerRole(player.id);
+    const playerRole = role;
     row.dataset.role = playerRole;
     if (selectedLineupPlayerId === player.id) {
       row.classList.add('is-selected');
