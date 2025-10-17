@@ -3651,7 +3651,7 @@ function renderLineupBoard() {
     none: 'Reservas',
   };
   const columnCount =
-    lineupTableBody.closest('table')?.tHead?.rows?.[0]?.cells.length ?? 11;
+    lineupTableBody.closest('table')?.tHead?.rows?.[0]?.cells.length ?? 12;
   let currentRole = null;
   let playerIndex = 0;
 
@@ -3731,10 +3731,16 @@ function renderLineupBoard() {
       player.attributes.leadership,
     ];
 
-    const cells = statValues.map((value) => createStatCell(value));
+    const normalizedStats = statValues.map((value) => clampStat(value));
+    const cells = normalizedStats.map((value) => createStatCell(value));
+    const averageStat =
+      normalizedStats.length > 0
+        ? normalizedStats.reduce((sum, value) => sum + value, 0) / normalizedStats.length
+        : 0;
+    const averageCell = createStatCell(averageStat);
     const moraleCell = createStatCell(player.morale);
 
-    row.append(indexCell, playerCell, ...cells, moraleCell);
+    row.append(indexCell, playerCell, ...cells, averageCell, moraleCell);
     lineupTableBody.append(row);
   });
   updateSelectionCounts();
