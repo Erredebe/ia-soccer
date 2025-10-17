@@ -497,55 +497,61 @@
                   identidad.
                 </p>
               </div>
-              <div class="field-grid">
-                <label class="field">
-                  <span class="field-label">Nombre del club</span>
-                  <input
-                    type="text"
-                    id="club-name-input"
-                    name="clubName"
-                    maxlength="60"
-                    autocomplete="organization"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field-label">Ciudad</span>
-                  <input
-                    type="text"
-                    id="club-city-input"
-                    name="clubCity"
-                    maxlength="60"
-                    autocomplete="address-level2"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field-label">Estadio</span>
-                  <input
-                    type="text"
-                    id="club-stadium-input"
-                    name="clubStadium"
-                    maxlength="60"
-                    autocomplete="off"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field-label">Color principal</span>
-                  <input type="color" id="club-primary-color" name="clubPrimaryColor" value="#1d4ed8" />
-                </label>
-                <label class="field">
-                  <span class="field-label">Color secundario</span>
-                  <input type="color" id="club-secondary-color" name="clubSecondaryColor" value="#bfdbfe" />
-                </label>
-                <label class="field">
-                  <span class="field-label">Escudo personalizado</span>
-                  <input
-                    type="file"
-                    id="club-logo-input"
-                    name="clubLogo"
-                    accept="image/png,image/svg+xml,image/jpeg"
-                  />
-                  <span class="field-hint">Se admiten PNG, JPG o SVG. El archivo se guardará en tu partida.</span>
-                </label>
+              <div class="identity-sections">
+                <fieldset class="identity-section">
+                  <legend class="identity-section__legend">Datos principales</legend>
+                  <label class="field">
+                    <span class="field-label">Nombre del club</span>
+                    <input
+                      type="text"
+                      id="club-name-input"
+                      name="clubName"
+                      maxlength="60"
+                      autocomplete="organization"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Ciudad</span>
+                    <input
+                      type="text"
+                      id="club-city-input"
+                      name="clubCity"
+                      maxlength="60"
+                      autocomplete="address-level2"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Estadio</span>
+                    <input
+                      type="text"
+                      id="club-stadium-input"
+                      name="clubStadium"
+                      maxlength="60"
+                      autocomplete="off"
+                    />
+                  </label>
+                </fieldset>
+                <fieldset class="identity-section">
+                  <legend class="identity-section__legend">Colores y escudo</legend>
+                  <label class="field">
+                    <span class="field-label">Color principal</span>
+                    <input type="color" id="club-primary-color" name="clubPrimaryColor" value="#1d4ed8" />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Color secundario</span>
+                    <input type="color" id="club-secondary-color" name="clubSecondaryColor" value="#bfdbfe" />
+                  </label>
+                  <label class="field identity-section--wide">
+                    <span class="field-label">Escudo personalizado</span>
+                    <input
+                      type="file"
+                      id="club-logo-input"
+                      name="clubLogo"
+                      accept="image/png,image/svg+xml,image/jpeg"
+                    />
+                    <span class="field-hint">Se admiten PNG, JPG o SVG. El archivo se guardará en tu partida.</span>
+                  </label>
+                </fieldset>
               </div>
               <div class="match-form__actions">
                 <button type="submit" class="play-button">Guardar identidad</button>
