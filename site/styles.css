@@ -2111,6 +2111,17 @@ body.modal-open {
   cursor: help;
 }
 
+.lineup-table__average-header {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(129, 140, 248, 0.16));
+  color: #1d4ed8;
+  font-weight: 800;
+  box-shadow: inset 0 -2px 0 rgba(59, 130, 246, 0.35);
+}
+
+.lineup-table__average-header abbr {
+  border-bottom-color: rgba(30, 64, 175, 0.55);
+}
+
 .lineup-table td {
   color: #1f2937;
 }
@@ -2238,6 +2249,13 @@ body.modal-open {
   font-variant-numeric: tabular-nums;
 }
 
+.lineup-table__stat--average {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(129, 140, 248, 0.18));
+  color: #1d4ed8;
+  font-weight: 800;
+  box-shadow: inset 0 -2px 0 rgba(59, 130, 246, 0.35);
+}
+
 @media (max-width: 800px) {
   .lineup-table thead {
     display: none;
@@ -2326,6 +2344,14 @@ body.modal-open {
     text-align: left;
   }
 
+  .lineup-table__stat--average {
+    order: 1;
+    flex: 1 1 100%;
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.32), rgba(129, 140, 248, 0.22));
+    color: #0f172a;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+  }
+
   .lineup-table__stat::before {
     font-size: 0.7rem;
     font-weight: 700;
@@ -2335,39 +2361,39 @@ body.modal-open {
   }
 
   td.lineup-table__stat:nth-of-type(2)::before {
-    content: 'EN';
+    content: 'ME';
   }
 
   td.lineup-table__stat:nth-of-type(3)::before {
-    content: 'VE';
+    content: 'EN';
   }
 
   td.lineup-table__stat:nth-of-type(4)::before {
-    content: 'RE';
+    content: 'VE';
   }
 
   td.lineup-table__stat:nth-of-type(5)::before {
-    content: 'AT';
+    content: 'RE';
   }
 
   td.lineup-table__stat:nth-of-type(6)::before {
-    content: 'DE';
+    content: 'AT';
   }
 
   td.lineup-table__stat:nth-of-type(7)::before {
-    content: 'MI';
+    content: 'DE';
   }
 
   td.lineup-table__stat:nth-of-type(8)::before {
-    content: 'CO';
+    content: 'MI';
   }
 
   td.lineup-table__stat:nth-of-type(9)::before {
-    content: 'LI';
+    content: 'CO';
   }
 
   td.lineup-table__stat:nth-of-type(10)::before {
-    content: 'ME';
+    content: 'LI';
   }
 
   td.lineup-table__stat:nth-of-type(11)::before {
@@ -3971,6 +3997,16 @@ body.modal-open {
     color: #bfdbfe;
   }
 
+  .lineup-table__average-header {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(14, 165, 233, 0.32));
+    color: #f8fafc;
+    box-shadow: inset 0 -2px 0 rgba(191, 219, 254, 0.32);
+  }
+
+  .lineup-table__average-header abbr {
+    border-bottom-color: rgba(191, 219, 254, 0.65);
+  }
+
   .lineup-table td {
     color: #e2e8f0;
     border-color: rgba(148, 163, 184, 0.3);
@@ -4000,6 +4036,12 @@ body.modal-open {
     color: #cbd5f5;
   }
 
+  .lineup-table__stat--average {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.32), rgba(14, 165, 233, 0.25));
+    color: #e0f2fe;
+    box-shadow: inset 0 -1px 0 rgba(148, 197, 255, 0.4);
+  }
+
   @media (max-width: 800px) {
     .lineup-table tbody tr[data-role] {
       box-shadow: 0 16px 34px rgba(2, 6, 23, 0.55);
@@ -4021,6 +4063,14 @@ body.modal-open {
     .lineup-table__stat {
       background: rgba(15, 23, 42, 0.78);
       color: #f1f5f9;
+    }
+
+    .lineup-table__stat--average {
+      order: 1;
+      flex: 1 1 100%;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.38), rgba(14, 165, 233, 0.28));
+      color: #f8fafc;
+      box-shadow: inset 0 0 0 1px rgba(148, 197, 255, 0.45);
     }
 
     .lineup-table__stat::before {
