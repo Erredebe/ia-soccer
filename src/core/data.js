@@ -26,6 +26,7 @@ import { CUP_ROUND_DEFINITIONS } from './types.js';
 /** @typedef {import('../types.js').StaffRole} StaffRole */
 /** @typedef {import('../types.js').SponsorOffer} SponsorOffer */
 /** @typedef {import('../types.js').TVDealOffer} TVDealOffer */
+/** @typedef {import('../types.js').MatchViewMode} MatchViewMode */
 /** @typedef {import('./types.js').CupState} CupState */
 /** @typedef {import('./types.js').CupRound} CupRound */
 /** @typedef {import('./types.js').CupTie} CupTie */
@@ -2259,9 +2260,10 @@ export function createExampleClub(options = {}) {
 
 /**
  * Configura un partido estándar con parámetros equilibrados.
+ * @param {MatchViewMode} [viewMode='text'] Modo de visualización preferido.
  * @returns {MatchConfig}
  */
-export function createDefaultMatchConfig() {
+export function createDefaultMatchConfig(viewMode = 'text') {
   return {
     home: true,
     opponentStrength: 68,
@@ -2278,7 +2280,7 @@ export function createDefaultMatchConfig() {
       substitutions: [],
     },
     inMatchAdjustments: [],
-    viewMode: 'text',
+    viewMode,
     seed: '',
   };
 }

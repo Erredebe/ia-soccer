@@ -71,6 +71,24 @@ test('simulateMatch genera frames 2D cuando se solicita', () => {
   assert.ok(viz.legend.length > 0);
 });
 
+test('simulateMatch construye cartas de duelos cuando se pide el modo correspondiente', () => {
+  const club = createExampleClub();
+  const config = createDefaultMatchConfig('duels');
+  config.startingLineup = club.squad.slice(0, 11).map((player) => player.id);
+  config.substitutes = club.squad.slice(11, 16).map((player) => player.id);
+  const rng = createDeterministicRng([0.18, 0.42, 0.67, 0.13, 0.59, 0.81, 0.24, 0.72, 0.36, 0.9]);
+
+  const result = simulateMatch(club, config, { rng });
+  assert.strictEqual(result.viewMode, 'duels');
+  assert.ok(result.duels, 'debe devolver un resumen de duelos');
+  assert.strictEqual(result.duels?.breakdown.length, 11, 'debe listar 11 enfrentamientos');
+  assert.ok(Number.isFinite(result.duels?.totalDifference ?? NaN), 'el acumulado debe ser numérico');
+  const manualTotal = Number(
+    (result.duels?.breakdown.reduce((sum, card) => sum + card.difference, 0) ?? 0).toFixed(2)
+  );
+  assert.strictEqual(result.duels?.totalDifference, manualTotal, 'el total debe coincidir con la suma redondeada');
+});
+
 test('simulateMatch respeta ajustes tácticos y sustituciones programadas', () => {
   const club = createExampleClub();
   const config = createDefaultMatchConfig();
