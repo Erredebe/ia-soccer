@@ -3398,9 +3398,15 @@ function clampStat(value) {
   return Math.max(0, Math.min(100, Math.round(numeric)));
 }
 
-function createStatCell(value) {
+function createStatCell(value, extraClasses = []) {
   const cell = document.createElement('td');
   cell.className = 'lineup-table__stat';
+  const classes = Array.isArray(extraClasses) ? extraClasses : [extraClasses];
+  for (const className of classes) {
+    if (typeof className === 'string' && className.trim()) {
+      cell.classList.add(className.trim());
+    }
+  }
   cell.textContent = String(clampStat(value));
   return cell;
 }
@@ -3844,10 +3850,10 @@ function renderLineupBoard() {
       normalizedStats.length > 0
         ? normalizedStats.reduce((sum, value) => sum + value, 0) / normalizedStats.length
         : 0;
-    const averageCell = createStatCell(averageStat);
+    const averageCell = createStatCell(averageStat, 'lineup-table__stat--average');
     const moraleCell = createStatCell(player.morale);
 
-    row.append(indexCell, playerCell, ...cells, averageCell, moraleCell);
+    row.append(indexCell, playerCell, averageCell, ...cells, moraleCell);
     lineupTableBody.append(row);
   });
   updateSelectionCounts();
