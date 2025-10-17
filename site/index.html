@@ -113,113 +113,146 @@
             <span class="control-card__badge">Modo manager</span>
           </header>
           <div class="control-panel" role="list">
-            <button
-              type="button"
-              class="control-panel__option control-panel__option--highlight"
-              data-panel-action="results"
-              data-modal-target="#modal-report"
-              disabled
-              aria-disabled="true"
-            >
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-results"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Resultados</span>
-            </button>
-            <button
-              type="button"
-              class="control-panel__option control-panel__option--highlight"
-              data-modal-target="#modal-league"
-            >
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-league"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Clasificación</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-cup">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-club-shield"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Copa</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-calendar">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-calendar"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Calendario</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-lineup">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-lineup"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Alineación</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-tactics">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-tactics"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Tácticas</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-opponent">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-opponent"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Rival</span>
-            </button>
-            <button type="button" class="control-panel__option control-panel__option--highlight" data-modal-target="#modal-transfers">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-transfers"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Fichar</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-staff">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-staff"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Empleados</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-finances">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-finances"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Caja</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-decisions">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-decisions"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Decisiones</span>
-            </button>
-            <button type="button" class="control-panel__option" data-modal-target="#modal-stadium">
-              <span class="control-panel__icon" aria-hidden="true">
-                <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                  <use href="icons.svg#icon-stadium"></use>
-                </svg>
-              </span>
-              <span class="control-panel__label">Estadio</span>
-            </button>
+            <section class="control-panel__section" aria-labelledby="control-panel-section-matches">
+              <h3 id="control-panel-section-matches" class="control-panel__section-title">Partidos</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-matches">
+                <button
+                  type="button"
+                  class="control-panel__option control-panel__option--highlight"
+                  data-panel-action="results"
+                  data-modal-target="#modal-report"
+                  disabled
+                  aria-disabled="true"
+                >
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-results"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Resultados</span>
+                </button>
+                <button
+                  type="button"
+                  class="control-panel__option control-panel__option--highlight"
+                  data-modal-target="#modal-league"
+                >
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-league"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Clasificación</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-cup">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-club-shield"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Copa</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-calendar">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-calendar"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Calendario</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-opponent">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-opponent"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Rival</span>
+                </button>
+              </div>
+            </section>
+
+            <div class="control-panel__section-divider" aria-hidden="true"></div>
+
+            <section class="control-panel__section" aria-labelledby="control-panel-section-management">
+              <h3 id="control-panel-section-management" class="control-panel__section-title">Gestión deportiva</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-management">
+                <button type="button" class="control-panel__option" data-modal-target="#modal-lineup">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-lineup"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Alineación</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-tactics">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-tactics"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Tácticas</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-decisions">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-decisions"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Decisiones</span>
+                </button>
+              </div>
+            </section>
+
+            <div class="control-panel__section-divider" aria-hidden="true"></div>
+
+            <section class="control-panel__section" aria-labelledby="control-panel-section-finances">
+              <h3 id="control-panel-section-finances" class="control-panel__section-title">Finanzas</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-finances">
+                <button type="button" class="control-panel__option" data-modal-target="#modal-finances">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-finances"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Caja</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-stadium">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-stadium"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Estadio</span>
+                </button>
+              </div>
+            </section>
+
+            <div class="control-panel__section-divider" aria-hidden="true"></div>
+
+            <section class="control-panel__section" aria-labelledby="control-panel-section-staff">
+              <h3 id="control-panel-section-staff" class="control-panel__section-title">Personal</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-staff">
+                <button
+                  type="button"
+                  class="control-panel__option control-panel__option--highlight"
+                  data-modal-target="#modal-transfers"
+                >
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-transfers"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Fichar</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-staff">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-staff"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Empleados</span>
+                </button>
+              </div>
+            </section>
           </div>
           <p class="control-card__hint">Selecciona un módulo para gestionar tu club con estilo noventero.</p>
         </section>

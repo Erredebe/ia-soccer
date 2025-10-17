@@ -561,7 +561,9 @@ const clubIdentityPreviewStadium = clubIdentityPreview?.querySelector('[data-pre
 const clubIdentityPreviewSeparator = clubIdentityPreview?.querySelector('.club-identity-preview__separator');
 const clubIdentityPreviewLogo = document.querySelector('#club-identity-preview-logo');
 
-const resultsControlButton = document.querySelector('[data-panel-action="results"]');
+const resultsControlButton = document.querySelector(
+  '.control-panel__section-options [data-panel-action="results"]'
+);
 const calendarList = document.querySelector('#calendar-list');
 const calendarNoteEl = document.querySelector('#calendar-note');
 const tacticPlanEl = document.querySelector('#tactic-plan');
