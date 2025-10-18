@@ -1,3 +1,4 @@
+import { templatesReady } from './layout/render.js';
 import { playMatchDay } from '../src/core/engine.js';
 import {
   createDefaultMatchConfig,
@@ -56,152 +57,402 @@ import {
 } from '../src/core/economy.js';
 import { CUP_ROUND_DEFINITIONS } from '../src/core/types.js';
 
-const decisionSelect = document.querySelector('#decision-select');
-const tacticSelect = document.querySelector('#tactic-select');
-const formationSelect = document.querySelector('#formation-select');
-const homeCheckbox = document.querySelector('#home-checkbox');
-const opponentStrength = document.querySelector('#opponent-strength');
-const opponentOutput = document.querySelector('#opponent-output');
-const seedInput = document.querySelector('#seed-input');
-const viewModeInputs = document.querySelectorAll("input[name='viewMode']");
-const form = document.querySelector('#game-form');
-const resetButton = document.querySelector('#reset-club');
-const lineupBoard = document.querySelector('#lineup-board');
-const lineupTableBody = document.querySelector('#lineup-table-body');
-const lineupCountEl = document.querySelector('#lineup-count');
-const subsCountEl = document.querySelector('#subs-count');
-const lineupAutosortButton = document.querySelector('#lineup-autosort');
-const lineupErrorEl = document.querySelector('#lineup-error');
-const lineupModal = document.querySelector('#modal-lineup');
-const reportModal = document.querySelector('#modal-report');
-const playerEditModal = document.querySelector('#modal-player-edit');
-const playerEditForm = document.querySelector('#player-edit-form');
-const playerEditNameInput = document.querySelector('#player-edit-name');
-const playerEditNicknameInput = document.querySelector('#player-edit-nickname');
-const playerEditErrorEl = document.querySelector('#player-edit-error');
-const playerEditRandomButton = document.querySelector('#player-edit-random');
-const planNextButton = document.querySelector('#plan-next');
-const saveButton = document.querySelector('#save-game');
-const saveFeedback = document.querySelector('#save-feedback');
-const saveVersionEl = document.querySelector('#save-version');
-const loadNoticeEl = document.querySelector('#load-notice');
-const startMenuEl = document.querySelector('#start-menu');
-const startMenuMessageEl = document.querySelector('#start-menu-message');
-const startNewGameButton = document.querySelector('#start-new-game');
-const startContinueButton = document.querySelector('#start-continue-game');
-const mainPageEl = document.querySelector('main.page');
-const sidebarToggleButton = document.querySelector('#sidebar-toggle');
-const sidebarPanel = document.querySelector('#sidebar-panel');
-const sidebarCollapseQuery =
-  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(max-width: 960px)')
-    : null;
+let decisionSelect;
+let tacticSelect;
+let formationSelect;
+let homeCheckbox;
+let opponentStrength;
+let opponentOutput;
+let seedInput;
+let viewModeInputs;
+let form;
+let resetButton;
+let lineupBoard;
+let lineupTableBody;
+let lineupCountEl;
+let subsCountEl;
+let lineupAutosortButton;
+let lineupErrorEl;
+let lineupModal;
+let reportModal;
+let playerEditModal;
+let playerEditForm;
+let playerEditNameInput;
+let playerEditNicknameInput;
+let playerEditErrorEl;
+let playerEditRandomButton;
+let planNextButton;
+let saveButton;
+let saveFeedback;
+let saveVersionEl;
+let loadNoticeEl;
+let startMenuEl;
+let startMenuMessageEl;
+let startNewGameButton;
+let startContinueButton;
+let mainPageEl;
+let sidebarToggleButton;
+let sidebarPanel;
+let sidebarCollapseQuery = null;
 
 const MODAL_TRIGGER_SELECTOR = '[data-modal-target]';
-const defaultModalTrigger = document.querySelector(
-  `${MODAL_TRIGGER_SELECTOR}[aria-current="page"]`
-);
-let activeModalTrigger = defaultModalTrigger ?? null;
+let defaultModalTrigger;
+let activeModalTrigger = null;
 
-const matchdayBadgeEl = document.querySelector('#matchday-badge');
-const heroMatchdayBadgeEl = document.querySelector('#hero-matchday-badge');
-const matchOpponentNameEl = document.querySelector('#match-opponent-name');
-const heroMatchOpponentNameEl = document.querySelector('#hero-match-opponent-name');
-const matchOpponentStrengthEl = document.querySelector('#match-opponent-strength');
-const matchOpponentRecordEl = document.querySelector('#match-opponent-record');
-const matchLocationEl = document.querySelector('#match-location');
-const matchLineupStatusEl = document.querySelector('#match-lineup-status');
-const heroMatchStatusEl = document.querySelector('#hero-match-status');
-const matchSeedEl = document.querySelector('#match-seed');
+let matchdayBadgeEl;
+let heroMatchdayBadgeEl;
+let matchOpponentNameEl;
+let heroMatchOpponentNameEl;
+let matchOpponentStrengthEl;
+let matchOpponentRecordEl;
+let matchLocationEl;
+let matchLineupStatusEl;
+let heroMatchStatusEl;
+let matchSeedEl;
 
-const clubNameEl = document.querySelector('#club-name');
-const clubCityEl = document.querySelector('#club-city');
-const clubStadiumEl = document.querySelector('#club-stadium');
-const clubBudgetEl = document.querySelector('#club-budget');
-const clubReputationEl = document.querySelector('#club-reputation');
-const clubMoraleEl = document.querySelector('#club-morale');
-const clubCupStatusEl = document.querySelector('#club-cup-status');
-const clubLogoEl = document.querySelector('#club-logo');
-const clubCardEl = document.querySelector('.club-card');
-const dashboardTabButtons = document.querySelectorAll('[data-dashboard-tab]');
-const dashboardPanels = document.querySelectorAll('[data-dashboard-panel]');
-const breadcrumbRootLink = document.querySelector('#breadcrumb-root');
-const breadcrumbTabItem = document.querySelector('#breadcrumb-tab-item');
-const breadcrumbTabLink = document.querySelector('#breadcrumb-tab-link');
-const breadcrumbModuleItem = document.querySelector('#breadcrumb-module-item');
-const breadcrumbModuleLabel = document.querySelector('#breadcrumb-module-label');
+let clubNameEl;
+let clubCityEl;
+let clubStadiumEl;
+let clubBudgetEl;
+let clubReputationEl;
+let clubMoraleEl;
+let clubCupStatusEl;
+let clubLogoEl;
+let clubCardEl;
+let dashboardTabButtons;
+let dashboardPanels;
+let breadcrumbRootLink;
+let breadcrumbTabItem;
+let breadcrumbTabLink;
+let breadcrumbModuleItem;
+let breadcrumbModuleLabel;
 
-const initialDashboardTabButton = Array.from(dashboardTabButtons).find((button) =>
-  button.classList.contains('is-active')
-);
-const defaultDashboardTab =
-  initialDashboardTabButton?.dataset.dashboardTab ?? dashboardTabButtons[0]?.dataset.dashboardTab ?? null;
-let activeDashboardTab = defaultDashboardTab;
+let initialDashboardTabButton;
+let defaultDashboardTab = null;
+let activeDashboardTab = null;
 
-const leagueMatchdayEl = document.querySelector('#league-matchday');
-const leagueTableBody = document.querySelector('#league-table-body');
-const leagueTopScorersBody = document.querySelector('#league-top-scorers-body');
-const leagueTopAssistsBody = document.querySelector('#league-top-assists-body');
-const leagueTopCleanSheetsBody = document.querySelector('#league-top-clean-sheets-body');
-const transferListEl = document.querySelector('#transfer-list');
-const transferMessageEl = document.querySelector('#transfer-message');
+let leagueMatchdayEl;
+let leagueTableBody;
+let leagueTopScorersBody;
+let leagueTopAssistsBody;
+let leagueTopCleanSheetsBody;
+let transferListEl;
+let transferMessageEl;
 
-const scorelineEl = document.querySelector('#scoreline');
+let scorelineEl;
 const scorelineState = {
   finalText: '',
   clubName: '',
   opponentName: '',
 };
-const financesDeltaEl = document.querySelector('#finances-delta');
-const financesAttendanceEl = document.querySelector('#finances-attendance');
-const financesIncomeList = document.querySelector('#finances-income');
-const financesExpenseList = document.querySelector('#finances-expenses');
-const staffBreakdownEl = document.querySelector('#staff-breakdown');
-const staffNoteEl = document.querySelector('#staff-note');
-const staffRosterList = document.querySelector('#staff-roster');
-const staffMarketList = document.querySelector('#staff-market');
-const narrativeList = document.querySelector('#narrative-list');
-const matchTimeline = document.querySelector('#match-timeline');
-const decisionReport = document.querySelector('#decision-report');
-const decisionNarrative = document.querySelector('#decision-narrative');
-const decisionStats = document.querySelector('#decision-stats');
-const postBudgetEl = document.querySelector('#post-budget');
-const postReputationEl = document.querySelector('#post-reputation');
-const postMoraleEl = document.querySelector('#post-morale');
-const mvpBadge = document.querySelector('#mvp-badge');
-const matchVisualizationSection = document.querySelector('#match-visualization');
-const matchVisualizationScreen = document.querySelector('#match-visualization-screen');
-const matchVisualizationPrevButton = document.querySelector('#match-visualization-prev');
-const matchVisualizationNextButton = document.querySelector('#match-visualization-next');
-const matchVisualizationSlider = document.querySelector('#match-visualization-slider');
-const matchVisualizationLegendList = document.querySelector('#match-visualization-legend');
-const matchVisualizationMinuteEl = document.querySelector('#match-visualization-minute');
-const matchVisualizationLabelEl = document.querySelector('#match-visualization-label');
-const matchVisualizationStatusEl = document.querySelector('#match-visualization-status');
-const matchVisualizationFrameEl = document.querySelector('#match-visualization-frame');
-const matchDuelsSection = document.querySelector('#match-duels');
-const matchDuelsStatusEl = document.querySelector('#match-duels-status');
-const matchDuelsListEl = document.querySelector('#match-duels-list');
-const matchDuelsScoreEl = document.querySelector('#match-duels-score');
-const reportTabButtons = document.querySelectorAll('[data-report-tab]');
-const reportPanels = document.querySelectorAll('[data-report-panel]');
-const reportHistoryList = document.querySelector('#report-history-list');
-const reportHistorySeasonSelect = document.querySelector('#report-history-season');
-const reportHistoryEmptyEl = document.querySelector('#report-history-empty');
+let financesDeltaEl;
+let financesAttendanceEl;
+let financesIncomeList;
+let financesExpenseList;
+let staffBreakdownEl;
+let staffNoteEl;
+let staffRosterList;
+let staffMarketList;
+let narrativeList;
+let matchTimeline;
+let decisionReport;
+let decisionNarrative;
+let decisionStats;
+let postBudgetEl;
+let postReputationEl;
+let postMoraleEl;
+let mvpBadge;
+let matchVisualizationSection;
+let matchVisualizationScreen;
+let matchVisualizationPrevButton;
+let matchVisualizationNextButton;
+let matchVisualizationSlider;
+let matchVisualizationLegendList;
+let matchVisualizationMinuteEl;
+let matchVisualizationLabelEl;
+let matchVisualizationStatusEl;
+let matchVisualizationFrameEl;
+let matchDuelsSection;
+let matchDuelsStatusEl;
+let matchDuelsListEl;
+let matchDuelsScoreEl;
+let reportTabButtons;
+let reportPanels;
+let reportHistoryList;
+let reportHistorySeasonSelect;
+let reportHistoryEmptyEl;
 
 const { home: defaultHomeSetting, opponentStrength: defaultOpponentStrength } = createDefaultMatchConfig();
 
-if (homeCheckbox) {
-  homeCheckbox.disabled = true;
-  homeCheckbox.setAttribute('aria-disabled', 'true');
-}
-
-if (opponentStrength instanceof HTMLInputElement) {
-  opponentStrength.disabled = true;
-  opponentStrength.setAttribute('aria-disabled', 'true');
-}
-
 let commercialModal;
+
+function assignDomReferences() {
+  decisionSelect = document.querySelector('#decision-select');
+  tacticSelect = document.querySelector('#tactic-select');
+  formationSelect = document.querySelector('#formation-select');
+  homeCheckbox = document.querySelector('#home-checkbox');
+  opponentStrength = document.querySelector('#opponent-strength');
+  opponentOutput = document.querySelector('#opponent-output');
+  seedInput = document.querySelector('#seed-input');
+  viewModeInputs = document.querySelectorAll("input[name='viewMode']");
+  form = document.querySelector('#game-form');
+  resetButton = document.querySelector('#reset-club');
+  lineupBoard = document.querySelector('#lineup-board');
+  lineupTableBody = document.querySelector('#lineup-table-body');
+  lineupCountEl = document.querySelector('#lineup-count');
+  subsCountEl = document.querySelector('#subs-count');
+  lineupAutosortButton = document.querySelector('#lineup-autosort');
+  lineupErrorEl = document.querySelector('#lineup-error');
+  lineupModal = document.querySelector('#modal-lineup');
+  reportModal = document.querySelector('#modal-report');
+  playerEditModal = document.querySelector('#modal-player-edit');
+  playerEditForm = document.querySelector('#player-edit-form');
+  playerEditNameInput = document.querySelector('#player-edit-name');
+  playerEditNicknameInput = document.querySelector('#player-edit-nickname');
+  playerEditErrorEl = document.querySelector('#player-edit-error');
+  playerEditRandomButton = document.querySelector('#player-edit-random');
+  planNextButton = document.querySelector('#plan-next');
+  saveButton = document.querySelector('#save-game');
+  saveFeedback = document.querySelector('#save-feedback');
+  saveVersionEl = document.querySelector('#save-version');
+  loadNoticeEl = document.querySelector('#load-notice');
+  startMenuEl = document.querySelector('#start-menu');
+  startMenuMessageEl = document.querySelector('#start-menu-message');
+  startNewGameButton = document.querySelector('#start-new-game');
+  startContinueButton = document.querySelector('#start-continue-game');
+  mainPageEl = document.querySelector('main.page');
+  sidebarToggleButton = document.querySelector('#sidebar-toggle');
+  sidebarPanel = document.querySelector('#sidebar-panel');
+  sidebarCollapseQuery =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(max-width: 960px)')
+      : null;
+
+  defaultModalTrigger = document.querySelector(
+    `${MODAL_TRIGGER_SELECTOR}[aria-current="page"]`
+  );
+  activeModalTrigger = defaultModalTrigger ?? null;
+
+  matchdayBadgeEl = document.querySelector('#matchday-badge');
+  heroMatchdayBadgeEl = document.querySelector('#hero-matchday-badge');
+  matchOpponentNameEl = document.querySelector('#match-opponent-name');
+  heroMatchOpponentNameEl = document.querySelector('#hero-match-opponent-name');
+  matchOpponentStrengthEl = document.querySelector('#match-opponent-strength');
+  matchOpponentRecordEl = document.querySelector('#match-opponent-record');
+  matchLocationEl = document.querySelector('#match-location');
+  matchLineupStatusEl = document.querySelector('#match-lineup-status');
+  heroMatchStatusEl = document.querySelector('#hero-match-status');
+  matchSeedEl = document.querySelector('#match-seed');
+
+  clubNameEl = document.querySelector('#club-name');
+  clubCityEl = document.querySelector('#club-city');
+  clubStadiumEl = document.querySelector('#club-stadium');
+  clubBudgetEl = document.querySelector('#club-budget');
+  clubReputationEl = document.querySelector('#club-reputation');
+  clubMoraleEl = document.querySelector('#club-morale');
+  clubCupStatusEl = document.querySelector('#club-cup-status');
+  clubLogoEl = document.querySelector('#club-logo');
+  clubCardEl = document.querySelector('.club-card');
+  dashboardTabButtons = document.querySelectorAll('[data-dashboard-tab]');
+  dashboardPanels = document.querySelectorAll('[data-dashboard-panel]');
+  breadcrumbRootLink = document.querySelector('#breadcrumb-root');
+  breadcrumbTabItem = document.querySelector('#breadcrumb-tab-item');
+  breadcrumbTabLink = document.querySelector('#breadcrumb-tab-link');
+  breadcrumbModuleItem = document.querySelector('#breadcrumb-module-item');
+  breadcrumbModuleLabel = document.querySelector('#breadcrumb-module-label');
+
+  initialDashboardTabButton = Array.from(dashboardTabButtons).find((button) =>
+    button.classList.contains('is-active')
+  );
+  defaultDashboardTab =
+    initialDashboardTabButton?.dataset.dashboardTab ??
+    dashboardTabButtons[0]?.dataset.dashboardTab ??
+    null;
+  activeDashboardTab = defaultDashboardTab;
+
+  leagueMatchdayEl = document.querySelector('#league-matchday');
+  leagueTableBody = document.querySelector('#league-table-body');
+  leagueTopScorersBody = document.querySelector('#league-top-scorers-body');
+  leagueTopAssistsBody = document.querySelector('#league-top-assists-body');
+  leagueTopCleanSheetsBody = document.querySelector('#league-top-clean-sheets-body');
+  transferListEl = document.querySelector('#transfer-list');
+  transferMessageEl = document.querySelector('#transfer-message');
+
+  scorelineEl = document.querySelector('#scoreline');
+  financesDeltaEl = document.querySelector('#finances-delta');
+  financesAttendanceEl = document.querySelector('#finances-attendance');
+  financesIncomeList = document.querySelector('#finances-income');
+  financesExpenseList = document.querySelector('#finances-expenses');
+  staffBreakdownEl = document.querySelector('#staff-breakdown');
+  staffNoteEl = document.querySelector('#staff-note');
+  staffRosterList = document.querySelector('#staff-roster');
+  staffMarketList = document.querySelector('#staff-market');
+  narrativeList = document.querySelector('#narrative-list');
+  matchTimeline = document.querySelector('#match-timeline');
+  decisionReport = document.querySelector('#decision-report');
+  decisionNarrative = document.querySelector('#decision-narrative');
+  decisionStats = document.querySelector('#decision-stats');
+  postBudgetEl = document.querySelector('#post-budget');
+  postReputationEl = document.querySelector('#post-reputation');
+  postMoraleEl = document.querySelector('#post-morale');
+  mvpBadge = document.querySelector('#mvp-badge');
+  matchVisualizationSection = document.querySelector('#match-visualization');
+  matchVisualizationScreen = document.querySelector('#match-visualization-screen');
+  matchVisualizationPrevButton = document.querySelector('#match-visualization-prev');
+  matchVisualizationNextButton = document.querySelector('#match-visualization-next');
+  matchVisualizationSlider = document.querySelector('#match-visualization-slider');
+  matchVisualizationLegendList = document.querySelector('#match-visualization-legend');
+  matchVisualizationMinuteEl = document.querySelector('#match-visualization-minute');
+  matchVisualizationLabelEl = document.querySelector('#match-visualization-label');
+  matchVisualizationStatusEl = document.querySelector('#match-visualization-status');
+  matchVisualizationFrameEl = document.querySelector('#match-visualization-frame');
+  matchDuelsSection = document.querySelector('#match-duels');
+  matchDuelsStatusEl = document.querySelector('#match-duels-status');
+  matchDuelsListEl = document.querySelector('#match-duels-list');
+  matchDuelsScoreEl = document.querySelector('#match-duels-score');
+  reportTabButtons = document.querySelectorAll('[data-report-tab]');
+  reportPanels = document.querySelectorAll('[data-report-panel]');
+  reportHistoryList = document.querySelector('#report-history-list');
+  reportHistorySeasonSelect = document.querySelector('#report-history-season');
+  reportHistoryEmptyEl = document.querySelector('#report-history-empty');
+
+  seasonSummarySection = document.querySelector('#season-summary');
+  seasonChampionEl = document.querySelector('#season-champion');
+  seasonTopScorersList = document.querySelector('#season-top-scorers');
+  seasonTopAssistsList = document.querySelector('#season-top-assists');
+  seasonAveragePossessionEl = document.querySelector('#season-average-possession');
+  seasonStreakEl = document.querySelector('#season-streak');
+  seasonTitlesEl = document.querySelector('#season-titles');
+  seasonRecordsList = document.querySelector('#season-records');
+  newSeasonButton = document.querySelector('#new-season');
+  configureClubButton = document.querySelector('#configure-club');
+  configureLeagueButton = document.querySelector('#configure-league');
+  clubIdentityModal = document.querySelector('#modal-club-identity');
+  clubIdentityForm = document.querySelector('#club-identity-form');
+  clubNameInput = document.querySelector('#club-name-input');
+  clubCityInput = document.querySelector('#club-city-input');
+  clubStadiumInput = document.querySelector('#club-stadium-input');
+  clubPrimaryColorInput = document.querySelector('#club-primary-color');
+  clubSecondaryColorInput = document.querySelector('#club-secondary-color');
+  clubPrimaryColorHexInput = document.querySelector('#club-primary-color-hex');
+  clubSecondaryColorHexInput = document.querySelector('#club-secondary-color-hex');
+  clubPrimaryColorPreview = document.querySelector('#club-primary-color-preview');
+  clubSecondaryColorPreview = document.querySelector('#club-secondary-color-preview');
+  clubPrimaryColorErrorEl = document.querySelector('#club-primary-color-error');
+  clubSecondaryColorErrorEl = document.querySelector('#club-secondary-color-error');
+  clubLogoInput = document.querySelector('#club-logo-input');
+  previewClubIdentityButton = document.querySelector('#preview-club-identity');
+  clubIdentityPreview = document.querySelector('#club-identity-preview');
+  clubIdentityPreviewName = clubIdentityPreview?.querySelector('[data-preview-field="name"]');
+  clubIdentityPreviewCity = clubIdentityPreview?.querySelector('[data-preview-field="city"]');
+  clubIdentityPreviewStadium = clubIdentityPreview?.querySelector('[data-preview-field="stadium"]');
+  clubIdentityPreviewSeparator = clubIdentityPreview?.querySelector(
+    '.club-identity-preview__separator'
+  );
+  clubIdentityPreviewLogo = document.querySelector('#club-identity-preview-logo');
+
+  resultsControlButton = document.querySelector(
+    '.control-panel__section-options [data-panel-action="results"]'
+  );
+  calendarList = document.querySelector('#calendar-list');
+  calendarNoteEl = document.querySelector('#calendar-note');
+  tacticPlanEl = document.querySelector('#tactic-plan');
+  tacticFormationEl = document.querySelector('#tactic-formation');
+  tacticInstructionsList = document.querySelector('#tactic-instructions');
+  opponentModalNameEl = document.querySelector('#opponent-modal-name');
+  opponentModalRecordEl = document.querySelector('#opponent-modal-record');
+  opponentModalStrengthEl = document.querySelector('#opponent-modal-strength');
+  opponentModalLocationEl = document.querySelector('#opponent-modal-location');
+  opponentModalCommentEl = document.querySelector('#opponent-modal-comment');
+  financesBudgetModalEl = document.querySelector('#finances-budget');
+  financesWagesModalEl = document.querySelector('#finances-wages');
+  financesOperatingModalEl = document.querySelector('#finances-operating');
+  financesNoteEl = document.querySelector('#finances-note');
+  financesIncomeTotalEl = document.querySelector('#finances-income-total');
+  financesExpenseTotalEl = document.querySelector('#finances-expense-total');
+  financesIncomeDonutEl = document.querySelector('#finances-income-donut');
+  financesExpenseBarEl = document.querySelector('#finances-expense-bar');
+  financesExpenseBarFillEl = document.querySelector('#finances-expense-bar-fill');
+  decisionsListEl = document.querySelector('#decisions-list');
+  decisionsHeatEl = document.querySelector('#decisions-heat');
+  stadiumCapacityEl = document.querySelector('#stadium-capacity');
+  stadiumLevelEl = document.querySelector('#stadium-level');
+  stadiumTrainingEl = document.querySelector('#stadium-training');
+  stadiumMedicalEl = document.querySelector('#stadium-medical');
+  stadiumAcademyEl = document.querySelector('#stadium-academy');
+  stadiumNoteEl = document.querySelector('#stadium-note');
+  stadiumUpgradeFeedbackEl = document.querySelector('#stadium-upgrade-feedback');
+  infrastructureUpgradeButtons = document.querySelectorAll('[data-infrastructure-upgrade]');
+  infrastructureCostEls = document.querySelectorAll('[data-infrastructure-cost]');
+  infrastructureDescriptionEls = document.querySelectorAll('[data-infrastructure-description]');
+
+  cupModalEl = document.querySelector('#modal-cup');
+  cupModalStatusEl = document.querySelector('#cup-modal-status');
+  cupDrawButton = document.querySelector('#cup-draw-button');
+  cupPlanButton = document.querySelector('#cup-plan-button');
+  cupNextFixtureEl = document.querySelector('#cup-next-fixture');
+  cupBracketList = document.querySelector('#cup-bracket');
+  cupHistoryList = document.querySelector('#cup-history');
+  cupDrawNarrativeList = document.querySelector('#cup-draw-narrative');
+
+  leagueConfigModal = document.querySelector('#modal-league-config');
+  leagueConfigForm = document.querySelector('#league-config-form');
+  leagueSizeSelect = document.querySelector('#league-size-select');
+  leagueDifficultySelect = document.querySelector('#league-difficulty-select');
+  leagueCatalogEl = document.querySelector('#league-catalog');
+  leagueSelectionCountEl = document.querySelector('#league-selection-count');
+  leagueRandomButton = document.querySelector('#league-randomize');
+  leagueConfigErrorEl = document.querySelector('#league-config-error');
+
+  playMatchButton = document.querySelector('#play-match');
+}
+
+function setupInitialControls() {
+  if (homeCheckbox) {
+    homeCheckbox.disabled = true;
+    homeCheckbox.setAttribute('aria-disabled', 'true');
+  }
+
+  if (opponentStrength instanceof HTMLInputElement) {
+    opponentStrength.disabled = true;
+    opponentStrength.setAttribute('aria-disabled', 'true');
+  }
+}
+
+function setupAriaLiveRegions() {
+  if (financesDeltaEl) {
+    financesDeltaEl.setAttribute('aria-live', 'polite');
+    financesDeltaEl.setAttribute('role', 'status');
+  }
+
+  if (financesIncomeList) {
+    financesIncomeList.setAttribute('aria-live', 'polite');
+    financesIncomeList.setAttribute('aria-label', 'Detalle de ingresos de la jornada');
+  }
+
+  if (financesExpenseList) {
+    financesExpenseList.setAttribute('aria-live', 'polite');
+    financesExpenseList.setAttribute('aria-label', 'Detalle de gastos de la jornada');
+  }
+
+  if (staffNoteEl) {
+    staffNoteEl.setAttribute('aria-live', 'polite');
+  }
+}
+
+function setupClubLogoFallback() {
+  if (!clubLogoEl) {
+    return;
+  }
+
+  clubLogoEl.addEventListener('error', () => {
+    if (clubLogoEl.dataset.logoSrc === DEFAULT_CLUB_LOGO) {
+      return;
+    }
+    clubLogoEl.dataset.logoSrc = DEFAULT_CLUB_LOGO;
+    clubLogoEl.src = DEFAULT_CLUB_LOGO;
+  });
+}
 
 const syncHeroMatchday = (text) => {
   if (heroMatchdayBadgeEl) {
@@ -311,8 +562,6 @@ const updateBreadcrumbs = () => {
     }
   }
 };
-
-updateBreadcrumbs();
 
 const switchDashboardTab = (targetTab) => {
   if (!targetTab) {
@@ -622,112 +871,91 @@ function resetMatchVisualizationElements({ detachPitch = false } = {}) {
   }
 }
 
-if (financesDeltaEl) {
-  financesDeltaEl.setAttribute('aria-live', 'polite');
-  financesDeltaEl.setAttribute('role', 'status');
-}
+let seasonSummarySection;
+let seasonChampionEl;
+let seasonTopScorersList;
+let seasonTopAssistsList;
+let seasonAveragePossessionEl;
+let seasonStreakEl;
+let seasonTitlesEl;
+let seasonRecordsList;
+let newSeasonButton;
+let configureClubButton;
+let configureLeagueButton;
+let clubIdentityModal;
+let clubIdentityForm;
+let clubNameInput;
+let clubCityInput;
+let clubStadiumInput;
+let clubPrimaryColorInput;
+let clubSecondaryColorInput;
+let clubPrimaryColorHexInput;
+let clubSecondaryColorHexInput;
+let clubPrimaryColorPreview;
+let clubSecondaryColorPreview;
+let clubPrimaryColorErrorEl;
+let clubSecondaryColorErrorEl;
+let clubLogoInput;
+let previewClubIdentityButton;
+let clubIdentityPreview;
+let clubIdentityPreviewName;
+let clubIdentityPreviewCity;
+let clubIdentityPreviewStadium;
+let clubIdentityPreviewSeparator;
+let clubIdentityPreviewLogo;
 
-if (financesIncomeList) {
-  financesIncomeList.setAttribute('aria-live', 'polite');
-  financesIncomeList.setAttribute('aria-label', 'Detalle de ingresos de la jornada');
-}
+let resultsControlButton;
+let calendarList;
+let calendarNoteEl;
+let tacticPlanEl;
+let tacticFormationEl;
+let tacticInstructionsList;
+let opponentModalNameEl;
+let opponentModalRecordEl;
+let opponentModalStrengthEl;
+let opponentModalLocationEl;
+let opponentModalCommentEl;
+let financesBudgetModalEl;
+let financesWagesModalEl;
+let financesOperatingModalEl;
+let financesNoteEl;
+let financesIncomeTotalEl;
+let financesExpenseTotalEl;
+let financesIncomeDonutEl;
+let financesExpenseBarEl;
+let financesExpenseBarFillEl;
+let decisionsListEl;
+let decisionsHeatEl;
+let stadiumCapacityEl;
+let stadiumLevelEl;
+let stadiumTrainingEl;
+let stadiumMedicalEl;
+let stadiumAcademyEl;
+let stadiumNoteEl;
+let stadiumUpgradeFeedbackEl;
+let infrastructureUpgradeButtons;
+let infrastructureCostEls;
+let infrastructureDescriptionEls;
 
-if (financesExpenseList) {
-  financesExpenseList.setAttribute('aria-live', 'polite');
-  financesExpenseList.setAttribute('aria-label', 'Detalle de gastos de la jornada');
-}
+let cupModalEl;
+let cupModalStatusEl;
+let cupDrawButton;
+let cupPlanButton;
+let cupNextFixtureEl;
+let cupBracketList;
+let cupHistoryList;
+let cupDrawNarrativeList;
 
-if (staffNoteEl) {
-  staffNoteEl.setAttribute('aria-live', 'polite');
-}
+let leagueConfigModal;
+let leagueConfigForm;
+let leagueSizeSelect;
+let leagueDifficultySelect;
+let leagueCatalogEl;
+let leagueSelectionCountEl;
+let leagueRandomButton;
+let leagueConfigErrorEl;
 
-const seasonSummarySection = document.querySelector('#season-summary');
-const seasonChampionEl = document.querySelector('#season-champion');
-const seasonTopScorersList = document.querySelector('#season-top-scorers');
-const seasonTopAssistsList = document.querySelector('#season-top-assists');
-const seasonAveragePossessionEl = document.querySelector('#season-average-possession');
-const seasonStreakEl = document.querySelector('#season-streak');
-const seasonTitlesEl = document.querySelector('#season-titles');
-const seasonRecordsList = document.querySelector('#season-records');
-const newSeasonButton = document.querySelector('#new-season');
-const configureClubButton = document.querySelector('#configure-club');
-const configureLeagueButton = document.querySelector('#configure-league');
-const clubIdentityModal = document.querySelector('#modal-club-identity');
-const clubIdentityForm = document.querySelector('#club-identity-form');
-const clubNameInput = document.querySelector('#club-name-input');
-const clubCityInput = document.querySelector('#club-city-input');
-const clubStadiumInput = document.querySelector('#club-stadium-input');
-const clubPrimaryColorInput = document.querySelector('#club-primary-color');
-const clubSecondaryColorInput = document.querySelector('#club-secondary-color');
-const clubPrimaryColorHexInput = document.querySelector('#club-primary-color-hex');
-const clubSecondaryColorHexInput = document.querySelector('#club-secondary-color-hex');
-const clubPrimaryColorPreview = document.querySelector('#club-primary-color-preview');
-const clubSecondaryColorPreview = document.querySelector('#club-secondary-color-preview');
-const clubPrimaryColorErrorEl = document.querySelector('#club-primary-color-error');
-const clubSecondaryColorErrorEl = document.querySelector('#club-secondary-color-error');
-const clubLogoInput = document.querySelector('#club-logo-input');
-const previewClubIdentityButton = document.querySelector('#preview-club-identity');
-const clubIdentityPreview = document.querySelector('#club-identity-preview');
-const clubIdentityPreviewName = clubIdentityPreview?.querySelector('[data-preview-field="name"]');
-const clubIdentityPreviewCity = clubIdentityPreview?.querySelector('[data-preview-field="city"]');
-const clubIdentityPreviewStadium = clubIdentityPreview?.querySelector('[data-preview-field="stadium"]');
-const clubIdentityPreviewSeparator = clubIdentityPreview?.querySelector('.club-identity-preview__separator');
-const clubIdentityPreviewLogo = document.querySelector('#club-identity-preview-logo');
-
-const resultsControlButton = document.querySelector(
-  '.control-panel__section-options [data-panel-action="results"]'
-);
-const calendarList = document.querySelector('#calendar-list');
-const calendarNoteEl = document.querySelector('#calendar-note');
-const tacticPlanEl = document.querySelector('#tactic-plan');
-const tacticFormationEl = document.querySelector('#tactic-formation');
-const tacticInstructionsList = document.querySelector('#tactic-instructions');
-const opponentModalNameEl = document.querySelector('#opponent-modal-name');
-const opponentModalRecordEl = document.querySelector('#opponent-modal-record');
-const opponentModalStrengthEl = document.querySelector('#opponent-modal-strength');
-const opponentModalLocationEl = document.querySelector('#opponent-modal-location');
-const opponentModalCommentEl = document.querySelector('#opponent-modal-comment');
-const financesBudgetModalEl = document.querySelector('#finances-budget');
-const financesWagesModalEl = document.querySelector('#finances-wages');
-const financesOperatingModalEl = document.querySelector('#finances-operating');
-const financesNoteEl = document.querySelector('#finances-note');
-const financesIncomeTotalEl = document.querySelector('#finances-income-total');
-const financesExpenseTotalEl = document.querySelector('#finances-expense-total');
-const financesIncomeDonutEl = document.querySelector('#finances-income-donut');
-const financesExpenseBarEl = document.querySelector('#finances-expense-bar');
-const financesExpenseBarFillEl = document.querySelector('#finances-expense-bar-fill');
-const decisionsListEl = document.querySelector('#decisions-list');
-const decisionsHeatEl = document.querySelector('#decisions-heat');
-const stadiumCapacityEl = document.querySelector('#stadium-capacity');
-const stadiumLevelEl = document.querySelector('#stadium-level');
-const stadiumTrainingEl = document.querySelector('#stadium-training');
-const stadiumMedicalEl = document.querySelector('#stadium-medical');
-const stadiumAcademyEl = document.querySelector('#stadium-academy');
-const stadiumNoteEl = document.querySelector('#stadium-note');
-const stadiumUpgradeFeedbackEl = document.querySelector('#stadium-upgrade-feedback');
-const infrastructureUpgradeButtons = document.querySelectorAll('[data-infrastructure-upgrade]');
-const infrastructureCostEls = document.querySelectorAll('[data-infrastructure-cost]');
-const infrastructureDescriptionEls = document.querySelectorAll('[data-infrastructure-description]');
-
-const cupModalEl = document.querySelector('#modal-cup');
-const cupModalStatusEl = document.querySelector('#cup-modal-status');
-const cupDrawButton = document.querySelector('#cup-draw-button');
-const cupPlanButton = document.querySelector('#cup-plan-button');
-const cupNextFixtureEl = document.querySelector('#cup-next-fixture');
-const cupBracketList = document.querySelector('#cup-bracket');
-const cupHistoryList = document.querySelector('#cup-history');
-const cupDrawNarrativeList = document.querySelector('#cup-draw-narrative');
-
-const leagueConfigModal = document.querySelector('#modal-league-config');
-const leagueConfigForm = document.querySelector('#league-config-form');
-const leagueSizeSelect = document.querySelector('#league-size-select');
-const leagueDifficultySelect = document.querySelector('#league-difficulty-select');
-const leagueCatalogEl = document.querySelector('#league-catalog');
-const leagueSelectionCountEl = document.querySelector('#league-selection-count');
-const leagueRandomButton = document.querySelector('#league-randomize');
-const leagueConfigErrorEl = document.querySelector('#league-config-error');
-
-const playMatchButton = document.querySelector('#play-match');
+let playMatchButton;
 
 const FOCUSABLE_SELECTOR =
   "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])";
@@ -926,16 +1154,6 @@ function syncSidebarState() {
     sidebarPanel.classList.remove('is-open');
     sidebarToggleButton.setAttribute('aria-expanded', 'true');
   }
-}
-
-if (clubLogoEl) {
-  clubLogoEl.addEventListener('error', () => {
-    if (clubLogoEl.dataset.logoSrc === DEFAULT_CLUB_LOGO) {
-      return;
-    }
-    clubLogoEl.dataset.logoSrc = DEFAULT_CLUB_LOGO;
-    clubLogoEl.src = DEFAULT_CLUB_LOGO;
-  });
 }
 
 const STARTERS_LIMIT = 11;
@@ -1916,7 +2134,7 @@ function closeModal(modal) {
 }
 
 function closeAllModals() {
-  const openModals = document.querySelectorAll('.modal.is-open');
+  let openModals;
   openModals.forEach((modal) => {
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
@@ -1928,31 +2146,33 @@ function closeAllModals() {
   applyModalTriggerState(null);
 }
 
-if (breadcrumbRootLink) {
-  breadcrumbRootLink.addEventListener('click', (event) => {
-    event.preventDefault();
-    closeAllModals();
-    if (defaultDashboardTab) {
-      switchDashboardTab(defaultDashboardTab);
-    } else {
-      updateBreadcrumbs();
-    }
-    if (mainPageEl instanceof HTMLElement && typeof mainPageEl.scrollIntoView === 'function') {
-      mainPageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
-}
+function setupBreadcrumbNavigation() {
+  if (breadcrumbRootLink) {
+    breadcrumbRootLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      closeAllModals();
+      if (defaultDashboardTab) {
+        switchDashboardTab(defaultDashboardTab);
+      } else {
+        updateBreadcrumbs();
+      }
+      if (mainPageEl instanceof HTMLElement && typeof mainPageEl.scrollIntoView === 'function') {
+        mainPageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
 
-if (breadcrumbTabLink) {
-  breadcrumbTabLink.addEventListener('click', (event) => {
-    event.preventDefault();
-    const targetTab = breadcrumbTabLink.dataset.dashboardTab;
-    if (typeof targetTab !== 'string' || targetTab.length === 0) {
-      return;
-    }
-    closeAllModals();
-    switchDashboardTab(targetTab);
-  });
+  if (breadcrumbTabLink) {
+    breadcrumbTabLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      const targetTab = breadcrumbTabLink.dataset.dashboardTab;
+      if (typeof targetTab !== 'string' || targetTab.length === 0) {
+        return;
+      }
+      closeAllModals();
+      switchDashboardTab(targetTab);
+    });
+  }
 }
 
 function openModal(modal, trigger) {
@@ -1982,19 +2202,19 @@ function attachModalHandlers() {
   }
   modalHandlersAttached = true;
 
-  const triggers = document.querySelectorAll(MODAL_TRIGGER_SELECTOR);
+  let triggers;
   triggers.forEach((trigger) => {
     trigger.addEventListener('click', () => {
       const targetSelector = trigger.getAttribute('data-modal-target');
       if (!targetSelector) {
         return;
       }
-      const modal = document.querySelector(targetSelector);
+      let modal;
       openModal(modal, trigger);
     });
   });
 
-  const closers = document.querySelectorAll('[data-modal-close]');
+  let closers;
   closers.forEach((closer) => {
     closer.addEventListener('click', () => {
       const modal = closer.closest('.modal');
@@ -2002,7 +2222,7 @@ function attachModalHandlers() {
     });
   });
 
-  const modals = document.querySelectorAll('.modal');
+  let modals;
   modals.forEach((modal) => {
     modal.addEventListener('click', (event) => {
       if (event.target === modal) {
@@ -2013,7 +2233,7 @@ function attachModalHandlers() {
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      const openModalElement = document.querySelector('.modal.is-open');
+      let openModalElement;
       if (openModalElement) {
         closeModal(openModalElement);
       }
@@ -2149,7 +2369,7 @@ function ensureCommercialAlertButton() {
   if (commercialAlertButton && commercialAlertButton.isConnected) {
     return;
   }
-  const actions = document.querySelector('.club-actions');
+  let actions;
   if (!(actions instanceof HTMLElement)) {
     return;
   }
@@ -3279,7 +3499,7 @@ function updateInfrastructureControls() {
     }
 
     const currentLevel = getInfrastructureLevel(type);
-    const costElement = document.querySelector(`[data-infrastructure-cost="${type}"]`);
+    let costElement;
 
     if (currentLevel >= blueprint.maxLevel) {
       button.textContent = `${blueprint.label}: nivel máximo`;
@@ -3396,17 +3616,19 @@ function handleInfrastructureUpgrade(type) {
   );
 }
 
-if (infrastructureUpgradeButtons.length > 0) {
-  infrastructureUpgradeButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const type = button.dataset.infrastructureUpgrade ?? '';
-      handleInfrastructureUpgrade(type);
+function setupInfrastructureInteractions() {
+  if (infrastructureUpgradeButtons.length > 0) {
+    infrastructureUpgradeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const type = button.dataset.infrastructureUpgrade ?? '';
+        handleInfrastructureUpgrade(type);
+      });
     });
-  });
-}
+  }
 
-if (infrastructureDescriptionEls.length > 0) {
-  updateInfrastructureDescriptions();
+  if (infrastructureDescriptionEls.length > 0) {
+    updateInfrastructureDescriptions();
+  }
 }
 
 function renderStadiumModal() {
@@ -4803,1681 +5025,272 @@ function clearReport() {
   refreshControlPanel();
 }
 
-if (playerEditForm) {
-  playerEditForm.addEventListener('submit', handlePlayerEditSubmit);
-}
-
-if (playerEditRandomButton) {
-  playerEditRandomButton.addEventListener('click', () => {
-    const identity = generateRandomPlayerIdentity();
-    if (playerEditNameInput) {
-      playerEditNameInput.value = identity.name;
-      playerEditNameInput.focus();
-      playerEditNameInput.select();
-    }
-    if (playerEditNicknameInput) {
-      playerEditNicknameInput.value = identity.nickname;
-    }
-    clearPlayerEditError();
-  });
-}
-
-if (lineupAutosortButton) {
-  lineupAutosortButton.addEventListener('click', autoSortLineup);
-}
-
-if (saveButton) {
-  saveButton.addEventListener('click', () => {
-    persistState('manual');
-  });
-}
-
-if (newSeasonButton) {
-  newSeasonButton.addEventListener('click', () => {
-    startNewSeason();
-  });
-}
-
-function renderDecisionOutcome(decisionOutcome) {
-  if (!decisionOutcome) {
-    decisionReport.hidden = true;
-    decisionNarrative.textContent = '';
-    decisionStats.innerHTML = '';
-    return;
+function setupEventHandlers() {
+  if (playerEditForm) {
+    playerEditForm.addEventListener('submit', handlePlayerEditSubmit);
   }
 
-  decisionReport.hidden = false;
-  decisionNarrative.textContent = decisionOutcome.narrative;
-
-  const stats = [
-    `Éxito: ${decisionOutcome.success ? 'sí' : 'no'}`,
-    `Reputación: ${decisionOutcome.reputationChange >= 0 ? '+' : ''}${decisionOutcome.reputationChange}`,
-    `Moral: ${decisionOutcome.moraleChange >= 0 ? '+' : ''}${decisionOutcome.moraleChange}`,
-    `Caja: ${numberFormatter.format(decisionOutcome.financesChange)}`,
-    `Nivel de riesgo percibido: ${decisionOutcome.riskLevel}/100`,
-  ];
-
-  if (typeof decisionOutcome.heatChange === 'number') {
-    stats.push(`Sospecha: ${decisionOutcome.heatChange >= 0 ? '+' : ''}${decisionOutcome.heatChange}`);
-  }
-
-  if (decisionOutcome.sanctions) {
-    stats.push(`Sanciones: ${decisionOutcome.sanctions}`);
-  }
-
-  if (Array.isArray(decisionOutcome.ongoingConsequences) && decisionOutcome.ongoingConsequences.length > 0) {
-    stats.push('Consecuencias latentes:');
-    decisionOutcome.ongoingConsequences.forEach((consequence) => {
-      stats.push(`↳ ${consequence}`);
-    });
-  }
-
-  decisionStats.innerHTML = '';
-  stats.forEach((stat) => {
-    const li = document.createElement('li');
-    li.textContent = stat;
-    decisionStats.append(li);
-  });
-}
-
-function renderFinancialBreakdown(finances) {
-  if (!finances) {
-    return;
-  }
-  const incomeEntries = Object.entries(finances.incomeBreakdown ?? {});
-  const expenseEntries = Object.entries(finances.expenseBreakdown ?? {});
-  const totalIncome = incomeEntries.reduce((sum, [, amount]) => sum + (Number(amount) || 0), 0);
-  const totalExpenses = expenseEntries.reduce((sum, [, amount]) => sum + (Number(amount) || 0), 0);
-  const totalMovement = totalIncome + totalExpenses;
-  const incomeShareRaw = totalMovement > 0 ? totalIncome / totalMovement : 0;
-  const expenseShareRaw = totalMovement > 0 ? totalExpenses / totalMovement : 0;
-  const incomeShare = Math.max(0, Math.min(1, incomeShareRaw));
-  const expenseShare = Math.max(0, Math.min(1, expenseShareRaw));
-
-  if (financesIncomeTotalEl) {
-    financesIncomeTotalEl.textContent =
-      totalIncome > 0
-        ? `${numberFormatter.format(totalIncome)} · ${percentageFormatter.format(incomeShare)} del movimiento`
-        : 'Sin ingresos registrados';
-  }
-
-  if (financesExpenseTotalEl) {
-    financesExpenseTotalEl.textContent =
-      totalExpenses > 0
-        ? `${numberFormatter.format(totalExpenses)} · ${percentageFormatter.format(expenseShare)} del movimiento`
-        : 'Sin gastos registrados';
-  }
-
-  if (financesIncomeDonutEl) {
-    const sweep = Math.max(0, Math.min(360, incomeShare * 360));
-    financesIncomeDonutEl.style.setProperty('--finances-sweep', `${sweep}deg`);
-    financesIncomeDonutEl.dataset.percentage = percentageFormatter.format(incomeShare || 0);
-    financesIncomeDonutEl.classList.toggle('is-empty', totalMovement <= 0);
-  }
-
-  if (financesExpenseBarEl && financesExpenseBarFillEl) {
-    const percent = Math.max(0, Math.min(100, expenseShare * 100));
-    const progressValue = `${percent.toFixed(2)}%`;
-    financesExpenseBarFillEl.style.setProperty('--finances-progress', progressValue);
-    financesExpenseBarFillEl.style.width = progressValue;
-    financesExpenseBarEl.dataset.percentage = percentageFormatter.format(expenseShare || 0);
-    financesExpenseBarEl.classList.toggle('is-empty', totalMovement <= 0);
-  }
-
-  if (financesAttendanceEl) {
-    financesAttendanceEl.textContent = finances.attendance
-      ? `${finances.attendance.toLocaleString('es-ES')} espectadores`
-      : 'Asistencia no disponible';
-  }
-  const renderBreakdownList = (listEl, entries, type, total) => {
-    if (!listEl) {
-      return;
-    }
-    listEl.innerHTML = '';
-    const sortedEntries = [...entries].sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0));
-    sortedEntries.forEach(([label, rawValue]) => {
-      const amount = Number(rawValue) || 0;
-      const formattedValue = numberFormatter.format(amount);
-      const shareRaw = total > 0 ? amount / total : 0;
-      const share = Math.max(0, Math.min(1, shareRaw));
-      const sharePercent = Math.max(0, Math.min(100, share * 100));
-      const shareText = percentageFormatter.format(share);
-
-      const item = document.createElement('li');
-      item.className = `finances-item finances-item--${type}`;
-
-      const row = document.createElement('div');
-      row.className = 'finances-item__row';
-
-      const labelEl = document.createElement('span');
-      labelEl.className = 'finances-item__label';
-      labelEl.textContent = label;
-
-      const valueEl = document.createElement('span');
-      valueEl.className = 'finances-item__value';
-      valueEl.textContent = formattedValue;
-
-      row.append(labelEl, valueEl);
-
-      const bar = document.createElement('div');
-      bar.className = 'finances-bar finances-item__bar';
-      bar.setAttribute('aria-hidden', 'true');
-      bar.setAttribute('data-percentage', shareText);
-
-      const barFill = document.createElement('span');
-      barFill.className = `finances-bar__fill finances-bar__fill--${type}`;
-      const progressValue = `${sharePercent.toFixed(2)}%`;
-      barFill.style.setProperty('--finances-progress', progressValue);
-      barFill.style.width = progressValue;
-      bar.append(barFill);
-
-      const ariaLabelPrefix = type === 'income' ? 'Ingreso por' : 'Gasto en';
-      const ariaLabelSuffix = type === 'income' ? 'del total de ingresos' : 'del total de gastos';
-      item.setAttribute(
-        'aria-label',
-        `${ariaLabelPrefix} ${label}: ${formattedValue} (${shareText} ${ariaLabelSuffix})`
-      );
-
-      item.append(row, bar);
-      listEl.append(item);
-    });
-  };
-
-  renderBreakdownList(financesIncomeList, incomeEntries, 'income', totalIncome);
-  renderBreakdownList(financesExpenseList, expenseEntries, 'expense', totalExpenses);
-}
-
-
-function normaliseViewMode(value) {
-  return value === '2d' || value === 'duels' || value === 'text' ? value : 'text';
-}
-
-function syncViewModeSelector() {
-  Array.from(viewModeInputs).forEach((input) => {
-    if (!(input instanceof HTMLInputElement)) {
-      return;
-    }
-    const option = input.closest('.view-mode-selector__option');
-    if (option) {
-      option.classList.toggle('is-selected', input.checked);
-    }
-  });
-}
-
-function clearDuelsAnimation() {
-  matchDuelsState.timeouts.forEach((timeoutId) => {
-    window.clearTimeout(timeoutId);
-  });
-  matchDuelsState.timeouts = [];
-}
-
-function formatSignedDifference(value) {
-  const rounded = Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
-  const normalised = Object.is(rounded, -0) ? 0 : rounded;
-  const base = normalised.toFixed(2);
-  return normalised > 0 ? `+${base}` : base;
-}
-
-function formatAverage(value) {
-  if (!Number.isFinite(value)) {
-    return '0.00';
-  }
-  const rounded = Number(value.toFixed(2));
-  return (Object.is(rounded, -0) ? 0 : rounded).toFixed(2);
-}
-
-function updateMatchDuelsScore(value, options = {}) {
-  if (!matchDuelsScoreEl) {
-    return;
-  }
-  const settings = { final: false, ...options };
-  matchDuelsScoreEl.classList.remove('match-duels__score--positive', 'match-duels__score--negative');
-  if (!Number.isFinite(value)) {
-    matchDuelsScoreEl.textContent = 'Marcador cartas: —';
-    return;
-  }
-  const text = formatSignedDifference(value);
-  matchDuelsScoreEl.textContent = settings.final
-    ? `Marcador cartas: ${text} (final)`
-    : `Marcador cartas: ${text}`;
-  if (value > 0) {
-    matchDuelsScoreEl.classList.add('match-duels__score--positive');
-  } else if (value < 0) {
-    matchDuelsScoreEl.classList.add('match-duels__score--negative');
-  }
-}
-
-function applyScoreline(text, { animate = false } = {}) {
-  if (!scorelineEl) {
-    return;
-  }
-  scorelineEl.textContent = text;
-  if (animate) {
-    restartAnimation(scorelineEl, 'scoreline--flash');
-  }
-}
-
-function restoreScoreline(animate = false) {
-  if (!scorelineEl) {
-    return;
-  }
-  if (scorelineState.finalText) {
-    applyScoreline(scorelineState.finalText, { animate });
-  } else {
-    applyScoreline('', { animate: false });
-  }
-}
-
-function applyDuelsScoreline(value) {
-  if (!scorelineEl) {
-    return;
-  }
-  const clubLabel = scorelineState.clubName || clubState.name || 'Nuestro club';
-  const opponentLabel = scorelineState.opponentName || 'Rival misterioso';
-  scorelineEl.textContent = `${clubLabel} vs ${opponentLabel} · Cartas ${formatSignedDifference(value)}`;
-}
-
-function createMatchDuelParticipant(participant, side) {
-  const container = document.createElement('div');
-  container.className = `match-duel-card__participant match-duel-card__participant--${side}`;
-  const name = document.createElement('span');
-  name.className = 'match-duel-card__name';
-  name.textContent = participant?.name ?? (side === 'home' ? 'Jugador canalla' : 'Rival proyectado');
-  const meta = document.createElement('span');
-  meta.className = 'match-duel-card__meta';
-  const role = document.createElement('span');
-  role.textContent = participant?.position ?? '—';
-  const average = document.createElement('span');
-  average.textContent = `Media ${formatAverage(participant?.average)}`;
-  meta.append(role, average);
-  container.append(name, meta);
-  return { container, name, role, average, raw: participant };
-}
-
-function createMatchDuelCard(entry, index) {
-  const card = document.createElement('article');
-  card.className = 'match-duel-card';
-  card.setAttribute('role', 'listitem');
-  card.tabIndex = -1;
-  const badge = document.createElement('span');
-  badge.className = 'match-duel-card__badge';
-  badge.textContent = `Duelo ${index + 1}`;
-
-  const participants = document.createElement('div');
-  participants.className = 'match-duel-card__participants';
-  const homeParticipant = createMatchDuelParticipant(entry?.home ?? null, 'home');
-  const awayParticipant = createMatchDuelParticipant(entry?.away ?? null, 'away');
-  participants.append(homeParticipant.container, awayParticipant.container);
-
-  const difference = document.createElement('p');
-  difference.className = 'match-duel-card__difference';
-  const rawDifference = Number.isFinite(entry?.difference) ? entry.difference : 0;
-  difference.textContent = formatSignedDifference(rawDifference);
-  const duelOutcome = rawDifference > 0 ? 'positive' : rawDifference < 0 ? 'negative' : 'neutral';
-  card.dataset.outcome = duelOutcome;
-
-  const winner = document.createElement('span');
-  winner.className = 'match-duel-card__winner';
-  winner.textContent = 'Duelo en preparación';
-
-  const partial = document.createElement('p');
-  partial.className = 'match-duel-card__partial';
-  partial.textContent = 'Acumulado: —';
-
-  card.append(badge, participants, difference, winner, partial);
-
-  return {
-    element: card,
-    entry: {
-      home: entry?.home ?? null,
-      away: entry?.away ?? null,
-      difference: rawDifference,
-    },
-    partialEl: partial,
-    winnerEl: winner,
-  };
-}
-
-function revealMatchDuelCard(cardData, runningTotal) {
-  const { element, entry, partialEl, winnerEl } = cardData;
-  const difference = entry.difference;
-  let winner = 'draw';
-  let winnerLabel = 'Empate vibrante';
-  if (difference > 0.01) {
-    winner = 'home';
-    winnerLabel = 'Ventaja canalla';
-  } else if (difference < -0.01) {
-    winner = 'away';
-    winnerLabel = 'Golpe rival';
-  }
-  element.dataset.winner = winner;
-  winnerEl.textContent = winnerLabel;
-  partialEl.innerHTML = `Acumulado: <strong>${formatSignedDifference(runningTotal)}</strong>`;
-  element.classList.add('match-duel-card--visible');
-  element.tabIndex = 0;
-  const homeName = entry.home?.name ?? 'Jugador canalla';
-  const awayName = entry.away?.name ?? 'Rival proyectado';
-  const homeAverage = formatAverage(entry.home?.average);
-  const awayAverage = formatAverage(entry.away?.average);
-  const contextLabel =
-    winner === 'home'
-      ? `${scorelineState.clubName || clubState.name || 'Nuestro club'} domina`
-      : winner === 'away'
-      ? `${scorelineState.opponentName || 'El rival'} se adelanta`
-      : 'Duelo equilibrado';
-  element.setAttribute(
-    'aria-label',
-    `${homeName} (${homeAverage}) vs ${awayName} (${awayAverage}). ${contextLabel}. Acumulado ${formatSignedDifference(
-      runningTotal
-    )}.`
-  );
-}
-
-function resolveSelectedViewMode() {
-  const selectedInput = Array.from(viewModeInputs).find(
-    (input) => input instanceof HTMLInputElement && input.checked
-  );
-  if (selectedInput instanceof HTMLInputElement) {
-    return normaliseViewMode(selectedInput.value);
-  }
-  return normaliseViewMode(configState.viewMode);
-}
-
-function renderMatchDuels(summary) {
-  if (!matchDuelsSection) {
-    return;
-  }
-
-  clearDuelsAnimation();
-
-  const isActive = resolveSelectedViewMode() === 'duels';
-  matchDuelsSection.hidden = !isActive;
-  matchDuelsSection.setAttribute('aria-hidden', isActive ? 'false' : 'true');
-
-  if (!isActive) {
-    matchDuelsSection.dataset.state = 'empty';
-    if (matchDuelsListEl) {
-      matchDuelsListEl.innerHTML = '';
-      matchDuelsListEl.setAttribute('aria-busy', 'false');
-    }
-    if (matchDuelsStatusEl) {
-      matchDuelsStatusEl.textContent = 'Selecciona el modo cartas para comparar jugador a jugador.';
-    }
-    updateMatchDuelsScore(Number.NaN);
-    restoreScoreline();
-    return;
-  }
-
-  const breakdown = Array.isArray(summary?.breakdown) ? summary.breakdown : [];
-  const totalDifference = Number.isFinite(summary?.totalDifference) ? summary.totalDifference : 0;
-
-  if (!breakdown.length) {
-    matchDuelsSection.dataset.state = 'empty';
-    if (matchDuelsStatusEl) {
-      matchDuelsStatusEl.textContent =
-        'Juega una jornada con el modo cartas para ver el enfrentamiento completo.';
-    }
-    if (matchDuelsListEl) {
-      matchDuelsListEl.innerHTML = '';
-      matchDuelsListEl.setAttribute('aria-busy', 'false');
-    }
-    updateMatchDuelsScore(Number.NaN);
-    restoreScoreline();
-    return;
-  }
-
-  matchDuelsSection.dataset.state = 'playing';
-  if (matchDuelsStatusEl) {
-    matchDuelsStatusEl.textContent = 'Reproduciendo duelos carta a carta.';
-  }
-
-  const cards = breakdown.map((entry, index) => createMatchDuelCard(entry, index));
-
-  if (matchDuelsListEl) {
-    matchDuelsListEl.innerHTML = '';
-    matchDuelsListEl.setAttribute('aria-busy', 'true');
-    const fragment = document.createDocumentFragment();
-    cards.forEach((card) => {
-      fragment.append(card.element);
-    });
-    matchDuelsListEl.append(fragment);
-  }
-
-  updateMatchDuelsScore(0);
-  applyDuelsScoreline(0);
-
-  let runningTotal = 0;
-
-  cards.forEach((cardData, index) => {
-    const revealDelay = index * MATCH_DUELS_REVEAL_DELAY + 120;
-    const revealTimeout = window.setTimeout(() => {
-      runningTotal = Number((runningTotal + cardData.entry.difference).toFixed(2));
-      revealMatchDuelCard(cardData, runningTotal);
-      updateMatchDuelsScore(runningTotal);
-      applyDuelsScoreline(runningTotal);
-
-      if (index === cards.length - 1) {
-        if (matchDuelsListEl) {
-          matchDuelsListEl.setAttribute('aria-busy', 'false');
-        }
-        const finalizeTimeout = window.setTimeout(() => {
-          matchDuelsSection.dataset.state = 'ready';
-          if (matchDuelsStatusEl) {
-            matchDuelsStatusEl.textContent = 'Cartas completadas. Repasa el acumulado final.';
-          }
-          updateMatchDuelsScore(totalDifference, { final: true });
-          restoreScoreline(true);
-        }, MATCH_DUELS_REVEAL_DELAY);
-        matchDuelsState.timeouts.push(finalizeTimeout);
+  if (playerEditRandomButton) {
+    playerEditRandomButton.addEventListener('click', () => {
+      const identity = generateRandomPlayerIdentity();
+      if (playerEditNameInput) {
+        playerEditNameInput.value = identity.name;
+        playerEditNameInput.focus();
+        playerEditNameInput.select();
       }
-    }, revealDelay);
-    matchDuelsState.timeouts.push(revealTimeout);
-  });
-}
-
-function updateMatchVisualizationFrame(index, options = {}) {
-  if (!matchVisualizationSection || matchVisualizationState.frames.length === 0) {
-    return;
-  }
-  const total = matchVisualizationState.frames.length;
-  const clamped = Math.max(0, Math.min(total - 1, index));
-  matchVisualizationState.index = clamped;
-  const frame = matchVisualizationState.frames[clamped];
-
-  if (matchVisualizationScreen) {
-    const pitch = renderMatchVisualizationPitch(frame);
-    if (!pitch.isConnected || pitch.parentElement !== matchVisualizationScreen) {
-      matchVisualizationScreen.replaceChildren(pitch);
-    }
-    restartAnimation(matchVisualizationScreen, MATCH_VISUALIZATION_TRANSITION_CLASS);
+      if (playerEditNicknameInput) {
+        playerEditNicknameInput.value = identity.nickname;
+      }
+      clearPlayerEditError();
+    });
   }
 
-  if (matchVisualizationMinuteEl) {
-    const hasMinute = typeof frame.minute === 'number' && Number.isFinite(frame.minute);
-    matchVisualizationMinuteEl.textContent = hasMinute ? `Minuto ${frame.minute}'` : 'Minuto —';
-    restartAnimation(matchVisualizationMinuteEl, MATCH_VISUALIZATION_MINUTE_CLASS);
+  if (lineupAutosortButton) {
+    lineupAutosortButton.addEventListener('click', autoSortLineup);
   }
 
-  if (matchVisualizationLabelEl) {
-    matchVisualizationLabelEl.textContent = frame.label ?? '';
+  if (saveButton) {
+    saveButton.addEventListener('click', () => {
+      persistState('manual');
+    });
   }
 
-  if (matchVisualizationSlider) {
-    matchVisualizationSlider.value = String(clamped);
-    matchVisualizationSlider.setAttribute('aria-valuemin', '0');
-    matchVisualizationSlider.setAttribute('aria-valuemax', String(total - 1));
-    matchVisualizationSlider.setAttribute('aria-valuenow', String(clamped));
-    const hasMinute = typeof frame.minute === 'number' && Number.isFinite(frame.minute);
-    const valuetext = hasMinute
-      ? `Fotograma ${clamped + 1} · minuto ${frame.minute}`
-      : `Fotograma ${clamped + 1}`;
-    matchVisualizationSlider.setAttribute('aria-valuetext', valuetext);
-    matchVisualizationSlider.disabled = total <= 1;
+  if (newSeasonButton) {
+    newSeasonButton.addEventListener('click', () => {
+      startNewSeason();
+    });
   }
 
-  if (matchVisualizationFrameEl) {
-    matchVisualizationFrameEl.textContent = `Fotograma ${clamped + 1} / ${total}`;
+  if (startNewGameButton) {
+    startNewGameButton.addEventListener('click', () => {
+      cancelAutoContinue();
+      startNewGame();
+    });
+  }
+
+  if (startContinueButton) {
+    startContinueButton.addEventListener('click', () => {
+      cancelAutoContinue();
+      continueSavedGame();
+    });
+  }
+
+  if (seedInput) {
+    seedInput.addEventListener('change', () => {
+      const value = seedInput.value.trim();
+      const nextSeed = value.length > 0 ? value : undefined;
+      configState = { ...configState, seed: nextSeed };
+    });
+  }
+
+  if (configureClubButton && clubIdentityModal) {
+    configureClubButton.addEventListener('click', () => {
+      populateClubIdentityForm();
+      openModal(clubIdentityModal);
+    });
+  }
+
+  if (configureLeagueButton && leagueConfigModal) {
+    configureLeagueButton.addEventListener('click', () => {
+      populateLeagueConfiguration();
+      openModal(leagueConfigModal);
+    });
+  }
+
+  if (previewClubIdentityButton) {
+    previewClubIdentityButton.addEventListener('click', () => {
+      if (clubIdentityForm) {
+        previewClubIdentity(clubIdentityForm);
+      }
+    });
+  }
+
+  if (clubIdentityForm) {
+    clubIdentityForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      submitClubIdentityForm();
+    });
+  }
+
+  if (decisionSelect) {
+    decisionSelect.addEventListener('change', () => {
+      updateDecisionDetails();
+    });
+  }
+
+  if (leagueCatalogEl) {
+    leagueCatalogEl.addEventListener('change', (event) => {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'checkbox') {
+        updateLeagueSelectionCountDisplay();
+        hideLeagueConfigError();
+      }
+    });
+  }
+
+  if (leagueSizeSelect instanceof HTMLSelectElement) {
+    leagueSizeSelect.addEventListener('change', () => {
+      updateLeagueSelectionCountDisplay();
+      hideLeagueConfigError();
+    });
+  }
+
+  if (leagueDifficultySelect instanceof HTMLSelectElement) {
+    leagueDifficultySelect.addEventListener('change', () => {
+      hideLeagueConfigError();
+    });
+  }
+
+  if (leagueRandomButton) {
+    leagueRandomButton.addEventListener('click', () => {
+      const targetCount = getTargetRivalCount();
+      const randomSelection = selectRandomLeagueRivals(targetCount, {
+        exclude: [clubState.name],
+      });
+      applyLeagueSelectionToForm(randomSelection);
+      hideLeagueConfigError();
+    });
+  }
+
+  if (leagueConfigForm && leagueConfigModal) {
+    leagueConfigForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const selected = getSelectedLeagueRivals();
+      const targetCount = getTargetRivalCount();
+      if (selected.length !== targetCount) {
+        showLeagueConfigError(`Selecciona ${targetCount} rivales (actualmente ${selected.length}).`);
+        return;
+      }
+      hideLeagueConfigError();
+      applyLeagueConfiguration(selected);
+      closeModal(leagueConfigModal);
+    });
+  }
+
+  if (cupDrawButton) {
+    cupDrawButton.addEventListener('click', () => {
+      handleCupDraw();
+    });
+  }
+
+  if (cupPlanButton) {
+    cupPlanButton.addEventListener('click', () => {
+      if (cupModalEl) {
+        closeModal(cupModalEl);
+      }
+      switchToPlanningView();
+    });
+  }
+
+  if (planNextButton) {
+    planNextButton.addEventListener('click', () => {
+      closeModal(reportModal);
+      switchToPlanningView();
+    });
+  }
+
+  if (viewModeInputs.length > 0) {
+    Array.from(viewModeInputs).forEach((input) => {
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+      input.addEventListener('change', () => {
+        if (!input.checked) {
+          return;
+        }
+        const mode = normaliseViewMode(input.value);
+        configState = { ...configState, viewMode: mode };
+        syncViewModeSelector();
+        renderMatchVisualization(currentReportData);
+      });
+    });
   }
 
   if (matchVisualizationPrevButton) {
-    matchVisualizationPrevButton.disabled = clamped <= 0;
+    matchVisualizationPrevButton.addEventListener('click', () => {
+      stepMatchVisualization(-1);
+    });
   }
+
   if (matchVisualizationNextButton) {
-    matchVisualizationNextButton.disabled = clamped >= total - 1;
-  }
-
-  if (options.userInitiated) {
-    resetMatchVisualizationAutoplay();
-  }
-}
-
-function renderMatchVisualization(report) {
-  if (!matchVisualizationSection) {
-    return;
-  }
-
-  const selectedViewMode = resolveSelectedViewMode();
-  renderMatchDuels(selectedViewMode === 'duels' ? report?.match?.duels ?? null : null);
-  const is2dActive = selectedViewMode === '2d';
-  matchVisualizationSection.hidden = !is2dActive;
-  matchVisualizationSection.setAttribute('aria-hidden', is2dActive ? 'false' : 'true');
-  const clearVisualization = (message) => {
-    matchVisualizationState.frames = [];
-    matchVisualizationState.index = 0;
-    matchVisualizationState.dimensions = { width: 21, height: 11 };
-    stopMatchVisualizationAutoplay();
-    matchVisualizationSection.dataset.state = 'empty';
-    resetMatchVisualizationElements({ detachPitch: true });
-    if (matchVisualizationScreen) {
-      matchVisualizationScreen.textContent = '';
-    }
-    if (matchVisualizationMinuteEl) {
-      matchVisualizationMinuteEl.textContent = '—';
-    }
-    if (matchVisualizationLabelEl) {
-      matchVisualizationLabelEl.textContent = '';
-    }
-    if (matchVisualizationFrameEl) {
-      matchVisualizationFrameEl.textContent = '—';
-    }
-    if (matchVisualizationStatusEl) {
-      matchVisualizationStatusEl.textContent = message;
-      matchVisualizationStatusEl.hidden = false;
-    }
-    if (matchVisualizationLegendList) {
-      matchVisualizationLegendList.innerHTML = '';
-    }
-    if (matchVisualizationSlider) {
-      matchVisualizationSlider.value = '0';
-      matchVisualizationSlider.min = '0';
-      matchVisualizationSlider.max = '0';
-      matchVisualizationSlider.disabled = true;
-      matchVisualizationSlider.setAttribute('aria-valuemin', '0');
-      matchVisualizationSlider.setAttribute('aria-valuemax', '0');
-      matchVisualizationSlider.setAttribute('aria-valuenow', '0');
-      matchVisualizationSlider.setAttribute('aria-valuetext', 'Sin fotogramas disponibles');
-    }
-    if (matchVisualizationPrevButton) {
-      matchVisualizationPrevButton.disabled = true;
-    }
-    if (matchVisualizationNextButton) {
-      matchVisualizationNextButton.disabled = true;
-    }
-  };
-
-  if (!is2dActive) {
-    clearVisualization('Selecciona la vista 2D en el selector para proyectar la pizarra retro.');
-    return;
-  }
-
-  const visualization = report?.match?.visualization2d;
-  const frames = Array.isArray(visualization?.frames) ? visualization.frames : [];
-  const legend = Array.isArray(visualization?.legend) ? visualization.legend : [];
-  const dimensions = visualization?.dimensions ?? {};
-  const resolvedWidth = Number.isFinite(dimensions.width) ? dimensions.width : 21;
-  const resolvedHeight = Number.isFinite(dimensions.height) ? dimensions.height : 11;
-
-  stopMatchVisualizationAutoplay();
-  matchVisualizationState.frames = frames;
-  matchVisualizationState.index = 0;
-  matchVisualizationState.dimensions = { width: resolvedWidth, height: resolvedHeight };
-
-  if (matchVisualizationLegendList) {
-    matchVisualizationLegendList.innerHTML = '';
-  }
-
-  if (!frames.length) {
-    clearVisualization('Juega una jornada para generar los fotogramas retro.');
-    return;
-  }
-
-  matchVisualizationSection.dataset.state = 'ready';
-  resetMatchVisualizationElements();
-  if (matchVisualizationStatusEl) {
-    matchVisualizationStatusEl.textContent = '';
-    matchVisualizationStatusEl.hidden = true;
-  }
-
-  if (matchVisualizationLegendList) {
-    const fragment = document.createDocumentFragment();
-    legend.forEach((entry) => {
-      const item = document.createElement('li');
-      item.textContent = entry;
-      fragment.append(item);
+    matchVisualizationNextButton.addEventListener('click', () => {
+      stepMatchVisualization(1);
     });
-    matchVisualizationLegendList.append(fragment);
   }
 
-  if (matchVisualizationSlider) {
-    matchVisualizationSlider.disabled = frames.length <= 1;
-    matchVisualizationSlider.min = '0';
-    matchVisualizationSlider.max = String(frames.length - 1);
-    matchVisualizationSlider.value = '0';
-    matchVisualizationSlider.setAttribute('aria-valuemin', '0');
-    matchVisualizationSlider.setAttribute('aria-valuemax', String(frames.length - 1));
-    const first = frames[0];
-    const hasMinute = typeof first.minute === 'number' && Number.isFinite(first.minute);
-    matchVisualizationSlider.setAttribute(
-      'aria-valuetext',
-      hasMinute ? `Fotograma 1 · minuto ${first.minute}` : 'Fotograma 1'
+  if (matchVisualizationSlider instanceof HTMLInputElement) {
+    matchVisualizationSlider.addEventListener('input', () => {
+      const nextIndex = Number.parseInt(matchVisualizationSlider.value, 10);
+      if (Number.isFinite(nextIndex)) {
+        updateMatchVisualizationFrame(nextIndex, { userInitiated: true });
+      }
+    });
+  }
+
+  if (matchVisualizationSection instanceof HTMLElement) {
+    matchVisualizationSection.addEventListener('keydown', (event) => {
+      if (event.target !== matchVisualizationSection) {
+        return;
+      }
+      if (matchVisualizationState.frames.length === 0) {
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        stepMatchVisualization(-1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        stepMatchVisualization(1);
+      }
+    });
+  }
+
+  if (dashboardTabButtons.length > 0 && dashboardPanels.length > 0) {
+    const initialButton = Array.from(dashboardTabButtons).find((button) =>
+      button.classList.contains('is-active')
     );
-    matchVisualizationSlider.setAttribute('aria-valuenow', '0');
-  }
+    const initialTab = (initialButton ?? dashboardTabButtons[0])?.dataset.dashboardTab;
 
-  if (matchVisualizationFrameEl) {
-    matchVisualizationFrameEl.textContent = `Fotograma 1 / ${frames.length}`;
-  }
-
-  updateMatchVisualizationFrame(0);
-  startMatchVisualizationAutoplay();
-}
-
-function stepMatchVisualization(delta) {
-  if (matchVisualizationState.frames.length === 0) {
-    return;
-  }
-  const nextIndex = matchVisualizationState.index + delta;
-  updateMatchVisualizationFrame(nextIndex, { userInitiated: true });
-}
-
-
-function switchReportTab(targetTab = 'current') {
-  activeReportTab = targetTab;
-  reportTabButtons.forEach((button) => {
-    const isActive = button.dataset.reportTab === targetTab;
-    button.classList.toggle('is-active', isActive);
-    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
-  });
-  reportPanels.forEach((panel) => {
-    const isActive = panel.dataset.reportPanel === targetTab;
-    panel.hidden = !isActive;
-    panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
-  });
-}
-
-function renderReportHistoryFilters() {
-  if (!(reportHistorySeasonSelect instanceof HTMLSelectElement)) {
-    return;
-  }
-  const seasons = Array.from(new Set(matchHistory.map((entry) => entry.season))).sort((a, b) => b - a);
-  const previousFilter = reportHistoryFilterSeason;
-  reportHistorySeasonSelect.innerHTML = '';
-  const allOption = document.createElement('option');
-  allOption.value = 'all';
-  allOption.textContent = 'Todas las temporadas';
-  reportHistorySeasonSelect.append(allOption);
-  seasons.forEach((season) => {
-    const option = document.createElement('option');
-    option.value = String(season);
-    option.textContent = `Temporada ${season}`;
-    reportHistorySeasonSelect.append(option);
-  });
-  if (previousFilter !== 'all') {
-    const previousNumber = Number.parseInt(previousFilter, 10);
-    if (!Number.isFinite(previousNumber) || !seasons.includes(previousNumber)) {
-      reportHistoryFilterSeason = 'all';
-    }
-  }
-  if (reportHistoryFilterSeason !== 'all') {
-    const filterNumber = Number.parseInt(reportHistoryFilterSeason, 10);
-    if (!Number.isFinite(filterNumber) || !seasons.includes(filterNumber)) {
-      reportHistoryFilterSeason = 'all';
-    }
-  }
-  reportHistorySeasonSelect.value = reportHistoryFilterSeason;
-}
-
-function renderReportHistoryList() {
-  if (!reportHistoryList) {
-    return;
-  }
-  const seasonFilter = reportHistoryFilterSeason;
-  const filtered = matchHistory.filter((entry) => {
-    if (seasonFilter === 'all') {
-      return true;
-    }
-    return String(entry.season) === seasonFilter;
-  });
-  const sorted = [...filtered].sort((a, b) => {
-    if (b.season !== a.season) {
-      return b.season - a.season;
-    }
-    if (b.matchday !== a.matchday) {
-      return b.matchday - a.matchday;
-    }
-    return b.timestamp - a.timestamp;
-  });
-  reportHistoryList.innerHTML = '';
-  if (sorted.length === 0) {
-    if (reportHistoryEmptyEl) {
-      reportHistoryEmptyEl.hidden = false;
-      reportHistoryEmptyEl.textContent =
-        matchHistory.length === 0
-          ? 'Todavía no has disputado ninguna jornada.'
-          : 'No hay jornadas guardadas para la temporada seleccionada.';
-    }
-    return;
-  }
-  if (reportHistoryEmptyEl) {
-    reportHistoryEmptyEl.hidden = true;
-  }
-  sorted.forEach((entry) => {
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'report-history__item';
-    button.dataset.historyId = entry.id;
-    if (entry.id === currentHistoryEntryId) {
-      button.classList.add('is-active');
-      button.setAttribute('aria-current', 'true');
+    if (typeof initialTab === 'string' && initialTab.length > 0) {
+      switchDashboardTab(initialTab);
     }
 
-    const competition = entry?.competition === 'cup' ? 'cup' : entry?.metadata?.competition === 'cup' ? 'cup' : 'league';
-    button.dataset.competition = competition;
-
-    const opponentLabel = entry.opponent || 'Rival misterioso';
-    const clubName = entry.report?.updatedClub?.name ?? clubState.name;
-    const goalsFor = entry.report?.match?.goalsFor ?? 0;
-    const goalsAgainst = entry.report?.match?.goalsAgainst ?? 0;
-
-    const title = document.createElement('span');
-    title.className = 'report-history__title';
-    const cupRoundLabel =
-      competition === 'cup'
-        ? entry.cupRoundName ?? entry.metadata?.cupRoundName ?? 'Eliminatoria'
-        : null;
-    const titlePrefix = competition === 'cup' ? `Copa · ${cupRoundLabel}` : `Jornada ${entry.matchday}`;
-    title.textContent = `${titlePrefix} · vs ${opponentLabel}`;
-
-    const score = document.createElement('span');
-    score.className = 'report-history__score';
-    score.textContent = `${clubName} ${goalsFor} - ${goalsAgainst} ${opponentLabel}`;
-
-    const meta = document.createElement('span');
-    meta.className = 'report-history__meta';
-    const competitionLabel = competition === 'cup' ? 'Copa' : 'Liga';
-    meta.textContent = `Temporada ${entry.season} · ${competitionLabel} · Guardado: ${historyDateFormatter.format(
-      new Date(entry.timestamp)
-    )}`;
-
-    button.append(title, score, meta);
-    button.addEventListener('click', () => {
-      showHistoryEntry(entry.id);
+    dashboardTabButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const targetTab = button.dataset.dashboardTab;
+        if (typeof targetTab === 'string' && targetTab.length > 0) {
+          switchDashboardTab(targetTab);
+        }
+      });
     });
-
-    item.append(button);
-    reportHistoryList.append(item);
-  });
-}
-
-function renderReportHistory() {
-  renderReportHistoryFilters();
-  renderReportHistoryList();
-  updateResultsButtonState();
-}
-
-function addReportToHistory(
-  report,
-  decisionOutcome,
-  opponentName,
-  metadata,
-  season,
-  matchday,
-  extra = {}
-) {
-  const cleanOpponent = typeof opponentName === 'string' && opponentName.trim().length > 0
-    ? opponentName.trim()
-    : 'Rival misterioso';
-  const fallbackSeason = typeof clubState?.season === 'number' ? Math.max(1, Math.trunc(clubState.season)) : 1;
-  const fallbackMatchday =
-    typeof leagueState?.matchDay === 'number' && Number.isFinite(leagueState.matchDay)
-      ? Math.max(1, Math.trunc(leagueState.matchDay))
-      : 1;
-  const seasonNumber = typeof season === 'number' && Number.isFinite(season)
-    ? Math.max(1, Math.trunc(season))
-    : fallbackSeason;
-  const matchdayNumber = typeof matchday === 'number' && Number.isFinite(matchday)
-    ? Math.max(1, Math.trunc(matchday))
-    : fallbackMatchday;
-  const competition = extra && extra.competition === 'cup' ? 'cup' : 'league';
-  const cupRoundId =
-    competition === 'cup' && typeof extra?.cupRoundId === 'string' && extra.cupRoundId.length > 0
-      ? extra.cupRoundId
-      : undefined;
-  const cupRoundName =
-    competition === 'cup' && typeof extra?.cupRoundName === 'string' && extra.cupRoundName.length > 0
-      ? extra.cupRoundName
-      : undefined;
-  const timestamp = Date.now();
-  const entry = {
-    id: `history-${seasonNumber}-${matchdayNumber}-${timestamp}`,
-    season: seasonNumber,
-    matchday: matchdayNumber,
-    opponent: cleanOpponent,
-    report: cloneData(report),
-    decisionOutcome: decisionOutcome ? cloneData(decisionOutcome) : undefined,
-    metadata: metadata ? cloneData(metadata) : {},
-    timestamp,
-    competition,
-    cupRoundId: cupRoundId ?? null,
-    cupRoundName: cupRoundName ?? null,
-  };
-  matchHistory = [
-    entry,
-    ...matchHistory.filter((item) => !(item.season === seasonNumber && item.matchday === matchdayNumber)),
-  ];
-  currentHistoryEntryId = entry.id;
-  renderReportHistory();
-  return entry;
-}
-
-function showHistoryEntry(entryId) {
-  const entry = matchHistory.find((item) => item.id === entryId);
-  if (!entry) {
-    return;
   }
-  currentHistoryEntryId = entry.id;
-  switchReportTab('current');
-  renderMatchReport(entry.report, entry.decisionOutcome, entry.opponent, entry.metadata ?? {});
-  renderReportHistory();
-  switchToReportView();
 }
 
-function renderMatchReport(report, decisionOutcome, opponentName = 'Rival misterioso', metadata = {}) {
-  currentReportData = report ?? null;
-  const clubName = clubState.name;
-  const scoreline = `${clubName} ${report.match.goalsFor} - ${report.match.goalsAgainst} ${opponentName}`;
-  scorelineState.finalText = scoreline;
-  scorelineState.clubName = clubName;
-  scorelineState.opponentName = opponentName;
-  applyScoreline(scoreline, { animate: true });
-  renderMatchVisualization(report ?? null);
-
-  const isPositiveFinances = report.financesDelta >= 0;
-  const financesPrefix = isPositiveFinances ? '+' : '−';
-  const absFinances = Math.abs(report.financesDelta);
-  const formattedFinances = numberFormatter.format(absFinances);
-  if (financesDeltaEl) {
-    financesDeltaEl.classList.remove('finances--positive', 'finances--negative');
-    financesDeltaEl.classList.add(isPositiveFinances ? 'finances--positive' : 'finances--negative');
-    financesDeltaEl.textContent = `Balance de la jornada: ${financesPrefix}${formattedFinances}`;
-    financesDeltaEl.setAttribute(
-      'aria-label',
-      `Balance de la jornada ${isPositiveFinances ? 'a favor' : 'en contra'} de ${formattedFinances}`
-    );
-  }
-  renderFinancialBreakdown(report.finances);
-
-  if (matchSeedEl) {
-    const rawSeed = typeof metadata.seedInputValue === 'string' ? metadata.seedInputValue.trim() : '';
-    const usedSeed = report.match.seed;
-    if (usedSeed !== undefined && Number.isFinite(usedSeed)) {
-      const displayValue = rawSeed && rawSeed !== String(usedSeed) ? `${rawSeed} (hash ${usedSeed})` : rawSeed || `${usedSeed}`;
-      matchSeedEl.textContent = `Semilla reproducible: ${displayValue}`;
-      matchSeedEl.hidden = false;
-    } else if (rawSeed) {
-      matchSeedEl.textContent = `Semilla reproducible: ${rawSeed}`;
-      matchSeedEl.hidden = false;
-    } else {
-      matchSeedEl.textContent = '';
-      matchSeedEl.hidden = true;
-    }
-  }
-
-  const goalMinutes = new Set(
-    report.match.events.filter((event) => GOAL_EVENT_TYPES.has(event.type)).map((event) => event.minute)
-  );
-
-  narrativeList.innerHTML = '';
-  report.match.narrative.forEach((line) => {
-    const item = document.createElement('li');
-    item.className = 'narrative-item';
-    item.textContent = line;
-    const minuteMatch = line.match(/\((\d+)'\)/u);
-    if (minuteMatch) {
-      const minuteValue = Number.parseInt(minuteMatch[1], 10);
-      if (goalMinutes.has(minuteValue)) {
-        item.classList.add('narrative-item--goal');
-      }
-    }
-    narrativeList.append(item);
-    requestAnimationFrame(() => {
-      item.classList.add('narrative-item--visible');
-    });
-  });
-
-  if (matchTimeline) {
-    matchTimeline.innerHTML = '';
-    report.match.events.forEach((event) => {
-      const metadata = TIMELINE_EVENT_META[event.type] ?? TIMELINE_EVENT_META.default;
-      const item = document.createElement('li');
-      item.className = 'timeline-event';
-      if (metadata.className) {
-        item.classList.add(metadata.className);
-      }
-
-      const minute = document.createElement('span');
-      minute.className = 'timeline-event__minute';
-      minute.textContent = `${event.minute}'`;
-
-      const iconWrapper = document.createElement('span');
-      iconWrapper.className = 'timeline-event__icon';
-      if (metadata.label) {
-        iconWrapper.setAttribute('role', 'img');
-        iconWrapper.setAttribute('aria-label', metadata.label);
-      } else {
-        iconWrapper.setAttribute('aria-hidden', 'true');
-      }
-
-      if (metadata.iconId) {
-        const svg = document.createElementNS(SVG_NS, 'svg');
-        svg.setAttribute('class', 'timeline-event__svg');
-        svg.setAttribute('viewBox', '0 0 24 24');
-        svg.setAttribute('focusable', 'false');
-        const use = document.createElementNS(SVG_NS, 'use');
-        use.setAttribute('href', `icons.svg#${metadata.iconId}`);
-        use.setAttributeNS(XLINK_NS, 'href', `icons.svg#${metadata.iconId}`);
-        svg.append(use);
-        iconWrapper.append(svg);
-      }
-
-      const description = document.createElement('span');
-      description.className = 'timeline-event__description';
-      description.textContent = event.description;
-
-      item.append(minute, iconWrapper, description);
-      matchTimeline.append(item);
-      requestAnimationFrame(() => {
-        item.classList.add('timeline-event--visible');
-        if (metadata.highlight) {
-          item.classList.add('timeline-event--highlight');
+function setupReportTabNavigation() {
+  if (reportTabButtons.length > 0) {
+    reportTabButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const targetTab = button.dataset.reportTab;
+        if (typeof targetTab === 'string' && targetTab.length > 0) {
+          switchReportTab(targetTab);
         }
       });
     });
   }
 
-  renderDecisionOutcome(decisionOutcome);
-
-  postBudgetEl.textContent = numberFormatter.format(report.updatedClub.budget);
-  postReputationEl.textContent = `${report.updatedClub.reputation}`;
-  postMoraleEl.textContent = formatMorale(averageMorale(report.updatedClub));
-
-  if (mvpBadge) {
-    if (report.match.manOfTheMatch) {
-      const hero = clubState.squad.find((player) => player.id === report.match.manOfTheMatch);
-      mvpBadge.textContent = hero ? `MVP: ${hero.name}` : 'MVP destacado';
-      mvpBadge.hidden = false;
-    } else {
-      mvpBadge.hidden = true;
-    }
-  }
-
-  renderSeasonSummary();
-  hasLatestReport = true;
-  refreshControlPanel();
-}
-
-function renderSeasonList(listElement, entries, formatter) {
-  if (!listElement) {
-    return;
-  }
-  listElement.innerHTML = '';
-  entries.forEach((entry, index) => {
-    const item = document.createElement('li');
-    item.textContent = formatter(entry, index);
-    listElement.append(item);
-  });
-}
-
-function describeRecordLine(label, record, options = {}) {
-  if (!record) {
-    return null;
-  }
-  const settings = { includeTotalGoals: false, ...options };
-  const scoreline = `${record.goalsFor}-${record.goalsAgainst}`;
-  const detailParts = [`Temp. ${record.season}`, `J. ${record.matchday}`];
-  if (settings.includeTotalGoals) {
-    detailParts.push(`${record.totalGoals} goles en total`);
-  }
-  const context = detailParts.join(' · ');
-  return `${label}: ${scoreline} vs ${record.opponent} (${context})`;
-}
-
-function renderSeasonSummary() {
-  if (!seasonSummarySection) {
-    return;
-  }
-  if (!leagueState || leagueState.matchDay < getTotalMatchdays()) {
-    seasonSummarySection.hidden = true;
-    if (newSeasonButton) {
-      newSeasonButton.hidden = true;
-    }
-    return;
-  }
-
-  seasonSummarySection.hidden = false;
-  if (newSeasonButton) {
-    newSeasonButton.hidden = false;
-  }
-
-  const champion = leagueState.table[0]?.club ?? 'Sin datos';
-  if (seasonChampionEl) {
-    seasonChampionEl.textContent =
-      champion === clubState.name ? `${champion} (¡campeón!)` : champion;
-  }
-
-  const stats = normaliseSeasonStats(clubState.seasonStats);
-  clubState.seasonStats = stats;
-  if (seasonAveragePossessionEl) {
-    const possessionAvg = stats.matches > 0 ? stats.possessionFor / stats.matches : 0;
-    seasonAveragePossessionEl.textContent = `${possessionAvg.toFixed(1)} %`;
-  }
-  if (seasonStreakEl) {
-    seasonStreakEl.textContent = `Mejor racha sin perder: ${stats.bestUnbeatenRun} partidos`;
-  }
-
-  const history = stats.history;
-  if (seasonTitlesEl) {
-    if ((history.titles ?? 0) > 0) {
-      const titleCount = history.titles;
-      seasonTitlesEl.textContent = `${titleCount} título${titleCount === 1 ? '' : 's'} de liga`;
-    } else {
-      seasonTitlesEl.textContent = 'Aún sin trofeos ligueros';
-    }
-  }
-
-  if (seasonRecordsList) {
-    seasonRecordsList.innerHTML = '';
-    const records = history.records ?? {};
-    const entries = [
-      describeRecordLine('Mayor goleada', records.biggestWin),
-      describeRecordLine('Derrota más dolorosa', records.heaviestDefeat),
-      describeRecordLine('Partido con más goles', records.goalFestival, {
-        includeTotalGoals: true,
-      }),
-    ].filter((text) => typeof text === 'string' && text.length > 0);
-    if (entries.length === 0) {
-      const item = document.createElement('li');
-      item.textContent = 'Todavía no hay récords registrados.';
-      seasonRecordsList.append(item);
-    } else {
-      entries.forEach((text) => {
-        const item = document.createElement('li');
-        item.textContent = text;
-        seasonRecordsList.append(item);
-      });
-    }
-  }
-
-  const scorers = [...clubState.squad]
-    .map((player) => ({
-      name: player.name,
-      goals: player.seasonLog?.goals ?? 0,
-    }))
-    .sort((a, b) => b.goals - a.goals)
-    .slice(0, 3);
-
-  const assisters = [...clubState.squad]
-    .map((player) => ({
-      name: player.name,
-      assists: player.seasonLog?.assists ?? 0,
-    }))
-    .sort((a, b) => b.assists - a.assists)
-    .slice(0, 3);
-
-  renderSeasonList(seasonTopScorersList, scorers, (entry) => `${entry.name} · ${entry.goals} goles`);
-  renderSeasonList(seasonTopAssistsList, assisters, (entry) => `${entry.name} · ${entry.assists} asistencias`);
-}
-
-function persistState(reason = 'auto') {
-  clubState = { ...clubState, cup: cupState };
-  const payload = saveGame(
-    {
-      club: clubState,
-      league: leagueState,
-      config: configState,
-      transferMarket: transferMarketState,
-      history: matchHistory,
-    },
-    undefined
-  );
-  if (!payload) {
-    return;
-  }
-  if (reason === 'auto') {
-    showSaveMessage('Guardado automático tras la jornada.');
-  } else if (reason === 'manual') {
-    showSaveMessage('Partida guardada.');
-  }
-}
-
-function startNewSeason() {
-  const nextSeason = clubState.season + 1;
-  const refreshedSquad = clubState.squad.map((player) => resetPlayerForNewSeason(player));
-  const newLeague = createExampleLeague(clubState.name, {
-    city: clubState.city,
-    leagueSize: leagueSettings.leagueSize,
-    difficulty: leagueSettings.difficulty,
-  });
-  const newCup = createExampleCup(clubState.name, { participants: newLeague.rivals });
-  opponentRotation = computeOpponentRotation(newLeague, clubState.name);
-  const previousStats = normaliseSeasonStats(clubState.seasonStats);
-  const preservedHistory = cloneData(previousStats.history ?? createSeasonStats().history);
-  const nextSeasonStats = createSeasonStats();
-  nextSeasonStats.history = preservedHistory;
-
-  clubState = {
-    ...clubState,
-    season: nextSeason,
-    league: newLeague,
-    cup: newCup,
-    squad: refreshedSquad,
-    seasonStats: nextSeasonStats,
-    weeklyWageBill: calculateWeeklyWageBill(refreshedSquad),
-  };
-  clubState = ensureCommercialOffersAvailable(clubState, { sponsorLimit: 3, tvLimit: 2, recentResults: [] });
-  clubState.staff = normaliseStaffState(clubState.staff);
-  leagueState = newLeague;
-  cupState = newCup;
-  updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
-  transferMarketState = createExampleTransferMarket(clubState);
-  configState = buildInitialConfig(clubState);
-
-  renderLeagueTable();
-  renderTransferMarket();
-  renderLineupBoard();
-  updateMatchSummary();
-  updateClubSummary();
-  updateCommercialUi();
-  clearReport();
-  showSaveMessage('Nueva temporada lista: plantilla puesta a tono.');
-  persistState('silent');
-}
-
-function applyLoadedState(saved) {
-  const identity = extractClubIdentity(saved.club);
-  clubIdentity = identity;
-  clubState = {
-    ...saved.club,
-    ...identity,
-    logoUrl: resolveClubLogoUrl(saved.club),
-    weeklyWageBill: calculateWeeklyWageBill(saved.club.squad),
-  };
-  clubState = { ...clubState, staff: normaliseStaffState(clubState.staff) };
-  const loadedLeague = saved.league;
-  const initialRivals = Array.isArray(loadedLeague?.rivals) && loadedLeague.rivals.length > 0
-    ? loadedLeague.rivals
-    : Array.isArray(loadedLeague?.table)
-      ? loadedLeague.table
-          .filter((entry) => entry.club !== clubState.name)
-          .map((entry) => entry.club)
-      : [];
-  const cleanedRivals = normaliseLeagueRivals(initialRivals, {
-    count: Math.max(1, deriveLeagueSettings(loadedLeague).leagueSize - 1),
-    exclude: [clubState.name],
-  });
-  const loadedSettings = deriveLeagueSettings(loadedLeague);
-  leagueState = {
-    ...loadedLeague,
-    rivals: cleanedRivals,
-    size: loadedSettings.leagueSize,
-    totalMatchdays: loadedSettings.totalMatchdays,
-    difficulty: loadedSettings.difficulty,
-    difficultyMultiplier: loadedSettings.difficultyMultiplier,
-  };
-  updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
-  clubState = { ...clubState, league: leagueState };
-  clubState.seasonStats = normaliseSeasonStats(clubState.seasonStats);
-  cupState = clubState.cup;
-  transferMarketState = saved.transferMarket.length
-    ? saved.transferMarket
-    : createExampleTransferMarket(clubState);
-  const baseConfig = buildInitialConfig(clubState);
-  const loadedSeed = saved.config?.seed;
-  const seedValue =
-    typeof loadedSeed === 'string'
-      ? loadedSeed
-      : typeof loadedSeed === 'number'
-        ? String(loadedSeed)
-        : baseConfig.seed ?? '';
-  const savedViewMode = normaliseViewMode(saved.config?.viewMode);
-  configState = {
-    ...baseConfig,
-    ...saved.config,
-    instructions: { ...createDefaultInstructions(), ...(saved.config.instructions ?? {}) },
-    seed: seedValue,
-    difficultyMultiplier: leagueSettings.difficultyMultiplier,
-    viewMode: savedViewMode,
-  };
-  opponentRotation = computeOpponentRotation(leagueState, clubState.name);
-  ensureLineupCompleteness();
-  matchHistory = Array.isArray(saved.history)
-    ? saved.history.map((entry) => {
-        const metadata = entry.metadata ? cloneData(entry.metadata) : {};
-        const competition = entry?.competition === 'cup' || metadata?.competition === 'cup' ? 'cup' : 'league';
-        const storedRoundId =
-          competition === 'cup'
-            ? entry?.cupRoundId ?? (typeof metadata?.cupRoundId === 'string' ? metadata.cupRoundId : null)
-            : null;
-        const storedRoundName =
-          competition === 'cup'
-            ? entry?.cupRoundName ?? (typeof metadata?.cupRoundName === 'string' ? metadata.cupRoundName : null)
-            : null;
-        return {
-          ...entry,
-          competition,
-          cupRoundId: storedRoundId,
-          cupRoundName: storedRoundName,
-          report: cloneData(entry.report),
-          decisionOutcome: entry.decisionOutcome ? cloneData(entry.decisionOutcome) : undefined,
-          metadata,
-        };
-      })
-    : [];
-  currentHistoryEntryId = matchHistory[0]?.id ?? null;
-  reportHistoryFilterSeason = 'all';
-  activeReportTab = 'current';
-  hasLatestReport = matchHistory.length > 0;
-  renderReportHistory();
-}
-
-if (startNewGameButton) {
-  startNewGameButton.addEventListener('click', () => {
-    handleStartMenuNewGame();
-  });
-}
-
-if (startContinueButton) {
-  startContinueButton.addEventListener('click', () => {
-    if (startContinueButton.disabled) {
-      return;
-    }
-    handleStartMenuContinue({ showNotice: true });
-  });
-}
-
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
-
-  const nextEvent = determineNextEvent();
-  if (nextEvent.type === 'cup-draw') {
-    hideLineupError();
-    handleCupDraw();
-    return;
-  }
-
-  hideLineupError();
-  if (configState.startingLineup.length !== STARTERS_LIMIT) {
-    showLineupError(`Necesitas ${STARTERS_LIMIT} titulares para saltar al campo.`);
-    return;
-  }
-  if (configState.substitutes.length > SUBS_LIMIT) {
-    showLineupError('Reduce el banquillo a 5 suplentes.');
-    return;
-  }
-
-  const isCupMatch = nextEvent.type === 'cup-match';
-
-  const opponentStanding = getUpcomingOpponent();
-  const opponentName =
-    typeof opponentStanding?.club === 'string' && opponentStanding.club.trim().length > 0
-      ? opponentStanding.club.trim()
-      : 'Rival misterioso';
-
-  const decisionIndex = decisionSelect.value;
-  let decision;
-  let decisionOutcome;
-  let workingClub = clubState;
-
-  if (decisionIndex !== '') {
-    decision = decisions[Number.parseInt(decisionIndex, 10)];
-    const resolution = resolveCanallaDecision(workingClub, decision);
-    workingClub = resolution.updatedClub;
-    decisionOutcome = resolution.outcome;
-  } else {
-    const passive = tickCanallaState(workingClub);
-    workingClub = passive.updatedClub;
-    const { budget = 0, reputation = 0, morale = 0, heat = 0, narratives = [] } = passive.applied ?? {};
-    if (budget !== 0 || reputation !== 0 || morale !== 0 || heat !== 0 || narratives.length > 0) {
-      decisionOutcome = {
-        success: true,
-        reputationChange: reputation,
-        financesChange: budget,
-        moraleChange: morale,
-        heatChange: heat,
-        riskLevel: Math.round(workingClub.canallaStatus?.heat ?? 0),
-        sanctions: undefined,
-        narrative: 'Los ecos de canalladas pasadas siguen presentes en el vestuario.',
-        ongoingConsequences: narratives.length > 0 ? narratives : undefined,
-        appliedToClub: true,
-      };
-    }
-  }
-
-  const seedValue = seedInput ? seedInput.value.trim() : '';
-  const selectedViewMode = resolveSelectedViewMode();
-  const resolvedHome = resolveNextMatchHome(nextEvent);
-  const resolvedStrength = resolveNextMatchStrength(nextEvent);
-  configState = {
-    ...configState,
-    home: resolvedHome,
-    opponentStrength: resolvedStrength,
-    opponentName,
-    tactic: tacticSelect.value,
-    formation: formationSelect.value,
-    seed: seedValue,
-    difficultyMultiplier: getDifficultyMultiplier(),
-    viewMode: selectedViewMode,
-  };
-
-  const simulationOptions = { decision, decisionOutcome };
-  if (seedValue) {
-    simulationOptions.seed = seedValue;
-  }
-
-  const report = playMatchDay(workingClub, configState, simulationOptions);
-  report.match.competition = isCupMatch ? 'cup' : 'league';
-  report.match.cupRoundId = isCupMatch && nextEvent.type === 'cup-match' ? nextEvent.round.id : report.match.cupRoundId;
-  report.competition = report.match.competition;
-
-  let updatedLeague = leagueState ?? workingClub.league;
-  let previousMatchDay = !isCupMatch && updatedLeague?.matchDay ? updatedLeague.matchDay : 0;
-  if (!isCupMatch) {
-    updatedLeague = updateLeagueTableAfterMatch(updatedLeague, workingClub.name, report.match);
-    updateSeasonHistoricalMetrics(report, opponentName, updatedLeague);
-    leagueState = updatedLeague;
-    updateLeagueSettingsFromState(updatedLeague);
-  }
-
-  const refreshedWageBill = calculateWeeklyWageBill(report.updatedClub.squad);
-
-  if (isCupMatch && nextEvent.type === 'cup-match') {
-    const progress = applyCupMatchResult(cupState, clubState.name, report.match);
-    cupState = progress.cup;
-    const prizeInfo = resolveCupPrize(progress.historyEntry.roundId, progress.historyEntry.outcome);
-    const reputationInfo = resolveCupReputation(progress.historyEntry.roundId, progress.historyEntry.outcome);
-    const currentPrize = report.finances?.incomeBreakdown?.premios ?? 0;
-    const deltaPrize = prizeInfo.prize - currentPrize;
-    if (report.finances) {
-      report.finances.incomeBreakdown = { ...(report.finances.incomeBreakdown ?? {}), premios: prizeInfo.prize };
-      report.finances.income += deltaPrize;
-      report.finances.net += deltaPrize;
-      report.finances.notes = [...(report.finances.notes ?? []), ...prizeInfo.notes];
-    }
-    report.financesDelta += deltaPrize;
-    report.updatedClub.budget += deltaPrize;
-    report.updatedClub.reputation = Math.max(
-      -100,
-      Math.min(100, report.updatedClub.reputation + reputationInfo.reputation)
-    );
-    report.match.narrative = [...report.match.narrative, ...progress.historyEntry.narrative, reputationInfo.narrative];
-    report.cupProgress = progress;
-  }
-
-  clubState = {
-    ...report.updatedClub,
-    logoUrl: resolveClubLogoUrl(report.updatedClub),
-    weeklyWageBill: refreshedWageBill,
-    league: updatedLeague,
-    cup: cupState ?? report.updatedClub.cup,
-  };
-  leagueState = updatedLeague;
-
-  const totalMatchdays = getTotalMatchdays();
-  const seasonFinished = !isCupMatch && previousMatchDay < totalMatchdays && updatedLeague.matchDay >= totalMatchdays;
-  const cupOutcome = report.cupProgress?.historyEntry?.outcome;
-  evaluateCommercialOpportunities({ report, seasonFinished, cupOutcome });
-
-  renderLeagueTable();
-  renderTransferMarket();
-  renderLineupBoard();
-  updateMatchSummary();
-  renderCupModal();
-  const competition = report.match?.competition === 'cup' ? 'cup' : 'league';
-  const cupProgress = report.cupProgress;
-  const cupRoundId =
-    competition === 'cup'
-      ? cupProgress?.historyEntry.roundId ?? report.match?.cupRoundId ??
-        (isCupMatch && nextEvent.type === 'cup-match' ? nextEvent.round.id : undefined)
-      : undefined;
-  const cupRoundName =
-    competition === 'cup'
-      ? cupProgress?.historyEntry.roundName ??
-        (isCupMatch && nextEvent.type === 'cup-match' ? nextEvent.round.name : undefined)
-      : undefined;
-  const historyMetadata = {
-    seedInputValue: seedValue,
-    competition,
-  };
-  if (cupRoundId) {
-    historyMetadata.cupRoundId = cupRoundId;
-  }
-  if (cupRoundName) {
-    historyMetadata.cupRoundName = cupRoundName;
-  }
-  const historyEntry = addReportToHistory(
-    report,
-    decisionOutcome,
-    opponentName,
-    historyMetadata,
-    clubState.season,
-    competition === 'cup' ? (leagueState?.matchDay ?? 0) : updatedLeague.matchDay,
-    {
-      competition,
-      cupRoundId,
-      cupRoundName,
-    }
-  );
-  switchReportTab('current');
-  renderMatchReport(historyEntry.report, historyEntry.decisionOutcome, historyEntry.opponent, historyEntry.metadata ?? {});
-  updateClubSummary();
-  persistState('auto');
-  switchToReportView();
-});
-
-resetButton.addEventListener('click', () => {
-  clearSavedGame();
-  clearSaveMessage();
-  clearLoadNotice();
-  const identity = extractClubIdentity(clubState);
-  rebuildClubState(identity);
-  showLoadNotice('Club reiniciado. Guardado anterior eliminado.');
-});
-if (seedInput) {
-  seedInput.addEventListener('input', () => {
-    const value = seedInput.value.trim();
-    configState = { ...configState, seed: value };
-  });
-}
-
-if (configureClubButton && clubIdentityModal) {
-  configureClubButton.addEventListener('click', () => {
-    prefillClubIdentityForm();
-    handleClubIdentityPreview();
-    openModal(clubIdentityModal);
-  });
-}
-
-if (configureLeagueButton && leagueConfigModal) {
-  configureLeagueButton.addEventListener('click', () => {
-    prepareLeagueConfigModal();
-    openModal(leagueConfigModal);
-  });
-}
-
-if (previewClubIdentityButton) {
-  previewClubIdentityButton.addEventListener('click', handleClubIdentityPreview);
-}
-
-if (clubIdentityForm) {
-  clubIdentityForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const identity = await collectIdentityFromForm();
-    clearSavedGame();
-    clearSaveMessage();
-    clearLoadNotice();
-    rebuildClubState(identity);
-    if (clubLogoInput) {
-      clubLogoInput.value = '';
-    }
-    if (clubIdentityModal) {
-      closeModal(clubIdentityModal);
-    }
-    showLoadNotice('Identidad del club actualizada. Se ha preparado una nueva partida.');
-    persistState('silent');
-  });
-}
-
-if (decisionSelect) {
-  decisionSelect.addEventListener('change', renderDecisionsModal);
-}
-
-if (leagueCatalogEl) {
-  leagueCatalogEl.addEventListener('change', (event) => {
-    if (event.target instanceof HTMLInputElement && event.target.type === 'checkbox') {
-      updateLeagueSelectionCountDisplay();
-      hideLeagueConfigError();
-    }
-  });
-}
-
-if (leagueSizeSelect instanceof HTMLSelectElement) {
-  leagueSizeSelect.addEventListener('change', () => {
-    updateLeagueSelectionCountDisplay();
-    hideLeagueConfigError();
-  });
-}
-
-if (leagueDifficultySelect instanceof HTMLSelectElement) {
-  leagueDifficultySelect.addEventListener('change', () => {
-    hideLeagueConfigError();
-  });
-}
-
-if (leagueRandomButton) {
-  leagueRandomButton.addEventListener('click', () => {
-    const targetCount = getTargetRivalCount();
-    const randomSelection = selectRandomLeagueRivals(targetCount, {
-      exclude: [clubState.name],
+  if (reportHistorySeasonSelect instanceof HTMLSelectElement) {
+    reportHistorySeasonSelect.addEventListener('change', () => {
+      const selected = reportHistorySeasonSelect.value || 'all';
+      reportHistoryFilterSeason = selected;
+      renderReportHistory();
     });
-    applyLeagueSelectionToForm(randomSelection);
-    hideLeagueConfigError();
-  });
+  }
 }
 
-if (leagueConfigForm && leagueConfigModal) {
-  leagueConfigForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const selected = getSelectedLeagueRivals();
-    const targetCount = getTargetRivalCount();
-    if (selected.length !== targetCount) {
-      showLeagueConfigError(`Selecciona ${targetCount} rivales (actualmente ${selected.length}).`);
-      return;
-    }
-    hideLeagueConfigError();
-    applyLeagueConfiguration(selected);
-    closeModal(leagueConfigModal);
-  });
-}
-
-if (cupDrawButton) {
-  cupDrawButton.addEventListener('click', () => {
-    handleCupDraw();
-  });
-}
-
-if (cupPlanButton) {
-  cupPlanButton.addEventListener('click', () => {
-    if (cupModalEl) {
-      closeModal(cupModalEl);
-    }
-    switchToPlanningView();
-  });
-}
-
-if (planNextButton) {
-  planNextButton.addEventListener('click', () => {
-    closeModal(reportModal);
-    switchToPlanningView();
-  });
-}
-
-if (viewModeInputs.length > 0) {
-  Array.from(viewModeInputs).forEach((input) => {
-    if (!(input instanceof HTMLInputElement)) {
-      return;
-    }
-    input.addEventListener('change', () => {
-      if (!input.checked) {
-        return;
-      }
-      const mode = normaliseViewMode(input.value);
-      configState = { ...configState, viewMode: mode };
-      syncViewModeSelector();
-      renderMatchVisualization(currentReportData);
-    });
-  });
-}
-
-if (matchVisualizationPrevButton) {
-  matchVisualizationPrevButton.addEventListener('click', () => {
-    stepMatchVisualization(-1);
-  });
-}
-
-if (matchVisualizationNextButton) {
-  matchVisualizationNextButton.addEventListener('click', () => {
-    stepMatchVisualization(1);
-  });
-}
-
-if (matchVisualizationSlider instanceof HTMLInputElement) {
-  matchVisualizationSlider.addEventListener('input', () => {
-    const nextIndex = Number.parseInt(matchVisualizationSlider.value, 10);
-    if (Number.isFinite(nextIndex)) {
-      updateMatchVisualizationFrame(nextIndex, { userInitiated: true });
-    }
-  });
-}
-
-if (matchVisualizationSection instanceof HTMLElement) {
-  matchVisualizationSection.addEventListener('keydown', (event) => {
-    if (event.target !== matchVisualizationSection) {
-      return;
-    }
-    if (matchVisualizationState.frames.length === 0) {
-      return;
-    }
-    if (event.key === 'ArrowLeft') {
-      event.preventDefault();
-      stepMatchVisualization(-1);
-    } else if (event.key === 'ArrowRight') {
-      event.preventDefault();
-      stepMatchVisualization(1);
-    }
-  });
-}
-
-if (dashboardTabButtons.length > 0 && dashboardPanels.length > 0) {
-  const initialButton = Array.from(dashboardTabButtons).find((button) =>
-    button.classList.contains('is-active')
-  );
-  const initialTab = (initialButton ?? dashboardTabButtons[0])?.dataset.dashboardTab;
-
-  if (typeof initialTab === 'string' && initialTab.length > 0) {
-    switchDashboardTab(initialTab);
+function setupSidebarInteractions() {
+  if (!sidebarToggleButton || !sidebarPanel || !sidebarCollapseQuery) {
+    return;
   }
 
-  dashboardTabButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const targetTab = button.dataset.dashboardTab;
-      if (typeof targetTab === 'string' && targetTab.length > 0) {
-        switchDashboardTab(targetTab);
-      }
-    });
-  });
-}
-
-if (reportTabButtons.length > 0) {
-  reportTabButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const targetTab = button.dataset.reportTab;
-      if (typeof targetTab === 'string' && targetTab.length > 0) {
-        switchReportTab(targetTab);
-      }
-    });
-  });
-}
-
-if (reportHistorySeasonSelect instanceof HTMLSelectElement) {
-  reportHistorySeasonSelect.addEventListener('change', () => {
-    const selected = reportHistorySeasonSelect.value || 'all';
-    reportHistoryFilterSeason = selected;
-    renderReportHistory();
-  });
-}
-
-if (sidebarToggleButton && sidebarPanel && sidebarCollapseQuery) {
   sidebarToggleButton.addEventListener('click', () => {
     if (!sidebarCollapseQuery.matches) {
       return;
@@ -6499,7 +5312,7 @@ if (sidebarToggleButton && sidebarPanel && sidebarCollapseQuery) {
   syncSidebarState();
 }
 
-function init() {
+function startGame() {
   ensureCommercialModal();
   ensureCommercialAlertButton();
   attachModalHandlers();
@@ -6527,8 +5340,29 @@ function init() {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
+function initGame() {
+  assignDomReferences();
+  setupInitialControls();
+  setupAriaLiveRegions();
+  setupClubLogoFallback();
+  setupBreadcrumbNavigation();
+  setupInfrastructureInteractions();
+  setupReportTabNavigation();
+  setupSidebarInteractions();
+  setupEventHandlers();
+  updateBreadcrumbs();
+  startGame();
 }
+
+templatesReady
+  .then(() => {
+    const run = () => initGame();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', run, { once: true });
+    } else {
+      run();
+    }
+  })
+  .catch((error) => {
+    console.error('Error al inicializar la interfaz', error);
+  });
