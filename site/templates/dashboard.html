@@ -1,0 +1,1474 @@
+﻿<main class="page is-hidden" aria-hidden="true">
+      <header class="hero">
+        <div class="hero__heading">
+          <h1>IA Soccer</h1>
+          <p class="tagline">Dirige cada jornada y disfruta de la cr├│nica canalla al instante.</p>
+        </div>
+        <div class="hero__scoreboard" role="region" aria-label="Panel de jornada">
+          <div class="hero__scoreboard-main">
+            <span class="hero__scoreboard-badge" id="hero-matchday-badge" aria-live="polite">Jornada 1</span>
+            <div class="hero__scoreboard-field">
+              <span class="hero__scoreboard-label">Rival</span>
+              <span class="hero__scoreboard-value" id="hero-match-opponent-name" aria-live="polite"
+                >Rival misterioso</span
+              >
+            </div>
+            <div class="hero__scoreboard-field">
+              <span class="hero__scoreboard-label">Estado</span>
+              <span class="hero__scoreboard-value" id="hero-match-status" aria-live="polite"
+                >Convocatoria por definir</span
+              >
+            </div>
+          </div>
+          <div class="hero__scoreboard-panels" role="navigation" aria-label="Accesos r├ípidos retro">
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-report">
+              <span class="hero__scoreboard-panel-title">Resultados</span>
+              <span class="hero__scoreboard-panel-subtitle">Cr├│nica al instante</span>
+            </button>
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-league">
+              <span class="hero__scoreboard-panel-title">Clasificaci├│n</span>
+              <span class="hero__scoreboard-panel-subtitle">Tabla y tendencias</span>
+            </button>
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-calendar">
+              <span class="hero__scoreboard-panel-title">Calendario</span>
+              <span class="hero__scoreboard-panel-subtitle">Planificaci├│n</span>
+            </button>
+            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-finances">
+              <span class="hero__scoreboard-panel-title">Econom├¡a</span>
+              <span class="hero__scoreboard-panel-subtitle">Caja del club</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <nav class="breadcrumbs" aria-label="Ruta de navegaci├│n del tablero">
+        <ol class="breadcrumbs__list">
+          <li class="breadcrumbs__item">
+            <a href="#" id="breadcrumb-root" class="breadcrumbs__link breadcrumbs__link--root">Tablero principal</a>
+          </li>
+          <li class="breadcrumbs__item" id="breadcrumb-tab-item">
+            <a href="#" id="breadcrumb-tab-link" class="breadcrumbs__link" aria-current="page">Club</a>
+          </li>
+          <li class="breadcrumbs__item breadcrumbs__item--current" id="breadcrumb-module-item" hidden>
+            <span class="breadcrumbs__current" id="breadcrumb-module-label"></span>
+          </li>
+        </ol>
+      </nav>
+
+      <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
+
+      <button
+        type="button"
+        class="sidebar-toggle"
+        id="sidebar-toggle"
+        aria-controls="sidebar-panel"
+        aria-expanded="false"
+      >
+        Panel de control retro
+      </button>
+
+      <aside class="page__sidebar" id="sidebar-panel">
+        <section class="card control-card" id="control-card">
+          <header class="control-card__header">
+            <div>
+              <h2>Panel de control retro</h2>
+              <p class="control-card__tagline">Accede r├ípido a cada ├írea del club como en los cl├ísicos PC F├║tbol.</p>
+            </div>
+            <span class="control-card__badge">Modo manager</span>
+          </header>
+          <div class="control-panel" role="list">
+            <section class="control-panel__section" aria-labelledby="control-panel-section-matches">
+              <h3 id="control-panel-section-matches" class="control-panel__section-title">Partidos</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-matches">
+                <button
+                  type="button"
+                  class="control-panel__option control-panel__option--highlight"
+                  data-panel-action="results"
+                  data-modal-target="#modal-report"
+                  disabled
+                  aria-disabled="true"
+                >
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-results"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Resultados</span>
+                </button>
+                <button
+                  type="button"
+                  class="control-panel__option control-panel__option--highlight control-panel__option--active"
+                  data-modal-target="#modal-league"
+                  aria-current="page"
+                >
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-league"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Clasificaci├│n</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-cup">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-club-shield"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Copa</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-calendar">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-calendar"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Calendario</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-opponent">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-opponent"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Rival</span>
+                </button>
+              </div>
+            </section>
+
+            <div class="control-panel__section-divider" aria-hidden="true"></div>
+
+            <section class="control-panel__section" aria-labelledby="control-panel-section-management">
+              <h3 id="control-panel-section-management" class="control-panel__section-title">Gesti├│n deportiva</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-management">
+                <button type="button" class="control-panel__option" data-modal-target="#modal-lineup">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-lineup"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Alineaci├│n</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-tactics">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-tactics"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">T├ícticas</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-decisions">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-decisions"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Decisiones</span>
+                </button>
+              </div>
+            </section>
+
+            <div class="control-panel__section-divider" aria-hidden="true"></div>
+
+            <section class="control-panel__section" aria-labelledby="control-panel-section-finances">
+              <h3 id="control-panel-section-finances" class="control-panel__section-title">Finanzas</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-finances">
+                <button type="button" class="control-panel__option" data-modal-target="#modal-finances">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-finances"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Caja</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-stadium">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-stadium"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Estadio</span>
+                </button>
+              </div>
+            </section>
+
+            <div class="control-panel__section-divider" aria-hidden="true"></div>
+
+            <section class="control-panel__section" aria-labelledby="control-panel-section-staff">
+              <h3 id="control-panel-section-staff" class="control-panel__section-title">Personal</h3>
+              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-staff">
+                <button
+                  type="button"
+                  class="control-panel__option control-panel__option--highlight"
+                  data-modal-target="#modal-transfers"
+                >
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-transfers"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Fichar</span>
+                </button>
+                <button type="button" class="control-panel__option" data-modal-target="#modal-staff">
+                  <span class="control-panel__icon" aria-hidden="true">
+                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
+                      <use href="icons.svg#icon-staff"></use>
+                    </svg>
+                  </span>
+                  <span class="control-panel__label">Empleados</span>
+                </button>
+              </div>
+            </section>
+          </div>
+          <p class="control-card__hint">Selecciona un m├│dulo para gestionar tu club con estilo noventero.</p>
+        </section>
+      </aside>
+
+      <section class="page__content">
+        <section class="dashboard-tabs" aria-label="Paneles destacados del dashboard">
+          <div
+            class="dashboard-tabs__tablist"
+            role="tablist"
+            aria-label="Selecciona el panel principal"
+          >
+            <button
+              type="button"
+              class="dashboard-tabs__tab is-active"
+              data-dashboard-tab="club"
+              role="tab"
+              id="dashboard-tab-club"
+              aria-selected="true"
+              aria-controls="dashboard-panel-club"
+            >
+              Club
+            </button>
+            <button
+              type="button"
+              class="dashboard-tabs__tab"
+              data-dashboard-tab="match"
+              role="tab"
+              id="dashboard-tab-match"
+              aria-selected="false"
+              aria-controls="dashboard-panel-match"
+              tabindex="-1"
+            >
+              Jornada
+            </button>
+          </div>
+
+          <div
+            class="dashboard-tabs__panel"
+            role="tabpanel"
+            id="dashboard-panel-club"
+            aria-labelledby="dashboard-tab-club"
+            data-dashboard-panel="club"
+          >
+            <section class="card club-card" id="club-card">
+              <header class="club-card__header">
+                <div class="club-card__title">
+                  <img
+                    id="club-logo"
+                    class="club-card__logo"
+                    src="assets/club-crest.svg"
+                    alt="Escudo del club"
+                    loading="lazy"
+                  />
+                  <div>
+                    <h2>Tu chiringuito futbolero</h2>
+                    <p class="club-card__tagline">Gestiona el vestuario y decide el rumbo de cada jornada.</p>
+                  </div>
+                </div>
+                <div class="club-card__actions">
+                  <button id="configure-club" type="button" class="reset-button">Configurar club</button>
+                  <button id="configure-league" type="button" class="reset-button">Configurar liga</button>
+                  <button id="reset-club" type="button" class="reset-button">Reiniciar club</button>
+                </div>
+              </header>
+              <dl class="club-stats" id="club-stats">
+                <div>
+                  <dt>Club</dt>
+                  <dd id="club-name"></dd>
+                </div>
+                <div>
+                  <dt>Ciudad</dt>
+                  <dd id="club-city"></dd>
+                </div>
+                <div>
+                  <dt>Estadio</dt>
+                  <dd id="club-stadium"></dd>
+                </div>
+                <div>
+                  <dt>Presupuesto</dt>
+                  <dd id="club-budget"></dd>
+                </div>
+                <div>
+                  <dt>Reputaci├│n</dt>
+                  <dd id="club-reputation"></dd>
+                </div>
+                <div>
+                  <dt>Moral media</dt>
+                  <dd id="club-morale"></dd>
+                </div>
+                <div>
+                  <dt>Copa</dt>
+                  <dd id="club-cup-status"></dd>
+                </div>
+              </dl>
+              <div class="club-actions">
+                <button type="button" class="club-action club-action--primary" data-modal-target="#modal-lineup">
+                  Gestionar alineaci├│n
+                </button>
+                <button type="button" class="club-action" data-modal-target="#modal-league">
+                  Clasificaci├│n liguera
+                </button>
+                <button type="button" class="club-action" data-modal-target="#modal-transfers">
+                  Mercado de fichajes
+                </button>
+                <button type="button" class="club-action" id="save-game">Guardar/Continuar</button>
+              </div>
+              <p id="save-feedback" class="save-feedback" hidden></p>
+              <p id="save-version" class="save-version"></p>
+            </section>
+          </div>
+
+          <div
+            class="dashboard-tabs__panel"
+            role="tabpanel"
+            id="dashboard-panel-match"
+            aria-labelledby="dashboard-tab-match"
+            data-dashboard-panel="match"
+            hidden
+          >
+            <section class="card match-card" id="match-card">
+              <header class="match-card__header">
+                <div>
+                  <h2>Jornada en curso</h2>
+                  <p class="match-card__tagline">Analiza al rival y ajusta tu plan antes del pitido inicial.</p>
+                </div>
+                <span class="match-card__badge" id="matchday-badge">Jornada 1</span>
+              </header>
+              <div class="match-card__body">
+                <dl class="match-summary">
+                  <div>
+                    <dt>Rival</dt>
+                    <dd id="match-opponent-name">Rival misterioso</dd>
+                  </div>
+                  <div>
+                    <dt>Fortaleza estimada</dt>
+                    <dd id="match-opponent-strength">68/100</dd>
+                  </div>
+                  <div>
+                    <dt>Estad├¡sticas</dt>
+                    <dd id="match-opponent-record">Sin registros disponibles</dd>
+                  </div>
+                  <div>
+                    <dt>Sede</dt>
+                    <dd id="match-location">Tu estadio</dd>
+                  </div>
+                </dl>
+
+                <form class="game-form" id="game-form">
+                  <label class="field">
+                    <span class="field-label">Canallada previa</span>
+                    <select id="decision-select" name="decision">
+                      <option value="">Mantenerse pulcro (sin travesuras)</option>
+                    </select>
+                  </label>
+
+                  <div class="field-grid">
+                    <label class="field">
+                      <span class="field-label">T├íctica</span>
+                      <select id="tactic-select" name="tactic">
+                        <option value="balanced">Equilibrada</option>
+                        <option value="attacking">Ofensiva</option>
+                        <option value="defensive">Defensiva</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span class="field-label">Alineaci├│n</span>
+                      <select id="formation-select" name="formation">
+                        <option value="4-4-2">4-4-2 Cl├ísica</option>
+                        <option value="4-3-3">4-3-3 Picante</option>
+                        <option value="4-2-3-1">4-2-3-1 Camiseta Ajustada</option>
+                        <option value="3-5-2">3-5-2 Superpoblado</option>
+                        <option value="5-3-2">5-3-2 Autob├║s Canalla</option>
+                        <option value="4-1-4-1">4-1-4-1 Presi├│n Alta</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span class="field-label">┬┐Jugamos en casa?</span>
+                      <input type="checkbox" id="home-checkbox" name="home" />
+                    </label>
+                    <label class="field">
+                      <span class="field-label">Fuerza rival</span>
+                      <input
+                        type="range"
+                        id="opponent-strength"
+                        name="opponentStrength"
+                        min="40"
+                        max="95"
+                        step="1"
+                      />
+                      <output id="opponent-output" for="opponent-strength"></output>
+                    </label>
+                    <label class="field">
+                      <span class="field-label">Semilla reproducible</span>
+                      <input
+                        type="text"
+                        id="seed-input"
+                        name="seed"
+                        placeholder="ej. derby-123"
+                        autocomplete="off"
+                        inputmode="text"
+                        aria-describedby="seed-hint"
+                      />
+                      <span id="seed-hint" class="field-hint"
+                        >Si introduces una semilla podr├ís repetir exactamente este partido m├ís adelante.</span
+                      >
+                    </label>
+                    <fieldset class="field field--wide" id="view-mode-fieldset">
+                      <legend id="view-mode-label" class="field-label">Modo de la cr├│nica</legend>
+                      <div
+                        class="view-mode-selector"
+                        role="radiogroup"
+                        aria-labelledby="view-mode-label"
+                      >
+                        <label class="view-mode-selector__option">
+                          <input type="radio" name="viewMode" value="text" />
+                          <span class="view-mode-selector__label">Relato cl├ísico</span>
+                        </label>
+                        <label class="view-mode-selector__option">
+                          <input type="radio" name="viewMode" value="duels" />
+                          <span class="view-mode-selector__label">Cartas duelo a duelo</span>
+                        </label>
+                        <label class="view-mode-selector__option">
+                          <input type="radio" name="viewMode" value="2d" />
+                          <span class="view-mode-selector__label">Pizarra retro 2D</span>
+                        </label>
+                      </div>
+                      <span class="field-hint"
+                        >Elige c├│mo revivir el partido: lectura cl├ísica, enfrentamientos carta a carta o la
+                        pizarra retro animada.</span
+                      >
+                    </fieldset>
+                  </div>
+
+                  <div class="match-form__actions">
+                    <p id="match-lineup-status" class="match-lineup-status"></p>
+                    <div class="match-actions">
+                      <button
+                        type="button"
+                        class="club-action club-action--primary"
+                        data-modal-target="#modal-lineup"
+                      >
+                        Gestionar alineaci├│n
+                      </button>
+                      <button id="play-match" type="submit" class="play-button">Jugar jornada</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <div class="modal" id="modal-club-identity" aria-hidden="true">
+          <div
+            class="modal__content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="club-identity-title"
+          >
+            <button
+              type="button"
+              class="modal__close"
+              data-modal-close
+              aria-label="Cerrar configuraci├│n del club"
+            >
+              ├ù
+            </button>
+            <form class="game-form" id="club-identity-form">
+              <div>
+                <h2 id="club-identity-title">Configura la identidad del club</h2>
+                <p>
+                  Personaliza el nombre, la ciudad y el estadio antes de lanzarte a la temporada y
+                  aseg├║rate de que el club proyecte la imagen que deseas.
+                </p>
+              </div>
+              <div class="identity-sections">
+                <fieldset class="identity-section">
+                  <legend class="identity-section__legend">Datos principales</legend>
+                  <label class="field">
+                    <span class="field-label">Nombre del club</span>
+                    <input
+                      type="text"
+                      id="club-name-input"
+                      name="clubName"
+                      maxlength="60"
+                      autocomplete="organization"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Ciudad</span>
+                    <input
+                      type="text"
+                      id="club-city-input"
+                      name="clubCity"
+                      maxlength="60"
+                      autocomplete="address-level2"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Estadio</span>
+                    <input
+                      type="text"
+                      id="club-stadium-input"
+                      name="clubStadium"
+                      maxlength="60"
+                      autocomplete="off"
+                    />
+                  </label>
+                </fieldset>
+                <fieldset class="identity-section">
+                  <legend class="identity-section__legend">Colores y escudo</legend>
+                  <div class="field color-field" data-color-role="primary">
+                    <div class="color-field__header">
+                      <label class="field-label" for="club-primary-color">Color principal</label>
+                      <span class="field-hint" id="club-primary-color-hint"
+                        >Ti├▒e los botones canallas, la cabecera retro y la camiseta local. El├¡gelo como el tono protagonista del
+                        club.</span
+                      >
+                    </div>
+                    <div class="color-field__body">
+                      <span
+                        class="color-preview"
+                        id="club-primary-color-preview"
+                        aria-hidden="true"
+                        style="background: #1d4ed8; color: #ffffff"
+                      >#1D4ED8</span>
+                      <input
+                        type="color"
+                        id="club-primary-color"
+                        name="clubPrimaryColor"
+                        class="color-picker"
+                        value="#1d4ed8"
+                        aria-describedby="club-primary-color-hint club-primary-color-error"
+                      />
+                      <input
+                        type="text"
+                        id="club-primary-color-hex"
+                        name="clubPrimaryColorHex"
+                        class="color-hex-input"
+                        inputmode="text"
+                        pattern="^#?[0-9a-fA-F]{6}$"
+                        maxlength="7"
+                        spellcheck="false"
+                        autocapitalize="off"
+                        aria-label="C├│digo hex del color principal"
+                        aria-describedby="club-primary-color-hint club-primary-color-error"
+                        value="#1D4ED8"
+                      />
+                    </div>
+                    <p class="color-field__error" id="club-primary-color-error" aria-live="polite" hidden></p>
+                  </div>
+                  <div class="field color-field" data-color-role="secondary">
+                    <div class="color-field__header">
+                      <label class="field-label" for="club-secondary-color">Color secundario</label>
+                      <span class="field-hint" id="club-secondary-color-hint"
+                        >Colorea paneles informativos, resaltados suaves y detalles del estadio. ├Üsalo para equilibrar el tono
+                        principal y mantener la lectura clara.</span
+                      >
+                    </div>
+                    <div class="color-field__body">
+                      <span
+                        class="color-preview"
+                        id="club-secondary-color-preview"
+                        aria-hidden="true"
+                        style="background: #bfdbfe; color: #0f172a"
+                      >#BFDBFE</span>
+                      <input
+                        type="color"
+                        id="club-secondary-color"
+                        name="clubSecondaryColor"
+                        class="color-picker"
+                        value="#bfdbfe"
+                        aria-describedby="club-secondary-color-hint club-secondary-color-error"
+                      />
+                      <input
+                        type="text"
+                        id="club-secondary-color-hex"
+                        name="clubSecondaryColorHex"
+                        class="color-hex-input"
+                        inputmode="text"
+                        pattern="^#?[0-9a-fA-F]{6}$"
+                        maxlength="7"
+                        spellcheck="false"
+                        autocapitalize="off"
+                        aria-label="C├│digo hex del color secundario"
+                        aria-describedby="club-secondary-color-hint club-secondary-color-error"
+                        value="#BFDBFE"
+                      />
+                    </div>
+                    <p class="color-field__error" id="club-secondary-color-error" aria-live="polite" hidden></p>
+                  </div>
+                  <label class="field identity-section--wide">
+                    <span class="field-label">Escudo personalizado</span>
+                    <input
+                      type="file"
+                      id="club-logo-input"
+                      name="clubLogo"
+                      accept="image/png,image/svg+xml,image/jpeg"
+                    />
+                    <span class="field-hint">Se admiten PNG, JPG o SVG. El archivo se guardar├í en tu partida.</span>
+                  </label>
+                </fieldset>
+              </div>
+              <div
+                id="club-identity-preview"
+                class="club-identity-preview"
+                aria-live="polite"
+              >
+                <div class="club-identity-preview__body">
+                  <div class="club-identity-preview__badge" aria-hidden="true">
+                    <img
+                      id="club-identity-preview-logo"
+                      src="assets/club-crest.svg"
+                      alt="Escudo provisional del club"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="club-identity-preview__details">
+                    <p class="club-identity-preview__name" data-preview-field="name">
+                      IA Soccer Club
+                    </p>
+                    <p class="club-identity-preview__meta">
+                      <span data-preview-field="city">Ciudad Canalla</span>
+                      <span class="club-identity-preview__separator" aria-hidden="true">┬À</span>
+                      <span data-preview-field="stadium">Estadio Retro</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="club-identity-preview__stripes" aria-hidden="true">
+                  <span class="club-identity-preview__stripe club-identity-preview__stripe--primary"></span>
+                  <span class="club-identity-preview__stripe club-identity-preview__stripe--secondary"></span>
+                  <span class="club-identity-preview__stripe club-identity-preview__stripe--primary"></span>
+                </div>
+              </div>
+              <div class="match-form__actions">
+                <div class="match-actions">
+                  <button type="submit" class="play-button">Guardar identidad</button>
+                  <button type="button" class="club-action" id="preview-club-identity">
+                    Vista previa
+                  </button>
+                  <button type="button" class="club-action" data-modal-close>Cancelar</button>
+                </div>
+                <div class="form-warning" role="alert">
+                  <strong>Atenci├│n:</strong>
+                  Al guardar los cambios se reiniciar├í el progreso actual para aplicar la nueva
+                  identidad.
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="modal" id="modal-league-config" aria-hidden="true">
+          <div
+            class="modal__content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="league-config-title"
+          >
+            <button
+              type="button"
+              class="modal__close"
+              data-modal-close
+              aria-label="Cerrar configuraci├│n de liga"
+            >
+              ├ù
+            </button>
+            <section class="control-modal card-panel">
+              <div>
+                <h2 id="league-config-title">Configura la liga</h2>
+                <p class="league-config__intro">
+                  Selecciona manualmente a los rivales de la temporada o genera un sorteo aleatorio para comenzar
+                  desde cero.
+                </p>
+              </div>
+              <form class="game-form" id="league-config-form">
+                <fieldset class="league-config__fieldset">
+                  <legend>Formato de la temporada</legend>
+                  <label class="field">
+                    <span class="field-label">Tama├▒o de la liga</span>
+                    <select id="league-size-select" name="leagueSize">
+                      <option value="8">Liga callejera ┬À 8 clubes</option>
+                      <option value="12" selected>Liga cl├ísica ┬À 12 clubes</option>
+                      <option value="16">Liga maratoniana ┬À 16 clubes</option>
+                    </select>
+                    <span class="field-hint">Incluye a tu club y define el n├║mero de jornadas.</span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Dificultad</span>
+                    <select id="league-difficulty-select" name="leagueDifficulty">
+                      <option value="relajada">Relajada ┬À Rivales 15% m├ís suaves</option>
+                      <option value="canalla" selected>Canalla ┬À Equilibrada</option>
+                      <option value="legendaria">Legendaria ┬À Rivales 20% m├ís duros</option>
+                    </select>
+                    <span class="field-hint">Ajusta la intensidad competitiva para tu aventura canalla.</span>
+                  </label>
+                </fieldset>
+                <div class="league-config__summary">
+                  <p id="league-selection-count" class="league-config__count" aria-live="polite" role="status">
+                    0/11 rivales elegidos ┬À 22 jornadas
+                  </p>
+                  <button type="button" class="lineup-auto-button" id="league-randomize">
+                    Sorteo aleatorio
+                  </button>
+                </div>
+                <div
+                  class="league-config__grid"
+                  id="league-catalog"
+                  role="group"
+                  aria-label="Cat├ílogo de rivales disponibles"
+                ></div>
+                <p class="league-config__error" id="league-config-error" role="alert" hidden></p>
+                <div class="modal__actions">
+                  <button type="submit" class="club-action club-action--primary">Aplicar rivales</button>
+                  <button type="button" class="club-action" data-modal-close>Cancelar</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <div class="modal" id="modal-lineup" aria-hidden="true">
+          <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="lineup-title">
+            <button type="button" class="modal__close" data-modal-close aria-label="Cerrar gesti├│n de alineaci├│n">├ù</button>
+            <section class="lineup-panel">
+              <div class="lineup-panel__header">
+                <h2 id="lineup-title">Gestiona tu alineaci├│n</h2>
+                <p>Escoge 11 titulares y hasta 5 suplentes antes de lanzarte a la jornada.</p>
+              </div>
+              <div class="lineup-panel__summary">
+                <span id="lineup-count" class="lineup-summary"></span>
+                <span id="subs-count" class="lineup-summary"></span>
+                <button
+                  id="lineup-autosort"
+                  type="button"
+                  class="lineup-auto-button"
+                  data-modal-initial-focus
+                >
+                  Autoordenar por posici├│n
+                </button>
+              </div>
+              <p id="lineup-error" class="form-error" hidden></p>
+              <div id="lineup-board" class="lineup-board">
+                <div class="lineup-table-wrapper">
+                  <table class="lineup-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">N.┬║</th>
+                        <th scope="col">Jugador</th>
+                        <th scope="col" class="lineup-table__average-header">
+                          <abbr title="Media de atributos t├®cnicos">ME</abbr>
+                        </th>
+                        <th scope="col"><abbr title="Energ├¡a">EN</abbr></th>
+                        <th scope="col"><abbr title="Velocidad">VE</abbr></th>
+                        <th scope="col"><abbr title="Resistencia">RE</abbr></th>
+                        <th scope="col"><abbr title="Ataque">AT</abbr></th>
+                        <th scope="col"><abbr title="Defensa">DE</abbr></th>
+                        <th scope="col"><abbr title="Visi├│n de pase">MI</abbr></th>
+                        <th scope="col"><abbr title="Control y regate">CO</abbr></th>
+                        <th scope="col"><abbr title="Liderazgo">LI</abbr></th>
+                        <th scope="col"><abbr title="Moral">MO</abbr></th>
+                      </tr>
+                    </thead>
+                    <tbody id="lineup-table-body"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="lineup-help">
+                <p>Consejos r├ípidos para mimar tu once:</p>
+                <ul>
+                  <li>Haz clic sobre un jugador y luego en otro para intercambiar puestos o reordenar el grupo r├ípidamente.</li>
+                  <li>Si te equivocas, vuelve a pulsar sobre el mismo jugador para cancelar la selecci├│n sin modificar la convocatoria.</li>
+                  <li>Prueba el atajo ┬½Autoordenar por posici├│n┬╗ para reordenar titulares y banquillo en segundos.</li>
+                </ul>
+              </div>
+              <section class="lineup-legend" aria-label="Leyenda de abreviaturas de estad├¡sticas">
+                <h3 class="lineup-legend__title">Leyenda r├ípida de estad├¡sticas</h3>
+                <dl class="lineup-legend__list">
+                  <div>
+                    <dt>ME</dt>
+                    <dd>Media global de las habilidades t├®cnicas.</dd>
+                  </div>
+                  <div>
+                    <dt>EN</dt>
+                    <dd>Energ├¡a actual del jugador.</dd>
+                  </div>
+                  <div>
+                    <dt>VE</dt>
+                    <dd>Velocidad punta y aceleraci├│n.</dd>
+                  </div>
+                  <div>
+                    <dt>RE</dt>
+                    <dd>Resistencia para aguantar todo el partido.</dd>
+                  </div>
+                  <div>
+                    <dt>AT</dt>
+                    <dd>Ataque y capacidad goleadora.</dd>
+                  </div>
+                  <div>
+                    <dt>DE</dt>
+                    <dd>Defensa y solidez al cortar jugadas.</dd>
+                  </div>
+                  <div>
+                    <dt>MI</dt>
+                    <dd>Mirada creativa para distribuir el juego (pase).</dd>
+                  </div>
+                  <div>
+                    <dt>CO</dt>
+                    <dd>Control y regate en espacios reducidos.</dd>
+                  </div>
+                  <div>
+                    <dt>LI</dt>
+                    <dd>Liderazgo dentro y fuera del campo.</dd>
+                  </div>
+                  <div>
+                    <dt>MO</dt>
+                    <dd>Moral general del futbolista.</dd>
+                  </div>
+                </dl>
+              </section>
+            </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-player-edit" aria-hidden="true">
+        <div
+          class="modal__content"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="player-edit-title"
+        >
+          <button
+            type="button"
+            class="modal__close"
+            data-modal-close
+            aria-label="Cerrar editor de jugador"
+          >
+            ├ù
+          </button>
+          <form class="game-form" id="player-edit-form">
+            <div>
+              <h2 id="player-edit-title">Personaliza a tu futbolista</h2>
+              <p>
+                Ajusta el nombre y el apodo para que la afici├│n coree exactamente lo que t├║ quieres.
+              </p>
+            </div>
+            <p id="player-edit-error" class="form-error" hidden></p>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-label">Nombre completo</span>
+                <input
+                  type="text"
+                  id="player-edit-name"
+                  name="playerName"
+                  maxlength="60"
+                  autocomplete="off"
+                  required
+                  data-modal-initial-focus
+                />
+              </label>
+              <label class="field">
+                <span class="field-label">Apodo</span>
+                <input
+                  type="text"
+                  id="player-edit-nickname"
+                  name="playerNickname"
+                  maxlength="40"
+                  autocomplete="off"
+                  placeholder="Opcional"
+                />
+                <span class="field-hint">D├®jalo vac├¡o si prefieres no usar apodo.</span>
+              </label>
+            </div>
+            <div class="match-form__actions">
+              <button type="submit" class="play-button">Guardar cambios</button>
+              <button type="button" class="club-action" id="player-edit-random">Sorpr├®ndeme</button>
+              <button type="button" class="club-action" data-modal-close>Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-league" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="league-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar clasificaci├│n">├ù</button>
+          <div class="league-panel card-panel">
+            <div class="league-panel__header">
+              <h2 id="league-title">Clasificaci├│n</h2>
+              <span id="league-matchday" class="league-badge"></span>
+            </div>
+            <table class="league-table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Club</th>
+                  <th scope="col">J</th>
+                  <th scope="col">G</th>
+                  <th scope="col">E</th>
+                  <th scope="col">P</th>
+                  <th scope="col">GF</th>
+                  <th scope="col">GC</th>
+                  <th scope="col">Pts</th>
+                </tr>
+              </thead>
+              <tbody id="league-table-body"></tbody>
+            </table>
+            <div class="league-panel__stats">
+              <section class="league-stats">
+                <h3>M├íximos goleadores</h3>
+                <table class="league-table league-table--compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Jugador</th>
+                      <th scope="col">Club</th>
+                      <th scope="col">Goles</th>
+                    </tr>
+                  </thead>
+                  <tbody id="league-top-scorers-body"></tbody>
+                </table>
+              </section>
+              <section class="league-stats">
+                <h3>Mejores asistentes</h3>
+                <table class="league-table league-table--compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Jugador</th>
+                      <th scope="col">Club</th>
+                      <th scope="col">Asistencias</th>
+                    </tr>
+                  </thead>
+                  <tbody id="league-top-assists-body"></tbody>
+                </table>
+              </section>
+              <section class="league-stats">
+                <h3>Porter├¡as imbatidas</h3>
+                <table class="league-table league-table--compact">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Jugador</th>
+                      <th scope="col">Club</th>
+                      <th scope="col">Imbatidas</th>
+                    </tr>
+                  </thead>
+                  <tbody id="league-top-clean-sheets-body"></tbody>
+                </table>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-cup" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="cup-modal-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar panel de copa">├ù</button>
+          <section class="card-panel cup-panel">
+            <header class="cup-panel__header">
+              <h2 id="cup-modal-title">Copa callejera</h2>
+              <p id="cup-modal-status">La aventura copera se actualiza tras cada sorteo y eliminatoria.</p>
+            </header>
+            <div class="cup-panel__actions">
+              <button type="button" id="cup-draw-button" class="club-action club-action--primary">Celebrar sorteo</button>
+              <button type="button" id="cup-plan-button" class="club-action" data-modal-close>Volver a la planificaci├│n</button>
+            </div>
+            <section class="cup-panel__section" aria-live="polite">
+              <h3 class="cup-panel__section-title">Pr├│ximo cruce</h3>
+              <p id="cup-next-fixture">A la espera del primer sorteo.</p>
+            </section>
+            <section class="cup-panel__section">
+              <h3 class="cup-panel__section-title">Cuadro de eliminatorias</h3>
+              <ol id="cup-bracket" class="cup-bracket"></ol>
+            </section>
+            <section class="cup-panel__section">
+              <h3 class="cup-panel__section-title">Trayectoria de la temporada</h3>
+              <ul id="cup-history" class="cup-history"></ul>
+            </section>
+            <section class="cup-panel__section">
+              <h3 class="cup-panel__section-title">├Ültimo sorteo</h3>
+              <ul id="cup-draw-narrative" class="cup-draw"></ul>
+            </section>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-transfers" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="transfers-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar mercado">├ù</button>
+          <div class="transfer-panel card-panel">
+            <h2 id="transfers-title">Mercado canalla</h2>
+            <p>Fichajes de barrio, promesas callejeras y veteranos curtidos al estilo PC F├║tbol.</p>
+            <p id="transfer-message" class="transfer-feedback" hidden></p>
+            <div id="transfer-list" class="transfer-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-calendar" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="calendar-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar calendario">├ù</button>
+          <section class="control-modal card-panel">
+            <h2 id="calendar-title">Calendario de la temporada</h2>
+            <p>Consulta las pr├│ximas jornadas y planifica tus rotaciones con calma.</p>
+            <ol id="calendar-list" class="control-list control-list--calendar"></ol>
+            <p id="calendar-note" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-tactics" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="tactics-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar t├ícticas">├ù</button>
+          <section class="control-modal card-panel">
+            <h2 id="tactics-title">Pizarra t├íctica</h2>
+            <p>Revisa de un vistazo la idea de juego seleccionada para la pr├│xima jornada.</p>
+            <dl class="control-dl">
+              <div>
+                <dt>Plan general</dt>
+                <dd id="tactic-plan"></dd>
+              </div>
+              <div>
+                <dt>Esquema</dt>
+                <dd id="tactic-formation"></dd>
+              </div>
+            </dl>
+            <h3>Ajustes finos</h3>
+            <ul id="tactic-instructions" class="control-list"></ul>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-opponent" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="opponent-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar informe de rival">├ù</button>
+          <section class="control-modal card-panel">
+            <h2 id="opponent-title">Informe del rival</h2>
+            <dl class="control-dl">
+              <div>
+                <dt>Club</dt>
+                <dd id="opponent-modal-name"></dd>
+              </div>
+              <div>
+                <dt>Balance</dt>
+                <dd id="opponent-modal-record"></dd>
+              </div>
+              <div>
+                <dt>Fortaleza prevista</dt>
+                <dd id="opponent-modal-strength"></dd>
+              </div>
+              <div>
+                <dt>Escenario</dt>
+                <dd id="opponent-modal-location"></dd>
+              </div>
+            </dl>
+            <p id="opponent-modal-comment" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-staff" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="staff-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar personal">├ù</button>
+          <section class="control-modal card-panel">
+            <h2 id="staff-title">Gesti├│n de empleados</h2>
+            <p>Controla el gasto en cuerpo t├®cnico, cantera y ├írea m├®dica.</p>
+            <dl id="staff-breakdown" class="control-dl"></dl>
+            <div class="control-modal__group">
+              <h3 class="control-modal__subtitle">Empleados activos</h3>
+              <ul id="staff-roster" class="control-list"></ul>
+            </div>
+            <div class="control-modal__group">
+              <h3 class="control-modal__subtitle">Agencia clandestina</h3>
+              <ul id="staff-market" class="control-list"></ul>
+            </div>
+            <p id="staff-note" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-finances" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="finances-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar caja">├ù</button>
+          <section class="control-modal card-panel">
+            <h2 id="finances-title">Caja y gastos</h2>
+            <dl class="control-dl">
+              <div>
+                <dt>Presupuesto disponible</dt>
+                <dd id="finances-budget"></dd>
+              </div>
+              <div>
+                <dt>N├│mina semanal</dt>
+                <dd id="finances-wages"></dd>
+              </div>
+              <div>
+                <dt>Costes operativos</dt>
+                <dd id="finances-operating"></dd>
+              </div>
+            </dl>
+            <p id="finances-note" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-decisions" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="decisions-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar decisiones">├ù</button>
+          <section class="control-modal card-panel">
+            <h2 id="decisions-title">Decisiones canallas</h2>
+            <p>Eval├║a cada travesura y su intensidad antes de arriesgar la reputaci├│n.</p>
+            <p id="decisions-heat" class="control-modal__note"></p>
+            <ul id="decisions-list" class="control-list control-list--decisions"></ul>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-stadium" aria-hidden="true">
+        <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="stadium-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar estadio">├ù</button>
+          <section class="control-modal card-panel">
+            <h2 id="stadium-title">Estado del estadio</h2>
+            <dl class="control-dl">
+              <div>
+                <dt>Capacidad</dt>
+                <dd id="stadium-capacity"></dd>
+              </div>
+              <div>
+                <dt>Nivel de grada</dt>
+                <dd id="stadium-level"></dd>
+              </div>
+              <div>
+                <dt>Centro de entrenamiento</dt>
+                <dd id="stadium-training"></dd>
+              </div>
+              <div>
+                <dt>├ürea m├®dica</dt>
+                <dd id="stadium-medical"></dd>
+              </div>
+              <div>
+                <dt>Cantera</dt>
+                <dd id="stadium-academy"></dd>
+              </div>
+            </dl>
+            <div class="stadium-upgrades">
+              <h3 class="stadium-upgrades__title">Plan de mejoras</h3>
+              <ul class="control-list control-list--infra" id="stadium-upgrade-list">
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>Grada</strong>
+                    <p data-infrastructure-description="stadium"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="stadium"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="stadium">
+                    Invertir en grada
+                  </button>
+                </li>
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>Centro de entrenamiento</strong>
+                    <p data-infrastructure-description="training"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="training"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="training">
+                    Mejorar entrenamientos
+                  </button>
+                </li>
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>├ürea m├®dica</strong>
+                    <p data-infrastructure-description="medical"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="medical"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="medical">
+                    Ampliar servicios m├®dicos
+                  </button>
+                </li>
+                <li class="stadium-upgrades__item">
+                  <div class="stadium-upgrades__info">
+                    <strong>Cantera</strong>
+                    <p data-infrastructure-description="academy"></p>
+                    <span class="stadium-upgrades__cost" data-infrastructure-cost="academy"></span>
+                  </div>
+                  <button type="button" class="stadium-upgrades__button" data-infrastructure-upgrade="academy">
+                    Invertir en cantera
+                  </button>
+                </li>
+              </ul>
+              <p id="stadium-upgrade-feedback" class="control-modal__note stadium-upgrades__feedback" aria-live="polite"></p>
+            </div>
+            <p id="stadium-note" class="control-modal__note"></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal" id="modal-report" aria-hidden="true">
+        <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="report-title">
+          <button type="button" class="modal__close" data-modal-close aria-label="Cerrar cr├│nica">├ù</button>
+          <section class="report-card">
+            <h2 id="report-title">Cr├│nica de la jornada</h2>
+            <div class="report-tabs" role="tablist" aria-label="Secciones de la cr├│nica">
+              <button
+                type="button"
+                class="report-tab is-active"
+                data-report-tab="current"
+                id="report-tab-current"
+                role="tab"
+                aria-selected="true"
+                aria-controls="report-panel-current"
+              >
+                Cr├│nica actual
+              </button>
+              <button
+                type="button"
+                class="report-tab"
+                data-report-tab="history"
+                id="report-tab-history"
+                role="tab"
+                aria-selected="false"
+                aria-controls="report-panel-history"
+              >
+                Historial
+              </button>
+            </div>
+            <div class="report-panels">
+              <div
+                class="report-panel"
+                id="report-panel-current"
+                data-report-panel="current"
+                role="tabpanel"
+                aria-labelledby="report-tab-current"
+              >
+                <div class="report-top">
+                  <div>
+                    <h3>Marcador</h3>
+                    <p id="scoreline" class="scoreline" aria-live="polite"></p>
+                    <p id="finances-delta" class="finances"></p>
+                    <p id="finances-attendance" class="finances-attendance"></p>
+                    <p id="match-seed" class="match-seed" hidden></p>
+                  </div>
+                  <div class="decision-report" id="decision-report" hidden>
+                    <h3>Decisi├│n canalla</h3>
+                    <p id="decision-narrative"></p>
+                    <ul id="decision-stats"></ul>
+                  </div>
+                  <div class="mvp-wrapper">
+                    <span id="mvp-badge" class="mvp-badge" hidden></span>
+                  </div>
+                </div>
+
+                <section
+                  id="match-visualization"
+                  class="match-visualization"
+                  aria-label="Visualizaci├│n 2D del partido"
+                  tabindex="0"
+                  data-state="empty"
+                  aria-hidden="true"
+                  hidden
+                >
+                  <div class="match-visualization__header">
+                    <h3>Visualizaci├│n 2D retro</h3>
+                    <span id="match-visualization-frame" class="match-visualization__frame">ÔÇö</span>
+                  </div>
+                  <p id="match-visualization-status" class="match-visualization__status">
+                    Activa el modo 2D para recrear las jugadas en la pizarra luminosa.
+                  </p>
+                  <div class="match-visualization__screen-wrapper">
+                    <div
+                      id="match-visualization-screen"
+                      class="match-visualization__screen"
+                      aria-live="polite"
+                    ></div>
+                  </div>
+                  <div class="match-visualization__meta">
+                    <span id="match-visualization-minute" class="match-visualization__minute">ÔÇö</span>
+                    <span id="match-visualization-label" class="match-visualization__label"></span>
+                  </div>
+                  <div
+                    class="match-visualization__controls"
+                    role="group"
+                    aria-label="Controles de la simulaci├│n 2D"
+                  >
+                    <button
+                      type="button"
+                      id="match-visualization-prev"
+                      class="match-visualization__button"
+                      aria-label="Fotograma anterior"
+                    >
+                      &lt;&lt;
+                    </button>
+                    <input
+                      type="range"
+                      id="match-visualization-slider"
+                      class="match-visualization__slider"
+                      min="0"
+                      max="0"
+                      value="0"
+                      step="1"
+                      aria-label="Fotograma del partido"
+                    />
+                    <button
+                      type="button"
+                      id="match-visualization-next"
+                      class="match-visualization__button"
+                      aria-label="Fotograma siguiente"
+                    >
+                      &gt;&gt;
+                    </button>
+                  </div>
+                <ul id="match-visualization-legend" class="match-visualization__legend"></ul>
+              </section>
+
+              <section
+                id="match-duels"
+                class="match-duels"
+                aria-label="Cartas duelo por duelo"
+                data-state="empty"
+                hidden
+                aria-hidden="true"
+              >
+                <div class="match-duels__header">
+                  <h3>Cartas duelo por duelo</h3>
+                  <span id="match-duels-score" class="match-duels__score" aria-live="polite"
+                    >Marcador cartas: ÔÇö</span
+                  >
+                </div>
+                <p id="match-duels-status" class="match-duels__status" aria-live="polite">
+                  Selecciona el modo cartas para comparar jugador a jugador.
+                </p>
+                <div
+                  id="match-duels-list"
+                  class="match-duels__list"
+                  role="list"
+                  aria-live="polite"
+                  aria-busy="false"
+                ></div>
+              </section>
+
+              <div class="finances-breakdown">
+                <div class="finances-panel finances-panel--income">
+                    <header class="finances-panel__header">
+                      <h3>Ingresos</h3>
+                      <p id="finances-income-total" class="finances-total"></p>
+                    </header>
+                    <div class="finances-panel__visual" aria-hidden="true">
+                      <div class="finances-donut finances-donut--income" id="finances-income-donut"></div>
+                    </div>
+                    <ul id="finances-income" class="finances-list finances-list--income"></ul>
+                  </div>
+                  <div class="finances-panel finances-panel--expense">
+                    <header class="finances-panel__header">
+                      <h3>Gastos</h3>
+                      <p id="finances-expense-total" class="finances-total"></p>
+                    </header>
+                    <div class="finances-panel__visual" aria-hidden="true">
+                      <div class="finances-bar finances-bar--summary" id="finances-expense-bar">
+                        <span
+                          class="finances-bar__fill finances-bar__fill--expense"
+                          id="finances-expense-bar-fill"
+                        ></span>
+                      </div>
+                    </div>
+                    <ul id="finances-expenses" class="finances-list finances-list--expense"></ul>
+                  </div>
+                </div>
+
+                <div class="report-body">
+                  <div>
+                    <h3>Narrativa</h3>
+                    <ol id="narrative-list"></ol>
+                  </div>
+                  <div>
+                    <h3>Eventos destacados</h3>
+                    <ol id="match-timeline" class="match-timeline" aria-live="polite"></ol>
+                  </div>
+                </div>
+
+                <div class="club-update">
+                  <h3>Estado del club tras la jornada</h3>
+                  <dl class="club-stats">
+                    <div>
+                      <dt>Presupuesto</dt>
+                      <dd id="post-budget"></dd>
+                    </div>
+                    <div>
+                      <dt>Reputaci├│n</dt>
+                      <dd id="post-reputation"></dd>
+                    </div>
+                    <div>
+                      <dt>Moral media</dt>
+                      <dd id="post-morale"></dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <section id="season-summary" class="season-summary" hidden>
+                  <h3>Resumen de temporada</h3>
+                  <p><strong>Campe├│n:</strong> <span id="season-champion"></span></p>
+                  <p><strong>Posesi├│n media:</strong> <span id="season-average-possession"></span></p>
+                  <p id="season-streak"></p>
+                  <p><strong>T├¡tulos logrados:</strong> <span id="season-titles"></span></p>
+                  <div class="season-summary__lists">
+                    <div>
+                      <h4>Goleadores</h4>
+                      <ol id="season-top-scorers"></ol>
+                    </div>
+                    <div>
+                      <h4>Asistentes</h4>
+                      <ol id="season-top-assists"></ol>
+                    </div>
+                  </div>
+                  <div class="season-summary__records">
+                    <h4>R├®cords del club</h4>
+                    <ul id="season-records"></ul>
+                  </div>
+                  <button type="button" id="new-season" class="plan-button" hidden>
+                    Comenzar nueva temporada
+                  </button>
+                </section>
+
+                <button type="button" id="plan-next" class="plan-button">Planificar la pr├│xima jornada</button>
+              </div>
+              <div
+                class="report-panel report-panel--history"
+                id="report-panel-history"
+                data-report-panel="history"
+                role="tabpanel"
+                aria-labelledby="report-tab-history"
+                hidden
+              >
+                <section class="report-history">
+                  <div class="report-history__controls">
+                    <label for="report-history-season">Temporada</label>
+                    <select id="report-history-season">
+                      <option value="all">Todas las temporadas</option>
+                    </select>
+                  </div>
+                  <p id="report-history-empty" class="report-history__empty">
+                    Todav├¡a no has disputado ninguna jornada.
+                  </p>
+                  <ol id="report-history-list" class="report-history__list" aria-live="polite"></ol>
+                </section>
+              </div>
+                  </div>
+                </section>
+
+      </div>
+      </div>
+
+      <footer class="footer">
+        <p>Hecho con pasi├│n canalla por la comunidad IA ÔÜ¢</p>
+      </footer>
+    </main>
+
