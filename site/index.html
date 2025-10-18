@@ -91,6 +91,20 @@
         </div>
       </header>
 
+      <nav class="breadcrumbs" aria-label="Ruta de navegación del tablero">
+        <ol class="breadcrumbs__list">
+          <li class="breadcrumbs__item">
+            <a href="#" id="breadcrumb-root" class="breadcrumbs__link breadcrumbs__link--root">Tablero principal</a>
+          </li>
+          <li class="breadcrumbs__item" id="breadcrumb-tab-item">
+            <a href="#" id="breadcrumb-tab-link" class="breadcrumbs__link" aria-current="page">Club</a>
+          </li>
+          <li class="breadcrumbs__item breadcrumbs__item--current" id="breadcrumb-module-item" hidden>
+            <span class="breadcrumbs__current" id="breadcrumb-module-label"></span>
+          </li>
+        </ol>
+      </nav>
+
       <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
 
       <button
