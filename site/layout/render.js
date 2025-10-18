@@ -31,7 +31,7 @@ function createFragment(html) {
   return template.content.cloneNode(true);
 }
 
-async function renderTemplates() {
+export async function renderTemplates() {
   const placeholders = Array.from(document.querySelectorAll('[data-template]'));
   await Promise.all(
     placeholders.map(async (placeholder) => {
@@ -50,6 +50,8 @@ async function renderTemplates() {
   );
 }
 
-renderTemplates().catch((error) => {
+export const templatesReady = renderTemplates();
+
+templatesReady.catch((error) => {
   console.error('Error al renderizar plantillas', error);
 });
