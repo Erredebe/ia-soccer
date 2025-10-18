@@ -97,6 +97,12 @@ const sidebarCollapseQuery =
     ? window.matchMedia('(max-width: 960px)')
     : null;
 
+const MODAL_TRIGGER_SELECTOR = '[data-modal-target]';
+const defaultModalTrigger = document.querySelector(
+  `${MODAL_TRIGGER_SELECTOR}[aria-current="page"]`
+);
+let activeModalTrigger = defaultModalTrigger ?? null;
+
 const matchdayBadgeEl = document.querySelector('#matchday-badge');
 const heroMatchdayBadgeEl = document.querySelector('#hero-matchday-badge');
 const matchOpponentNameEl = document.querySelector('#match-opponent-name');
@@ -1610,6 +1616,40 @@ let staffFeedback = '';
 let pendingSavedGame = null;
 let autoContinueTimeoutId = null;
 
+function getModalTriggers() {
+  return Array.from(document.querySelectorAll(MODAL_TRIGGER_SELECTOR));
+}
+
+function applyModalTriggerState(trigger) {
+  const nextActive = trigger ?? (defaultModalTrigger ?? null);
+  activeModalTrigger = nextActive;
+  const triggers = getModalTriggers();
+  triggers.forEach((element) => {
+    const isActive = element === nextActive;
+    if (isActive) {
+      element.setAttribute('aria-current', 'page');
+    } else {
+      element.removeAttribute('aria-current');
+    }
+    if (element.classList.contains('control-panel__option')) {
+      element.classList.toggle('control-panel__option--active', isActive);
+    }
+  });
+}
+
+function findModalTriggerFor(modal) {
+  if (!(modal instanceof HTMLElement) || typeof modal.id !== 'string' || modal.id.length === 0) {
+    return null;
+  }
+  const targetValue = `#${modal.id}`;
+  const controlPanelTrigger =
+    document.querySelector(`.control-panel__option[data-modal-target="${targetValue}"]:not([disabled])`) ??
+    document.querySelector(`.control-panel__option[data-modal-target="${targetValue}"]`);
+  return controlPanelTrigger ?? document.querySelector(`[data-modal-target="${targetValue}"]`);
+}
+
+applyModalTriggerState(activeModalTrigger);
+
 if (!cupState) {
   cupState = createExampleCup(clubState.name, { participants: leagueState?.rivals });
   clubState = { ...clubState, cup: cupState };
@@ -1761,6 +1801,9 @@ function closeModal(modal) {
     resetPlayerEditForm();
   }
   updateBodyModalState();
+  if (!document.querySelector('.modal.is-open')) {
+    applyModalTriggerState(null);
+  }
 }
 
 function closeAllModals() {
@@ -1773,14 +1816,18 @@ function closeAllModals() {
     }
   });
   updateBodyModalState();
+  applyModalTriggerState(null);
 }
 
-function openModal(modal) {
+function openModal(modal, trigger) {
   if (!(modal instanceof HTMLElement)) {
     return;
   }
 
+  const resolvedTrigger = trigger ?? findModalTriggerFor(modal);
+
   if (modal.classList.contains('is-open')) {
+    applyModalTriggerState(resolvedTrigger);
     focusModal(modal);
     return;
   }
@@ -1789,6 +1836,7 @@ function openModal(modal) {
   modal.classList.add('is-open');
   modal.setAttribute('aria-hidden', 'false');
   updateBodyModalState();
+  applyModalTriggerState(resolvedTrigger);
   focusModal(modal);
 }
 
@@ -1798,7 +1846,7 @@ function attachModalHandlers() {
   }
   modalHandlersAttached = true;
 
-  const triggers = document.querySelectorAll('[data-modal-target]');
+  const triggers = document.querySelectorAll(MODAL_TRIGGER_SELECTOR);
   triggers.forEach((trigger) => {
     trigger.addEventListener('click', () => {
       const targetSelector = trigger.getAttribute('data-modal-target');
@@ -1806,7 +1854,7 @@ function attachModalHandlers() {
         return;
       }
       const modal = document.querySelector(targetSelector);
-      openModal(modal);
+      openModal(modal, trigger);
     });
   });
 
