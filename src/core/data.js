@@ -5,6 +5,71 @@
  */
 
 import { CUP_ROUND_DEFINITIONS } from './types.js';
+import {
+  STAFF_CATALOG,
+  getStaffDefinition,
+  createExampleStaffState,
+  normaliseStaffState,
+  listStaffMembers,
+  calculateStaffWeeklyCost,
+  resolveStaffMatchImpact,
+} from './data/staff.js';
+import {
+  INFRASTRUCTURE_BLUEPRINT,
+  INFRASTRUCTURE_ORDER,
+  INFRASTRUCTURE_MAX_LEVEL,
+  BASE_STADIUM_CAPACITY,
+  STADIUM_CAPACITY_PER_LEVEL,
+  BASE_OPERATING_COSTS,
+  clampInfrastructureLevel,
+  calculateStadiumCapacity,
+  calculateInfrastructureUpgradeCost,
+  calculateOperatingExpensesForInfrastructure,
+  createExampleInfrastructure,
+  createExampleOperatingExpenses,
+} from './data/infrastructure.js';
+import { clampNumber } from './data/utils.js';
+import {
+  COMMERCIAL_PROFILE_DATA,
+  SPONSOR_PROFILE_DEFINITIONS,
+  TV_DEAL_PROFILE_DEFINITIONS,
+  generateSponsorOffers,
+  generateTvDeals,
+  createExampleTvDeal,
+  createExampleMerchandising,
+} from './data/commercial.js';
+
+export {
+  STAFF_CATALOG,
+  getStaffDefinition,
+  createExampleStaffState,
+  normaliseStaffState,
+  listStaffMembers,
+  calculateStaffWeeklyCost,
+  resolveStaffMatchImpact,
+} from './data/staff.js';
+
+export {
+  INFRASTRUCTURE_BLUEPRINT,
+  INFRASTRUCTURE_ORDER,
+  INFRASTRUCTURE_MAX_LEVEL,
+  clampInfrastructureLevel,
+  calculateStadiumCapacity,
+  calculateInfrastructureUpgradeCost,
+  calculateOperatingExpensesForInfrastructure,
+  createExampleInfrastructure,
+  createExampleOperatingExpenses,
+} from './data/infrastructure.js';
+
+export {
+  COMMERCIAL_PROFILE_DATA,
+  SPONSOR_PROFILE_DEFINITIONS,
+  TV_DEAL_PROFILE_DEFINITIONS,
+  generateSponsorOffers,
+  generateTvDeals,
+  createExampleTvDeal,
+  createExampleMerchandising,
+} from './data/commercial.js';
 
 /** @typedef {import('../types.js').Player} Player */
 /** @typedef {import('../types.js').ClubState} ClubState */
@@ -44,528 +109,6 @@ export const LEAGUE_DIFFICULTIES = Object.freeze([
   { id: 'canalla', label: 'Canalla', multiplier: 1 },
   { id: 'legendaria', label: 'Legendaria', multiplier: 1.2 },
 ]);
-
-function clampNumber(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function generateOfferId(prefix) {
-  const random = Math.floor(Math.random() * 1_000_000);
-  return `${prefix}-${Date.now().toString(36)}-${random.toString(36)}`;
-}
-
-/**
- * Resume el momento competitivo reciente del club.
- * @param {MatchResult[]} results
- */
-function summariseRecentPerformance(results) {
-  const sample = results.slice(-5);
-  let formScore = 0;
-  let goalDelta = 0;
-  for (const result of sample) {
-    if (!result) {
-      continue;
-    }
-    if (result.goalsFor > result.goalsAgainst) {
-      formScore += 3;
-    } else if (result.goalsFor === result.goalsAgainst) {
-      formScore += 1;
-    } else {
-      formScore -= 1;
-    }
-    goalDelta += result.goalsFor - result.goalsAgainst;
-  }
-  return {
-    matches: sample.length,
-    formScore,
-    goalDelta,
-    average: sample.length > 0 ? formScore / sample.length : 0,
-  };
-}
-
-const INFRASTRUCTURE_MAX_LEVEL = 5;
-const BASE_STADIUM_CAPACITY = 20000;
-const STADIUM_CAPACITY_PER_LEVEL = 1500;
-const BASE_OPERATING_COSTS = Object.freeze({
-  maintenance: 32000,
-  staff: 24000,
-  academy: 10000,
-  medical: 9000,
-});
-
-const SPONSOR_NAME_CATALOG = Object.freeze({
-  purista: ['Cooperativa', 'Fundación', 'Colectivo', 'Red cultural', 'Ruta Gastronómica'],
-  equilibrado: ['Bodega Urbana', 'Startup Analítica', 'Mercado Fusión', 'Laboratorio Deportivo', 'Red Social Futbolera'],
-  canalla: ['Casa de Apuestas', 'Criptocasino', 'Marisquería Nocturna', 'After clandestino', 'Bingo 24h'],
-});
-
-const TV_BRAND_CATALOG = Object.freeze({
-  purista: ['Televisión Pública', 'Canal Cultural', 'Cadena Vecinal'],
-  equilibrado: ['Stream Fut', 'Deporte Total+', 'Canal Esférico'],
-  canalla: ['Late Night Sports', 'Canalla Prime', 'FutTube X'],
-});
-
-const COMMERCIAL_PROFILE_DATA = Object.freeze({
-  purista: {
-    clauses: (club) => [
-      `Acciones comunitarias mensuales en ${club.city}.`,
-      'Uniformes con mensaje social en la manga.',
-    ],
-  },
-  equilibrado: {
-    clauses: (club) => [
-      'Campañas cruzadas en redes emergentes.',
-      `Eventos híbridos con fans del ${club.name}.`,
-    ],
-  },
-  canalla: {
-    clauses: () => [
-      'Activaciones nocturnas antes de partidos clave.',
-      'Bonificaciones por titulares picantes en prensa.',
-    ],
-  },
-});
-
-const SPONSOR_PROFILE_DEFINITIONS = Object.freeze([
-  {
-    profile: 'purista',
-    frequency: 'annual',
-    multiplier: 0.95,
-    upfrontFactor: 0.12,
-    reputation: { accept: 4, reject: -1 },
-    durationMatches: 40,
-    summary: (club) =>
-      `Una cooperativa de ${club.city} quiere asociarse a la causa y presume de fútbol de barrio.`,
-  },
-  {
-    profile: 'equilibrado',
-    frequency: 'monthly',
-    multiplier: 1.05,
-    upfrontFactor: 0.18,
-    reputation: { accept: 1, reject: 0 },
-    durationMatches: 32,
-    summary: () => 'Marca emergente busca club valiente para explorar formatos digitales y acciones exprés.',
-  },
-  {
-    profile: 'canalla',
-    frequency: 'match',
-    multiplier: 1.18,
-    upfrontFactor: 0.26,
-    reputation: { accept: -3, reject: 2 },
-    durationMatches: 24,
-    summary: () => 'Patrocinador descarado promete ingresos suculentos... a cambio de abrazar la picardía.',
-  },
-]);
-
-const TV_DEAL_PROFILE_DEFINITIONS = Object.freeze([
-  {
-    profile: 'purista',
-    upfrontFactor: 0.15,
-    multiplier: 0.9,
-    reputation: { accept: 3, reject: -1 },
-    durationSeasons: 1,
-    summary: (club) =>
-      `La televisión pública de ${club.city} ofrece retransmisiones cuidadas y foco en la cantera.`,
-  },
-  {
-    profile: 'equilibrado',
-    upfrontFactor: 0.22,
-    multiplier: 1.05,
-    reputation: { accept: 1, reject: 0 },
-    durationSeasons: 2,
-    summary: () => 'Plataforma híbrida mezcla directos clásicos con métricas en vivo para la grada digital.',
-  },
-  {
-    profile: 'canalla',
-    upfrontFactor: 0.3,
-    multiplier: 1.18,
-    reputation: { accept: -2, reject: 2 },
-    durationSeasons: 1,
-    summary: () => 'Cadena nocturna promete audiencias globales a cambio de espectáculo y drama semanal.',
-  },
-]);
-
-function pickLabel(entries, rng) {
-  if (entries.length === 0) {
-    return '';
-  }
-  const index = Math.floor((rng?.() ?? Math.random()) * entries.length);
-  return entries[Math.max(0, Math.min(entries.length - 1, index))];
-}
-
-function buildSponsorName(profile, club, rng) {
-  const base = pickLabel(SPONSOR_NAME_CATALOG[profile] ?? [], rng);
-  if (!base) {
-    return `${club.name} Sponsor`; // fallback
-  }
-  if (profile === 'purista') {
-    return `${base} ${club.city}`;
-  }
-  if (profile === 'equilibrado') {
-    return `${base} ${club.name}`;
-  }
-  return `${base} ${club.city}`;
-}
-
-function buildTvBrand(profile, club, rng) {
-  const base = pickLabel(TV_BRAND_CATALOG[profile] ?? [], rng);
-  if (!base) {
-    return `${club.name} TV`;
-  }
-  if (profile === 'purista') {
-    return `${base} ${club.city}`;
-  }
-  if (profile === 'equilibrado') {
-    return `${base} Live`;
-  }
-  return `${base} Show`;
-}
-
-/**
- * Blueprint de mejoras de infraestructura disponibles.
- */
-export const INFRASTRUCTURE_BLUEPRINT = Object.freeze({
-  stadium: {
-    id: 'stadium',
-    levelKey: 'stadiumLevel',
-    label: 'Grada',
-    description: 'Amplía el aforo y mejora la experiencia de la hinchada.',
-    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
-    baseCost: 350000,
-    costGrowth: 1.6,
-    maintenancePerLevel: 5000,
-  },
-  training: {
-    id: 'training',
-    levelKey: 'trainingLevel',
-    label: 'Centro de entrenamiento',
-    description: 'Refuerza la preparación física y la progresión semanal.',
-    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
-    baseCost: 240000,
-    costGrowth: 1.5,
-    staffPerLevel: 2000,
-  },
-  medical: {
-    id: 'medical',
-    levelKey: 'medicalLevel',
-    label: 'Área médica',
-    description: 'Reduce lesiones prolongadas y acelera la recuperación.',
-    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
-    baseCost: 210000,
-    costGrowth: 1.45,
-    medicalPerLevel: 3000,
-  },
-  academy: {
-    id: 'academy',
-    levelKey: 'academyLevel',
-    label: 'Cantera',
-    description: 'Nutre al primer equipo con canteranos ilusionantes.',
-    maxLevel: INFRASTRUCTURE_MAX_LEVEL,
-    baseCost: 180000,
-    costGrowth: 1.45,
-    academyPerLevel: 6000,
-  },
-});
-
-export const INFRASTRUCTURE_ORDER = Object.freeze(['stadium', 'training', 'medical', 'academy']);
-
-export const STAFF_ROLE_INFO = Object.freeze({
-  coach: { id: 'coach', label: 'Entrenador/a jefe', summary: 'Charla táctica y gestión del vestuario.' },
-  scout: { id: 'scout', label: 'Ojeador/a clandestino/a', summary: 'Detecta talento y negocia desde la barra.' },
-  analyst: { id: 'analyst', label: 'Analista de datos', summary: 'Convierte hojas de cálculo en narrativa canalla.' },
-  physio: { id: 'physio', label: 'Fisios de barrio', summary: 'Recupera tocados con métodos poco ortodoxos.' },
-  motivator: { id: 'motivator', label: 'Animador/a de grada', summary: 'Mantiene la fiesta y el ánimo en ebullición.' },
-  pressOfficer: { id: 'pressOfficer', label: 'Jefe/a de prensa', summary: 'Apaga incendios con titulares y vermut.' },
-});
-
-/** @type {readonly StaffMember[]} */
-export const STAFF_CATALOG = Object.freeze([
-  {
-    id: 'staff-maestra-pizarra',
-    role: 'coach',
-    name: "Marga 'La Pizarra' Romero",
-    description: 'Diseña esquemas imposibles y exprime al vestuario con humor barriobajero.',
-    salary: 22000,
-    hiringCost: 85000,
-    dismissalCost: 20000,
-    effects: [
-      {
-        target: 'morale',
-        value: 3,
-        frequency: 'match',
-        narrative: '{{name}} enchufa la charla táctica: la moral del vestuario sube +3.',
-      },
-    ],
-  },
-  {
-    id: 'staff-ojeador-puente',
-    role: 'scout',
-    name: "Teo 'Puente' Delgado",
-    description: 'Merodea mercadillos y conoce a cada representante del barrio.',
-    salary: 16000,
-    hiringCost: 62000,
-    dismissalCost: 15000,
-    effects: [
-      {
-        target: 'budget',
-        value: 2200,
-        frequency: 'match',
-        narrative: '{{name}} trae comisiones discretas: entran +2.200€ de chanchullos.',
-      },
-      {
-        target: 'reputation',
-        value: -1,
-        frequency: 'match',
-        narrative: 'Los tejemanejes de {{name}} levantan cejas entre la prensa (reputación −1).',
-      },
-    ],
-  },
-  {
-    id: 'staff-analista-datos',
-    role: 'analyst',
-    name: 'Irene Datos',
-    description: 'Convierte hojas de cálculo en relatos épicos para la grada.',
-    salary: 15000,
-    hiringCost: 68000,
-    dismissalCost: 17000,
-    effects: [
-      {
-        target: 'reputation',
-        value: 2,
-        frequency: 'match',
-        narrative: '{{name}} viraliza estadísticas canallas: reputación +2.',
-      },
-    ],
-  },
-  {
-    id: 'staff-fisio-habanera',
-    role: 'physio',
-    name: 'Lucho Bendita',
-    description: 'Masajista milagroso que rebaja facturas con brebajes caseros.',
-    salary: 14000,
-    hiringCost: 54000,
-    dismissalCost: 12000,
-    effects: [
-      {
-        target: 'budget',
-        value: 1500,
-        frequency: 'match',
-        narrative: '{{name}} ahorra en camillas y botiquín (+1.500€).',
-      },
-    ],
-  },
-  {
-    id: 'staff-motivadora-batucada',
-    role: 'motivator',
-    name: 'Rocío Batucada',
-    description: 'Organiza batucadas clandestinas para mantener la llama del grupo.',
-    salary: 9000,
-    hiringCost: 38000,
-    dismissalCost: 8000,
-    effects: [
-      {
-        target: 'morale',
-        value: 2,
-        frequency: 'match',
-        narrative: '{{name}} monta fiesta nocturna: moral +2.',
-      },
-      {
-        target: 'budget',
-        value: -600,
-        frequency: 'match',
-        narrative: 'Los saraos de {{name}} cuestan 600€ en refrescos premium.',
-      },
-    ],
-  },
-  {
-    id: 'staff-pr-capote',
-    role: 'pressOfficer',
-    name: 'Carla Capote',
-    description: 'Camina entre micrófonos y tapas para maquillar escándalos.',
-    salary: 11000,
-    hiringCost: 42000,
-    dismissalCost: 9000,
-    effects: [
-      {
-        target: 'reputation',
-        value: 2,
-        frequency: 'match',
-        narrative: '{{name}} maneja titulares con mano izquierda: reputación +2.',
-      },
-      {
-        target: 'budget',
-        value: -800,
-        frequency: 'match',
-        narrative: '{{name}} invita a la prensa a vermut (−800€).',
-      },
-    ],
-  },
-]);
-
-const STAFF_MAP = new Map(STAFF_CATALOG.map((member) => [member.id, member]));
-const DEFAULT_STAFF_ROSTER = Object.freeze([
-  'staff-maestra-pizarra',
-  'staff-ojeador-puente',
-  'staff-fisio-habanera',
-]);
-
-function coerceStaffId(entry) {
-  if (typeof entry === 'string') {
-    return entry.trim();
-  }
-  if (entry && typeof entry === 'object' && typeof entry.id === 'string') {
-    return entry.id.trim();
-  }
-  return '';
-}
-
-export function getStaffDefinition(staffId) {
-  if (typeof staffId !== 'string') {
-    return null;
-  }
-  return STAFF_MAP.get(staffId) ?? null;
-}
-
-export function createExampleStaffState() {
-  const roster = DEFAULT_STAFF_ROSTER.filter((id) => STAFF_MAP.has(id));
-  const rosterSet = new Set(roster);
-  const available = STAFF_CATALOG.map((member) => member.id).filter((id) => !rosterSet.has(id));
-  return { roster, available };
-}
-
-export function normaliseStaffState(value) {
-  const baseline = createExampleStaffState();
-  const input = value && typeof value === 'object' ? value : {};
-  const rawRoster = Array.isArray(input.roster) ? input.roster : [];
-  const filteredRoster = rawRoster
-    .map((entry) => coerceStaffId(entry))
-    .filter((id) => STAFF_MAP.has(id));
-  const roster = filteredRoster.length > 0
-    ? [...new Set(filteredRoster)]
-    : Array.isArray(input.roster) && input.roster.length === 0
-      ? []
-      : [...baseline.roster];
-  const rosterSet = new Set(roster);
-
-  const rawAvailable = Array.isArray(input.available) ? input.available : [];
-  const filteredAvailable = rawAvailable
-    .map((entry) => coerceStaffId(entry))
-    .filter((id) => STAFF_MAP.has(id) && !rosterSet.has(id));
-  const fallbackAvailable = STAFF_CATALOG.map((member) => member.id).filter((id) => !rosterSet.has(id));
-  const available = [...new Set([...filteredAvailable, ...fallbackAvailable])];
-
-  return { roster, available };
-}
-
-export function listStaffMembers(ids = []) {
-  if (!Array.isArray(ids)) {
-    return [];
-  }
-  return ids
-    .map((entry) => getStaffDefinition(coerceStaffId(entry)))
-    .filter((member) => member !== null);
-}
-
-export function calculateStaffWeeklyCost(staffState) {
-  const rosterIds = Array.isArray(staffState?.roster) ? staffState.roster : [];
-  const members = listStaffMembers(rosterIds);
-  return members.reduce((sum, member) => sum + Math.round(member.salary / 4), 0);
-}
-
-export function resolveStaffMatchImpact(staffState) {
-  /** @type {StaffImpact} */
-  const impact = { budget: 0, reputation: 0, morale: 0, narratives: [] };
-  const rosterIds = Array.isArray(staffState?.roster) ? staffState.roster : [];
-  const members = listStaffMembers(rosterIds);
-  members.forEach((member) => {
-    member.effects.forEach((effect) => {
-      if (!effect || effect.frequency !== 'match' || !Number.isFinite(effect.value)) {
-        return;
-      }
-      const value = Number(effect.value);
-      switch (effect.target) {
-        case 'budget':
-          impact.budget += value;
-          break;
-        case 'reputation':
-          impact.reputation += value;
-          break;
-        case 'morale':
-          impact.morale += value;
-          break;
-        default:
-          break;
-      }
-      if (effect.narrative) {
-        const text = effect.narrative.replace(/\{\{name\}\}/g, member.name);
-        impact.narratives.push(text);
-      }
-    });
-  });
-  return impact;
-}
-
-export function clampInfrastructureLevel(type, value) {
-  const blueprint = INFRASTRUCTURE_BLUEPRINT[type];
-  const numeric = Number.isFinite(value) ? Math.trunc(Number(value)) : 0;
-  const maxLevel = blueprint?.maxLevel ?? INFRASTRUCTURE_MAX_LEVEL;
-  return Math.max(0, Math.min(maxLevel, numeric));
-}
-
-function generateProspectId(rng, index = 0) {
-  const randomSegment = Math.floor(Math.max(0, rng()) * 1e6)
-    .toString(36)
-    .padStart(4, '0');
-  return `academy-${Date.now().toString(36)}-${index.toString(36)}-${randomSegment}`;
-}
-
-function clampAttributeValue(value) {
-  const numeric = Number.isFinite(value) ? Number(value) : 0;
-  return Math.max(25, Math.min(99, Math.round(numeric)));
-}
-
-function pickAcademyPosition(rng) {
-  const positions = ['GK', 'DEF', 'MID', 'FWD'];
-  const index = Math.max(0, Math.min(positions.length - 1, Math.floor(rng() * positions.length)));
-  return positions[index];
-}
-
-export function calculateStadiumCapacity(level = 0) {
-  const safeLevel = Number.isFinite(level) ? Math.max(0, Math.trunc(level)) : 0;
-  return BASE_STADIUM_CAPACITY + safeLevel * STADIUM_CAPACITY_PER_LEVEL;
-}
-
-export function calculateInfrastructureUpgradeCost(type, level) {
-  const blueprint = INFRASTRUCTURE_BLUEPRINT[type];
-  if (!blueprint) {
-    return Infinity;
-  }
-  const safeLevel = Math.max(1, Math.trunc(level));
-  return Math.round(blueprint.baseCost * Math.pow(blueprint.costGrowth, safeLevel - 1));
-}
-
-export function calculateOperatingExpensesForInfrastructure(infrastructure) {
-  const stadiumLevel = clampInfrastructureLevel('stadium', infrastructure?.stadiumLevel ?? 0);
-  const trainingLevel = clampInfrastructureLevel('training', infrastructure?.trainingLevel ?? 0);
-  const medicalLevel = clampInfrastructureLevel('medical', infrastructure?.medicalLevel ?? 0);
-  const academyLevel = clampInfrastructureLevel('academy', infrastructure?.academyLevel ?? 0);
-
-  return {
-    maintenance:
-      BASE_OPERATING_COSTS.maintenance + stadiumLevel * (INFRASTRUCTURE_BLUEPRINT.stadium.maintenancePerLevel ?? 0),
-    staff: BASE_OPERATING_COSTS.staff + trainingLevel * (INFRASTRUCTURE_BLUEPRINT.training.staffPerLevel ?? 0),
-    medical: BASE_OPERATING_COSTS.medical + medicalLevel * (INFRASTRUCTURE_BLUEPRINT.medical.medicalPerLevel ?? 0),
-    academy: BASE_OPERATING_COSTS.academy + academyLevel * (INFRASTRUCTURE_BLUEPRINT.academy.academyPerLevel ?? 0),
-  };
-}
-
-export function createExampleInfrastructure() {
-  return { stadiumLevel: 2, academyLevel: 1, medicalLevel: 1, trainingLevel: 2 };
-}
-
-export function createExampleOperatingExpenses(infrastructure = createExampleInfrastructure()) {
-  return calculateOperatingExpensesForInfrastructure(infrastructure);
-}
 
 export function createAcademyProspect(level = 1, options = {}) {
   const rng = typeof options.rng === 'function' ? options.rng : Math.random;
@@ -1540,67 +1083,11 @@ function createExampleSponsors(options = {}) {
  * @param {{ limit?: number; rng?: () => number; existingNames?: string[] }} [options]
  * @returns {SponsorOffer[]}
  */
-export function generateSponsorOffers(club, recentResults = [], options = {}) {
-  const rng = options.rng ?? Math.random;
-  const limit = Math.max(1, Math.min(options.limit ?? SPONSOR_PROFILE_DEFINITIONS.length, SPONSOR_PROFILE_DEFINITIONS.length));
-  const reputation = clampNumber(Number.isFinite(club.reputation) ? club.reputation : 50, 5, 95);
-  const performance = summariseRecentPerformance(recentResults);
-  const momentumFactor = 1 + Math.max(-0.4, Math.min(0.6, performance.average * 0.2));
-  const goalFactor = 1 + Math.max(-0.2, Math.min(0.3, performance.goalDelta * 0.03));
-  const annualBaseline = Math.max(120000, Math.round((180000 + reputation * 4200) * momentumFactor * goalFactor));
-  const usedNames = new Set(options.existingNames ?? []);
-  (club.sponsors ?? []).forEach((sponsor) => usedNames.add(sponsor.name));
-
-  const offers = [];
-  for (const definition of SPONSOR_PROFILE_DEFINITIONS) {
-    if (offers.length >= limit) {
-      break;
-    }
-    const name = buildSponsorName(definition.profile, club, rng);
-    if (usedNames.has(name)) {
-      continue;
-    }
-    usedNames.add(name);
-    const annualValue = Math.max(90000, Math.round(annualBaseline * definition.multiplier));
-    let contractValue = annualValue;
-    if (definition.frequency === 'monthly') {
-      contractValue = Math.max(18000, Math.round(annualValue / 10));
-    } else if (definition.frequency === 'match') {
-      contractValue = Math.max(9000, Math.round(annualValue / 40));
-    }
-    const upfrontBase = Math.round(annualValue * definition.upfrontFactor);
-    const momentumBonus = performance.formScore > 0 ? Math.round(performance.formScore * 2500) : 0;
-    const upfrontPayment = Math.max(15000, upfrontBase + momentumBonus);
-    const clausesFactory = COMMERCIAL_PROFILE_DATA[definition.profile]?.clauses;
-    const clauses = clausesFactory ? clausesFactory(club) : [];
-    /** @type {SponsorOffer} */
-    const offer = {
-      id: generateOfferId('sponsor'),
-      profile: /** @type {"purista" | "equilibrado" | "canalla"} */ (definition.profile),
-      contract: {
-        name,
-        value: contractValue,
-        frequency: /** @type {SponsorContract['frequency']} */ (definition.frequency),
-        lastPaidMatchDay: (club.league?.matchDay ?? 0) - 1,
-      },
-      upfrontPayment,
-      reputationImpact: definition.reputation,
-      summary: definition.summary(club),
-      clauses,
-      durationMatches: definition.durationMatches,
-    };
-    offers.push(offer);
-  }
-  return offers;
-}
 
 /**
  * Crea un acuerdo televisivo base para los clubes ejemplo.
  * @returns {TVDeal}
  */
-export function createExampleTvDeal() {
-  return { name: 'Liga Retro TV', perMatch: 28000, bonusWin: 12000, bonusDraw: 6000 };
-}
 
 /**
  * Sugiere nuevos contratos televisivos basándose en reputación y resultados.
@@ -1609,74 +1096,11 @@ export function createExampleTvDeal() {
  * @param {{ limit?: number; rng?: () => number }} [options]
  * @returns {TVDealOffer[]}
  */
-export function generateTvDeals(club, recentResults = [], options = {}) {
-  const rng = options.rng ?? Math.random;
-  const limit = Math.max(1, Math.min(options.limit ?? 2, TV_DEAL_PROFILE_DEFINITIONS.length));
-  const reputation = clampNumber(Number.isFinite(club.reputation) ? club.reputation : 45, 5, 95);
-  const performance = summariseRecentPerformance(recentResults);
-  const formBoost = 1 + Math.max(-0.35, Math.min(0.45, performance.average * 0.22));
-  const excitementFactor = 1 + Math.max(-0.25, Math.min(0.35, performance.goalDelta * 0.05));
-  const basePerMatch = Math.max(18000, Math.round((22000 + reputation * 260) * formBoost * excitementFactor));
-  const usedNames = new Set(club.tvDeal?.name ? [club.tvDeal.name] : []);
-  const offers = [];
-  const tvClauses = {
-    purista: [
-      'Retransmisión con comentaristas clásicos y espacios para cantera.',
-      'Cobertura abierta de entrenos solidarios.',
-    ],
-    equilibrado: [
-      'Panel de datos interactivo durante los partidos.',
-      'Mini-documentales mensuales sobre la táctica del equipo.',
-    ],
-    canalla: [
-      'Reality semanal con acceso al vestuario.',
-      'Programas nocturnos con debate sin filtros.',
-    ],
-  };
-
-  for (const definition of TV_DEAL_PROFILE_DEFINITIONS) {
-    if (offers.length >= limit) {
-      break;
-    }
-    const name = buildTvBrand(definition.profile, club, rng);
-    if (usedNames.has(name)) {
-      continue;
-    }
-    usedNames.add(name);
-    const perMatch = Math.max(16000, Math.round(basePerMatch * definition.multiplier));
-    const bonusWin = Math.max(6000, Math.round(perMatch * 0.45));
-    const bonusDraw = Math.max(3200, Math.round(perMatch * 0.22));
-    const upfrontBase = Math.round(perMatch * 4 * definition.upfrontFactor);
-    const flareBonus = performance.formScore > 0 ? Math.round(performance.formScore * 3000) : 0;
-    const upfrontPayment = Math.max(25000, upfrontBase + flareBonus);
-    /** @type {TVDealOffer} */
-    const offer = {
-      id: generateOfferId('tv'),
-      profile: /** @type {"purista" | "equilibrado" | "canalla"} */ (definition.profile),
-      deal: {
-        name,
-        perMatch,
-        bonusWin,
-        bonusDraw,
-      },
-      upfrontPayment,
-      reputationImpact: definition.reputation,
-      summary: definition.summary(club),
-      clauses: tvClauses[definition.profile] ?? [],
-      durationSeasons: definition.durationSeasons,
-    };
-    offers.push(offer);
-  }
-  return offers;
-}
 
 /**
  * Define un plan de merchandising genérico para el club inicial.
  * @returns {MerchandisingPlan}
  */
-function createExampleMerchandising() {
-  return { brand: 'Mercadillo Vintage', base: 18000, bonusWin: 4000, bonusStarPlayer: 2500 };
-}
 
 /**
  * Crea un registro vacío de clasificación para un club concreto.
@@ -2450,3 +1874,9 @@ export function listCanallaDecisions(overrides = {}) {
     return { ...decision };
   });
 }
+
+
+
+
+
+
