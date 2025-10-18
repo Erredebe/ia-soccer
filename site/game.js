@@ -2134,7 +2134,7 @@ function closeModal(modal) {
 }
 
 function closeAllModals() {
-  let openModals;
+  const openModals = document.querySelectorAll('.modal.is-open');
   openModals.forEach((modal) => {
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
@@ -5064,14 +5064,17 @@ function setupEventHandlers() {
   if (startNewGameButton) {
     startNewGameButton.addEventListener('click', () => {
       cancelAutoContinue();
-      startNewGame();
+      handleStartMenuNewGame();
     });
   }
 
   if (startContinueButton) {
     startContinueButton.addEventListener('click', () => {
+      if (startContinueButton.disabled) {
+        return;
+      }
       cancelAutoContinue();
-      continueSavedGame();
+      handleStartMenuContinue({ showNotice: true });
     });
   }
 
