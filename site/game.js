@@ -1665,6 +1665,29 @@ function clampOpponentStrengthValue(value) {
   return Math.max(40, Math.min(95, Math.round(value)));
 }
 
+const VIEW_MODE_ALIASES = new Map(
+  Object.entries({
+    text: ['text', 'texto', 'classic', 'clásico', 'relato'],
+    duels: ['duels', 'duel', 'duelo', 'duelos', 'cards', 'cartas'],
+    '2d': ['2d', 'board', 'retro', 'pizarra', 'visual'],
+  })
+    .map(([normalised, variants]) =>
+      variants.map((variant) => [variant, normalised])
+    )
+    .flat()
+);
+
+function normaliseViewMode(value) {
+  if (typeof value === 'string') {
+    const key = value.trim().toLowerCase();
+    const resolved = VIEW_MODE_ALIASES.get(key);
+    if (resolved) {
+      return resolved;
+    }
+  }
+  return 'text';
+}
+
 function inferStrengthFromStanding(standing) {
   if (!standing) {
     return configState?.opponentStrength ?? defaultOpponentStrength;
@@ -2051,6 +2074,179 @@ function cancelAutoContinue() {
   }
 }
 
+function buildSavedStateSnapshot() {
+  if (!clubState || !leagueState || !configState) {
+    return null;
+  }
+  const config = {
+    ...configState,
+    instructions: { ...(configState.instructions ?? {}) },
+    startingLineup: Array.isArray(configState.startingLineup)
+      ? [...configState.startingLineup]
+      : [],
+    substitutes: Array.isArray(configState.substitutes) ? [...configState.substitutes] : [],
+  };
+  const transferMarket = Array.isArray(transferMarketState)
+    ? transferMarketState.map((target) => ({ ...target }))
+    : [];
+  const history = Array.isArray(matchHistory) ? [...matchHistory] : [];
+  return {
+    club: { ...clubState },
+    league: { ...leagueState },
+    config,
+    transferMarket,
+    history,
+  };
+}
+
+function buildLineupFromSave(saved, fallback, validIds, usedIds, squadOrder) {
+  const limit = Math.max(0, fallback.length);
+  const lineup = [];
+  const addCandidate = (candidate) => {
+    if (lineup.length >= limit) {
+      return;
+    }
+    if (typeof candidate !== 'string') {
+      return;
+    }
+    const trimmed = candidate.trim();
+    if (trimmed.length === 0 || !validIds.has(trimmed) || usedIds.has(trimmed)) {
+      return;
+    }
+    lineup.push(trimmed);
+    usedIds.add(trimmed);
+  };
+  if (Array.isArray(saved)) {
+    saved.forEach(addCandidate);
+  }
+  fallback.forEach(addCandidate);
+  squadOrder.forEach(addCandidate);
+  return lineup;
+}
+
+function normaliseConfigFromSave(savedConfig, club) {
+  const defaults = buildInitialConfig(club);
+  const config = {
+    ...defaults,
+    ...(savedConfig ?? {}),
+  };
+  const squadIds = new Set(club.squad.map((player) => player.id));
+  const squadOrder = club.squad.map((player) => player.id);
+  const usedIds = new Set();
+  const defaultLineup = createDefaultLineup(club);
+  config.instructions = {
+    ...createDefaultInstructions(),
+    ...(defaults.instructions ?? {}),
+    ...(savedConfig?.instructions ?? {}),
+  };
+  config.startingLineup = buildLineupFromSave(
+    savedConfig?.startingLineup,
+    defaultLineup.starters,
+    squadIds,
+    usedIds,
+    squadOrder
+  );
+  config.substitutes = buildLineupFromSave(
+    savedConfig?.substitutes,
+    defaultLineup.substitutes,
+    squadIds,
+    usedIds,
+    squadOrder
+  );
+  if (typeof savedConfig?.opponentStrength === 'number') {
+    config.opponentStrength = clampOpponentStrengthValue(savedConfig.opponentStrength);
+  } else {
+    config.opponentStrength = clampOpponentStrengthValue(defaults.opponentStrength);
+  }
+  if (typeof savedConfig?.difficultyMultiplier === 'number' && Number.isFinite(savedConfig.difficultyMultiplier)) {
+    config.difficultyMultiplier = savedConfig.difficultyMultiplier;
+  } else if (
+    typeof savedConfig?.difficultyMultiplier === 'string' &&
+    Number.isFinite(Number.parseFloat(savedConfig.difficultyMultiplier))
+  ) {
+    config.difficultyMultiplier = Number.parseFloat(savedConfig.difficultyMultiplier);
+  }
+  config.viewMode = normaliseViewMode(savedConfig?.viewMode ?? config.viewMode);
+  if (typeof savedConfig?.seed === 'number' || typeof savedConfig?.seed === 'string') {
+    config.seed = String(savedConfig.seed);
+  } else if (defaults.seed !== undefined) {
+    config.seed = defaults.seed;
+  } else {
+    config.seed = '';
+  }
+  if (typeof savedConfig?.opponentName === 'string') {
+    config.opponentName = savedConfig.opponentName;
+  }
+  config.home = Boolean(savedConfig?.home ?? config.home);
+  return config;
+}
+
+function applyLoadedState(state) {
+  if (!state || !state.club || !state.league || !state.config) {
+    throw new Error('Estado guardado incompleto o corrupto.');
+  }
+  const restoredClub = ensureCommercialOffersAvailable({
+    ...state.club,
+    logoUrl: resolveClubLogoUrl(state.club),
+  });
+  restoredClub.seasonStats = normaliseSeasonStats(restoredClub.seasonStats);
+  restoredClub.staff = normaliseStaffState(restoredClub.staff);
+  clubState = restoredClub;
+  leagueState = { ...state.league };
+  updateLeagueSettingsFromState(leagueState, { syncSelectors: true });
+  cupState = clubState.cup ?? createExampleCup(clubState.name, { participants: leagueState?.rivals });
+  clubState = { ...clubState, cup: cupState };
+  transferMarketState = Array.isArray(state.transferMarket)
+    ? state.transferMarket.map((target) => ({ ...target }))
+    : [];
+  configState = normaliseConfigFromSave(state.config, clubState);
+  opponentRotation = computeOpponentRotation(leagueState, clubState.name);
+  matchHistory = Array.isArray(state.history) ? [...state.history] : [];
+  hasLatestReport = matchHistory.length > 0;
+  currentHistoryEntryId = hasLatestReport ? matchHistory[0]?.id ?? null : null;
+  currentReportData = hasLatestReport ? matchHistory[0]?.report ?? null : null;
+  reportHistoryFilterSeason = 'all';
+  activeReportTab = 'current';
+  selectedLineupPlayerId = null;
+  editingPlayerId = null;
+  staffFeedback = '';
+  clubIdentity = extractClubIdentity(clubState);
+  ensureLineupCompleteness();
+}
+
+function persistState(mode = 'silent') {
+  const snapshot = buildSavedStateSnapshot();
+  if (!snapshot) {
+    if (mode === 'manual') {
+      showSaveMessage('Todavía no hay una partida activa para guardar.', 'error');
+    }
+    return;
+  }
+  try {
+    const payload = saveGame(snapshot);
+    if (!payload) {
+      const message =
+        mode === 'manual'
+          ? 'No se pudo guardar la partida. Comprueba el almacenamiento del navegador.'
+          : 'Guardado automático fallido. Revisa los permisos de almacenamiento.';
+      showSaveMessage(message, 'error');
+      return;
+    }
+    pendingSavedGame = payload;
+    setContinueAvailability(true);
+    if (mode === 'manual') {
+      showSaveMessage('Partida guardada. Podrás continuar la próxima vez que vuelvas al despacho.');
+    }
+  } catch (error) {
+    console.error('Error al guardar la partida', error);
+    const message =
+      mode === 'manual'
+        ? 'No se pudo guardar la partida. Comprueba el almacenamiento del navegador.'
+        : 'Guardado automático fallido. Revisa los permisos de almacenamiento.';
+    showSaveMessage(message, 'error');
+  }
+}
+
 function refreshManagementInterfaceAfterLoad() {
   updateFormDefaults();
   updateClubSummary();
@@ -2202,27 +2398,33 @@ function attachModalHandlers() {
   }
   modalHandlersAttached = true;
 
-  let triggers;
+  const triggers = getModalTriggers();
   triggers.forEach((trigger) => {
-    trigger.addEventListener('click', () => {
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
       const targetSelector = trigger.getAttribute('data-modal-target');
       if (!targetSelector) {
         return;
       }
-      let modal;
-      openModal(modal, trigger);
+      const modal = document.querySelector(targetSelector);
+      if (modal instanceof HTMLElement) {
+        openModal(modal, trigger);
+      }
     });
   });
 
-  let closers;
+  const closers = Array.from(document.querySelectorAll('[data-modal-close]'));
   closers.forEach((closer) => {
-    closer.addEventListener('click', () => {
+    closer.addEventListener('click', (event) => {
+      event.preventDefault();
       const modal = closer.closest('.modal');
-      closeModal(modal);
+      if (modal instanceof HTMLElement) {
+        closeModal(modal);
+      }
     });
   });
 
-  let modals;
+  const modals = Array.from(document.querySelectorAll('.modal'));
   modals.forEach((modal) => {
     modal.addEventListener('click', (event) => {
       if (event.target === modal) {
@@ -2233,8 +2435,8 @@ function attachModalHandlers() {
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      let openModalElement;
-      if (openModalElement) {
+      const openModalElement = document.querySelector('.modal.is-open');
+      if (openModalElement instanceof HTMLElement) {
         closeModal(openModalElement);
       }
     }
