@@ -1879,25 +1879,24 @@ function handleStartMenuNewGame() {
   }
 }
 
-function updateBodyModalState() {
-  const hasOpenModal = document.querySelector('.modal.is-open') !== null;
-  document.body.classList.toggle('modal-open', hasOpenModal);
-  if (document.documentElement) {
-    document.documentElement.classList.toggle('modal-open', hasOpenModal);
-  }
-}
-
 function focusModal(modal) {
   if (!(modal instanceof HTMLElement)) {
     return;
   }
 
-  const focusTarget =
+  const modalContent = modal.querySelector('.modal__content');
+  let focusTarget =
     modal.querySelector('[data-modal-initial-focus]') ?? modal.querySelector(FOCUSABLE_SELECTOR);
 
+  if (!(focusTarget instanceof HTMLElement) && modalContent instanceof HTMLElement) {
+    modalContent.setAttribute('tabindex', '-1');
+    focusTarget = modalContent;
+  }
+
   const scrollModalIntoView = () => {
-    if (typeof modal.scrollIntoView === 'function') {
-      modal.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const scrollTarget = modalContent ?? modal;
+    if (scrollTarget && typeof scrollTarget.scrollIntoView === 'function') {
+      scrollTarget.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
   };
 
@@ -1910,6 +1909,41 @@ function focusModal(modal) {
     window.requestAnimationFrame(() => {
       scrollModalIntoView();
     });
+  }
+}
+
+function ensureModalAccessibleControls(modal) {
+  if (!(modal instanceof HTMLElement)) {
+    return;
+  }
+
+  const content = modal.querySelector('.modal__content');
+  if (!(content instanceof HTMLElement)) {
+    return;
+  }
+
+  const hasFooterClose = content.querySelector('[data-modal-close][data-modal-footer]');
+  if (!hasFooterClose) {
+    const footer = document.createElement('div');
+    footer.className = 'modal__actions';
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'modal__action modal__action--dismiss';
+    closeButton.setAttribute('data-modal-close', '');
+    closeButton.setAttribute('data-modal-footer', 'true');
+    closeButton.textContent = 'Cerrar';
+
+    footer.append(closeButton);
+    content.append(footer);
+  }
+}
+
+function updateBodyModalState() {
+  const hasOpenModal = document.querySelector('.modal.is-open') !== null;
+  document.body.classList.toggle('modal-open', hasOpenModal);
+  if (document.documentElement) {
+    document.documentElement.classList.toggle('modal-open', hasOpenModal);
   }
 }
 
@@ -1974,7 +2008,7 @@ function openModal(modal, trigger) {
     return;
   }
 
-  const resolvedTrigger = trigger ?? findModalTriggerFor(modal);
+  const resolvedTrigger = findModalTriggerFor(modal) ?? trigger ?? null;
 
   if (modal.classList.contains('is-open')) {
     applyModalTriggerState(resolvedTrigger);
@@ -1996,6 +2030,16 @@ function attachModalHandlers() {
   }
   modalHandlersAttached = true;
 
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach((modal) => {
+    ensureModalAccessibleControls(modal);
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeModal(modal);
+      }
+    });
+  });
+
   const triggers = document.querySelectorAll(MODAL_TRIGGER_SELECTOR);
   triggers.forEach((trigger) => {
     trigger.addEventListener('click', () => {
@@ -2013,15 +2057,6 @@ function attachModalHandlers() {
     closer.addEventListener('click', () => {
       const modal = closer.closest('.modal');
       closeModal(modal);
-    });
-  });
-
-  const modals = document.querySelectorAll('.modal');
-  modals.forEach((modal) => {
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        closeModal(modal);
-      }
     });
   });
 
@@ -6269,14 +6304,21 @@ form.addEventListener('submit', (event) => {
   switchToReportView();
 });
 
-resetButton.addEventListener('click', () => {
-  clearSavedGame();
-  clearSaveMessage();
-  clearLoadNotice();
-  const identity = extractClubIdentity(clubState);
-  rebuildClubState(identity);
-  showLoadNotice('Club reiniciado. Guardado anterior eliminado.');
-});
+if (resetButton) {
+  resetButton.addEventListener('click', () => {
+    const userConfirmed = window.confirm('¿Deseas reiniciar la partida? Se perderá el progreso guardado.');
+    if (!userConfirmed) {
+      showLoadNotice('Reinicio cancelado. El progreso sigue a salvo.');
+      return;
+    }
+    clearSavedGame();
+    clearSaveMessage();
+    clearLoadNotice();
+    const identity = extractClubIdentity(clubState);
+    rebuildClubState(identity);
+    showLoadNotice('Club reiniciado. Guardado anterior eliminado.');
+  });
+}
 if (seedInput) {
   seedInput.addEventListener('input', () => {
     const value = seedInput.value.trim();
