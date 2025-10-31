@@ -6270,6 +6270,15 @@ form.addEventListener('submit', (event) => {
 });
 
 resetButton.addEventListener('click', () => {
+  const confirmationMessage =
+    '¿Seguro que quieres reiniciar el club? Esta acción eliminará el progreso guardado.';
+  const confirmed = window.confirm(confirmationMessage);
+
+  if (!confirmed) {
+    showLoadNotice('Reinicio cancelado. El club sigue intacto.');
+    return;
+  }
+
   clearSavedGame();
   clearSaveMessage();
   clearLoadNotice();
