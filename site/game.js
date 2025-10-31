@@ -1722,9 +1722,27 @@ let selectedLineupPlayerId = null;
 let staffFeedback = '';
 let pendingSavedGame = null;
 let autoContinueTimeoutId = null;
+let lastModalInvoker = null;
 
 function getModalTriggers() {
   return Array.from(document.querySelectorAll(MODAL_TRIGGER_SELECTOR));
+}
+
+function setLastModalInvoker(trigger) {
+  if (trigger instanceof HTMLElement) {
+    lastModalInvoker = trigger;
+  } else {
+    lastModalInvoker = null;
+  }
+}
+
+function focusLastModalInvoker() {
+  if (lastModalInvoker instanceof HTMLElement) {
+    window.requestAnimationFrame(() => {
+      lastModalInvoker?.focus?.();
+    });
+  }
+  lastModalInvoker = null;
 }
 
 function applyModalTriggerState(trigger) {
@@ -1960,10 +1978,12 @@ function closeModal(modal) {
   updateBodyModalState();
   if (!document.querySelector('.modal.is-open')) {
     applyModalTriggerState(null);
+    focusLastModalInvoker();
   }
 }
 
-function closeAllModals() {
+function closeAllModals(options = {}) {
+  const { skipFocus = false, skipTriggerReset = false } = options;
   const openModals = document.querySelectorAll('.modal.is-open');
   openModals.forEach((modal) => {
     modal.classList.remove('is-open');
@@ -1973,7 +1993,12 @@ function closeAllModals() {
     }
   });
   updateBodyModalState();
-  applyModalTriggerState(null);
+  if (!skipTriggerReset) {
+    applyModalTriggerState(null);
+  }
+  if (!skipFocus) {
+    focusLastModalInvoker();
+  }
 }
 
 if (breadcrumbRootLink) {
@@ -2008,19 +2033,22 @@ function openModal(modal, trigger) {
     return;
   }
 
-  const resolvedTrigger = findModalTriggerFor(modal) ?? trigger ?? null;
+  const navigationTrigger = findModalTriggerFor(modal);
+  const invokingElement = trigger ?? navigationTrigger ?? null;
 
   if (modal.classList.contains('is-open')) {
-    applyModalTriggerState(resolvedTrigger);
+    applyModalTriggerState(navigationTrigger ?? invokingElement);
+    setLastModalInvoker(invokingElement);
     focusModal(modal);
     return;
   }
 
-  closeAllModals();
+  closeAllModals({ skipFocus: true, skipTriggerReset: true });
   modal.classList.add('is-open');
   modal.setAttribute('aria-hidden', 'false');
   updateBodyModalState();
-  applyModalTriggerState(resolvedTrigger);
+  applyModalTriggerState(navigationTrigger ?? invokingElement);
+  setLastModalInvoker(invokingElement);
   focusModal(modal);
 }
 
