@@ -1882,6 +1882,9 @@ function handleStartMenuNewGame() {
 function updateBodyModalState() {
   const hasOpenModal = document.querySelector('.modal.is-open') !== null;
   document.body.classList.toggle('modal-open', hasOpenModal);
+  if (document.documentElement) {
+    document.documentElement.classList.toggle('modal-open', hasOpenModal);
+  }
 }
 
 function focusModal(modal) {
@@ -1892,9 +1895,20 @@ function focusModal(modal) {
   const focusTarget =
     modal.querySelector('[data-modal-initial-focus]') ?? modal.querySelector(FOCUSABLE_SELECTOR);
 
+  const scrollModalIntoView = () => {
+    if (typeof modal.scrollIntoView === 'function') {
+      modal.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  };
+
   if (focusTarget instanceof HTMLElement) {
     window.requestAnimationFrame(() => {
+      scrollModalIntoView();
       focusTarget.focus();
+    });
+  } else {
+    window.requestAnimationFrame(() => {
+      scrollModalIntoView();
     });
   }
 }
