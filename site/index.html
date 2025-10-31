@@ -959,22 +959,58 @@
               <h2 id="league-title">Clasificación</h2>
               <span id="league-matchday" class="league-badge"></span>
             </div>
-            <table class="league-table">
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Club</th>
-                  <th scope="col">J</th>
-                  <th scope="col">G</th>
-                  <th scope="col">E</th>
-                  <th scope="col">P</th>
-                  <th scope="col">GF</th>
-                  <th scope="col">GC</th>
-                  <th scope="col">Pts</th>
-                </tr>
-              </thead>
-              <tbody id="league-table-body"></tbody>
-            </table>
+            <div class="league-table-wrapper table-scroll" role="group" aria-labelledby="league-title">
+              <table class="league-table">
+                <caption class="visually-hidden">Tabla de posiciones de la liga con abreviaturas explicadas en la leyenda siguiente.</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Club</th>
+                    <th scope="col">J</th>
+                    <th scope="col">G</th>
+                    <th scope="col">E</th>
+                    <th scope="col">P</th>
+                    <th scope="col">GF</th>
+                    <th scope="col">GC</th>
+                    <th scope="col">Pts</th>
+                  </tr>
+                </thead>
+                <tbody id="league-table-body"></tbody>
+              </table>
+            </div>
+            <section class="league-legend" aria-label="Leyenda de abreviaturas de la clasificación">
+              <h3 class="league-legend__title">Cómo leer la tabla</h3>
+              <dl class="league-legend__list">
+                <div>
+                  <dt>J</dt>
+                  <dd>Partidos jugados.</dd>
+                </div>
+                <div>
+                  <dt>G</dt>
+                  <dd>Victorias firmadas por el club.</dd>
+                </div>
+                <div>
+                  <dt>E</dt>
+                  <dd>Encuentros terminados en empate.</dd>
+                </div>
+                <div>
+                  <dt>P</dt>
+                  <dd>Partidos perdidos.</dd>
+                </div>
+                <div>
+                  <dt>GF</dt>
+                  <dd>Goles a favor acumulados.</dd>
+                </div>
+                <div>
+                  <dt>GC</dt>
+                  <dd>Goles encajados.</dd>
+                </div>
+                <div>
+                  <dt>Pts</dt>
+                  <dd>Total de puntos en la clasificación.</dd>
+                </div>
+              </dl>
+            </section>
             <div class="league-panel__stats">
               <section class="league-stats">
                 <h3>Máximos goleadores</h3>
