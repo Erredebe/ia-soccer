@@ -17,7 +17,7 @@ Estas indicaciones aplican a todo el repositorio salvo que un subdirectorio cont
 
 ## Código
 
-- Prefiere TypeScript para nuevas funcionalidades; si necesitas JavaScript, acompáñalo de tipos o comentarios que mantengan la coherencia con los modelos existentes.
+- El proyecto utiliza JavaScript con anotaciones JSDoc para tipado. Mantén este enfoque para nuevas funcionalidades, asegurándote de que los tipos JSDoc sean coherentes con los modelos existentes en `src/types.js`.
 - Añade pruebas en `tests/` cuando introduzcas lógica nueva.
 
 ## Documentación adicional

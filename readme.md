@@ -12,12 +12,12 @@ IA Soccer es un simulador tipo "manager" de fútbol con tono canallesco inspirad
 
 ## Estructura del repositorio
 
-- `src/types.ts`: definiciones TypeScript de jugadores, clubes, partidos y decisiones.
-- `src/core/engine.ts`: motor principal de simulación de partidos.
-- `src/core/reputation.ts`: lógica de reputación y consecuencias de las decisiones canallas.
-- `src/core/economy.ts`: utilidades económicas y cálculo de flujos.
-- `src/core/data.ts`: datos de ejemplo para arrancar la demo.
-- `src/cli/index.ts`: interfaz de línea de comandos canallesca.
+- `src/types.js`: definiciones JSDoc para jugadores, clubes, partidos y decisiones.
+- `src/core/engine.js`: motor principal de simulación de partidos.
+- `src/core/reputation.js`: lógica de reputación y consecuencias de las decisiones canallas.
+- `src/core/economy.js`: utilidades económicas y cálculo de flujos.
+- `src/core/data.js`: datos de ejemplo para arrancar la demo.
+- `src/cli/index.js`: interfaz de línea de comandos canallesca.
 - `tests/`: batería de pruebas automatizadas.
 - `site/`: material de documentación generado con VitePress.
 
@@ -37,10 +37,10 @@ Las dependencias están bloqueadas en el repositorio para facilitar la instalaci
 ## Scripts disponibles
 
 ```bash
-npm run build   # Compila el proyecto a JavaScript en dist/
-npm run demo    # Ejecuta la demo interactiva con tsx
+npm run build   # Genera el paquete de distribución en public/
+npm run demo    # Ejecuta la demo interactiva del CLI
 npm run dev     # Ejecuta el CLI con Node.js
-npm test        # Lanza las pruebas unitarias con Vitest
+npm test        # Lanza las pruebas unitarias con el test runner de Node.js
 ```
 
 ## Cómo ejecutar la demo
