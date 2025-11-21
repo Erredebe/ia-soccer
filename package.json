@@ -17,5 +17,12 @@
     "canallesco"
   ],
   "author": "IA Assistant",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "src/cli/index.js",
+  "bin": {
+    "ia-soccer": "src/cli/index.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
