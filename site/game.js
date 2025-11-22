@@ -2,6 +2,10 @@ import { initializeGame } from './js/actions.js';
 import { setupEventListeners } from './js/events.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  setupEventListeners();
-  initializeGame();
+  try {
+    setupEventListeners();
+    initializeGame();
+  } catch (error) {
+    console.error('Game initialization failed:', error);
+  }
 });

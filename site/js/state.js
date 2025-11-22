@@ -9,6 +9,7 @@ import {
   createExampleTransferMarket,
   createDefaultMatchConfig,
   createDefaultInstructions,
+  createDefaultLineup,
   createSeasonStats,
   normaliseStaffState,
   generateSponsorOffers,
