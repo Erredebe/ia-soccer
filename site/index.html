@@ -48,232 +48,132 @@
       </div>
     </section>
 
-    <main class="page is-hidden" aria-hidden="true">
-      <header class="hero">
-        <div class="hero__heading">
-          <h1>IA Soccer</h1>
-          <p class="tagline">Dirige cada jornada y disfruta de la crónica canalla al instante.</p>
+    <div class="app-layout is-hidden" id="app-layout" aria-hidden="true">
+      <aside class="app-sidebar">
+        <div class="app-sidebar__header">
+          <div class="app-sidebar__logo">
+            <img src="assets/club-crest.svg" alt="Escudo" id="sidebar-club-logo" />
+          </div>
+          <h2 class="app-sidebar__title">IA Soccer</h2>
         </div>
-        <div class="hero__scoreboard" role="region" aria-label="Panel de jornada">
-          <div class="hero__scoreboard-main">
-            <span class="hero__scoreboard-badge" id="hero-matchday-badge" aria-live="polite">Jornada 1</span>
-            <div class="hero__scoreboard-field">
-              <span class="hero__scoreboard-label">Rival</span>
-              <span class="hero__scoreboard-value" id="hero-match-opponent-name" aria-live="polite"
-                >Rival misterioso</span
-              >
-            </div>
-            <div class="hero__scoreboard-field">
-              <span class="hero__scoreboard-label">Estado</span>
-              <span class="hero__scoreboard-value" id="hero-match-status" aria-live="polite"
-                >Convocatoria por definir</span
-              >
-            </div>
+        
+        <nav class="app-nav">
+          <div class="app-nav__section">
+            <h3 class="app-nav__title">Competición</h3>
+            <ul class="app-nav__list">
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-report">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-results"></use></svg>
+                  Resultados
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-league">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-league"></use></svg>
+                  Clasificación
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-cup">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-club-shield"></use></svg>
+                  Copa
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-calendar">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-calendar"></use></svg>
+                  Calendario
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-opponent">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-opponent"></use></svg>
+                  Rival
+                </button>
+              </li>
+            </ul>
           </div>
-          <div class="hero__scoreboard-panels" role="navigation" aria-label="Accesos rápidos retro">
-            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-report">
-              <span class="hero__scoreboard-panel-title">Resultados</span>
-              <span class="hero__scoreboard-panel-subtitle">Crónica al instante</span>
-            </button>
-            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-league">
-              <span class="hero__scoreboard-panel-title">Clasificación</span>
-              <span class="hero__scoreboard-panel-subtitle">Tabla y tendencias</span>
-            </button>
-            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-calendar">
-              <span class="hero__scoreboard-panel-title">Calendario</span>
-              <span class="hero__scoreboard-panel-subtitle">Planificación</span>
-            </button>
-            <button type="button" class="hero__scoreboard-panel" data-modal-target="#modal-finances">
-              <span class="hero__scoreboard-panel-title">Economía</span>
-              <span class="hero__scoreboard-panel-subtitle">Caja del club</span>
-            </button>
+
+          <div class="app-nav__section">
+            <h3 class="app-nav__title">Gestión</h3>
+            <ul class="app-nav__list">
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-lineup">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-lineup"></use></svg>
+                  Alineación
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-tactics">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-tactics"></use></svg>
+                  Tácticas
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-decisions">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-decisions"></use></svg>
+                  Decisiones
+                </button>
+              </li>
+            </ul>
           </div>
+
+          <div class="app-nav__section">
+            <h3 class="app-nav__title">Club</h3>
+            <ul class="app-nav__list">
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-finances">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-finances"></use></svg>
+                  Economía
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-stadium">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-stadium"></use></svg>
+                  Estadio
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-transfers">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-transfers"></use></svg>
+                  Fichar
+                </button>
+              </li>
+              <li>
+                <button type="button" class="app-nav__link" data-modal-target="#modal-staff">
+                  <svg class="app-nav__icon" viewBox="0 0 24 24"><use href="icons.svg#icon-staff"></use></svg>
+                  Empleados
+                </button>
+              </li>
+            </ul>
+          </div>
+        </nav>
+        
+        <div class="app-sidebar__footer">
+          <p class="app-version">v1.0.2 Retro</p>
         </div>
-      </header>
-
-      <nav class="breadcrumbs" aria-label="Ruta de navegación del tablero">
-        <ol class="breadcrumbs__list">
-          <li class="breadcrumbs__item">
-            <a href="#" id="breadcrumb-root" class="breadcrumbs__link breadcrumbs__link--root">Tablero principal</a>
-          </li>
-          <li class="breadcrumbs__item" id="breadcrumb-tab-item">
-            <a href="#" id="breadcrumb-tab-link" class="breadcrumbs__link" aria-current="page">Club</a>
-          </li>
-          <li class="breadcrumbs__item breadcrumbs__item--current" id="breadcrumb-module-item" hidden>
-            <span class="breadcrumbs__current" id="breadcrumb-module-label"></span>
-          </li>
-        </ol>
-      </nav>
-
-      <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
-
-      <button
-        type="button"
-        class="sidebar-toggle"
-        id="sidebar-toggle"
-        aria-controls="sidebar-panel"
-        aria-expanded="false"
-      >
-        Panel de control retro
-      </button>
-
-      <aside class="page__sidebar" id="sidebar-panel">
-        <section class="card control-card" id="control-card">
-          <header class="control-card__header">
-            <div>
-              <h2>Panel de control retro</h2>
-              <p class="control-card__tagline">Accede rápido a cada área del club como en los clásicos PC Fútbol.</p>
-            </div>
-            <span class="control-card__badge">Modo manager</span>
-          </header>
-          <div class="control-panel" role="list">
-            <section class="control-panel__section" aria-labelledby="control-panel-section-matches">
-              <h3 id="control-panel-section-matches" class="control-panel__section-title">Partidos</h3>
-              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-matches">
-                <button
-                  type="button"
-                  class="control-panel__option control-panel__option--highlight"
-                  data-panel-action="results"
-                  data-modal-target="#modal-report"
-                  disabled
-                  aria-disabled="true"
-                >
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-results"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Resultados</span>
-                </button>
-                <button
-                  type="button"
-                  class="control-panel__option control-panel__option--highlight control-panel__option--active"
-                  data-modal-target="#modal-league"
-                  aria-current="page"
-                >
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-league"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Clasificación</span>
-                </button>
-                <button type="button" class="control-panel__option" data-modal-target="#modal-cup">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-club-shield"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Copa</span>
-                </button>
-                <button type="button" class="control-panel__option" data-modal-target="#modal-calendar">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-calendar"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Calendario</span>
-                </button>
-                <button type="button" class="control-panel__option" data-modal-target="#modal-opponent">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-opponent"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Rival</span>
-                </button>
-              </div>
-            </section>
-
-            <div class="control-panel__section-divider" aria-hidden="true"></div>
-
-            <section class="control-panel__section" aria-labelledby="control-panel-section-management">
-              <h3 id="control-panel-section-management" class="control-panel__section-title">Gestión deportiva</h3>
-              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-management">
-                <button type="button" class="control-panel__option" data-modal-target="#modal-lineup">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-lineup"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Alineación</span>
-                </button>
-                <button type="button" class="control-panel__option" data-modal-target="#modal-tactics">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-tactics"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Tácticas</span>
-                </button>
-                <button type="button" class="control-panel__option" data-modal-target="#modal-decisions">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-decisions"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Decisiones</span>
-                </button>
-              </div>
-            </section>
-
-            <div class="control-panel__section-divider" aria-hidden="true"></div>
-
-            <section class="control-panel__section" aria-labelledby="control-panel-section-finances">
-              <h3 id="control-panel-section-finances" class="control-panel__section-title">Finanzas</h3>
-              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-finances">
-                <button type="button" class="control-panel__option" data-modal-target="#modal-finances">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-finances"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Caja</span>
-                </button>
-                <button type="button" class="control-panel__option" data-modal-target="#modal-stadium">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-stadium"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Estadio</span>
-                </button>
-              </div>
-            </section>
-
-            <div class="control-panel__section-divider" aria-hidden="true"></div>
-
-            <section class="control-panel__section" aria-labelledby="control-panel-section-staff">
-              <h3 id="control-panel-section-staff" class="control-panel__section-title">Personal</h3>
-              <div class="control-panel__section-options" role="group" aria-labelledby="control-panel-section-staff">
-                <button
-                  type="button"
-                  class="control-panel__option control-panel__option--highlight"
-                  data-modal-target="#modal-transfers"
-                >
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-transfers"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Fichar</span>
-                </button>
-                <button type="button" class="control-panel__option" data-modal-target="#modal-staff">
-                  <span class="control-panel__icon" aria-hidden="true">
-                    <svg class="control-panel__svg" viewBox="0 0 24 24" focusable="false">
-                      <use href="icons.svg#icon-staff"></use>
-                    </svg>
-                  </span>
-                  <span class="control-panel__label">Empleados</span>
-                </button>
-              </div>
-            </section>
-          </div>
-          <p class="control-card__hint">Selecciona un módulo para gestionar tu club con estilo noventero.</p>
-        </section>
       </aside>
 
-      <section class="page__content">
+      <main class="app-main">
+        <header class="app-topbar">
+          <div class="app-topbar__status">
+            <span class="status-badge" id="hero-matchday-badge">Jornada 1</span>
+            <div class="status-info">
+              <span class="status-label">Próximo rival</span>
+              <span class="status-value" id="hero-match-opponent-name">Rival misterioso</span>
+            </div>
+            <div class="status-info">
+              <span class="status-label">Estado</span>
+              <span class="status-value" id="hero-match-status">Convocatoria por definir</span>
+            </div>
+          </div>
+          <div class="app-topbar__actions">
+             <p id="load-notice" class="load-notice" aria-live="polite" hidden></p>
+          </div>
+        </header>
+
+        <div class="app-content">
+
         <section class="dashboard-tabs" aria-label="Paneles destacados del dashboard">
           <div
             class="dashboard-tabs__tablist"
@@ -1509,18 +1409,212 @@
                     Todavía no has disputado ninguna jornada.
                   </p>
                   <ol id="report-history-list" class="report-history__list" aria-live="polite"></ol>
+                    <span id="mvp-badge" class="mvp-badge" hidden></span>
+                  </div>
+                </div>
+
+                <section
+                  id="match-visualization"
+                  class="match-visualization"
+                  aria-label="Visualización 2D del partido"
+                  tabindex="0"
+                  data-state="empty"
+                  aria-hidden="true"
+                  hidden
+                >
+                  <div class="match-visualization__header">
+                    <h3>Visualización 2D retro</h3>
+                    <span id="match-visualization-frame" class="match-visualization__frame">—</span>
+                  </div>
+                  <p id="match-visualization-status" class="match-visualization__status">
+                    Activa el modo 2D para recrear las jugadas en la pizarra luminosa.
+                  </p>
+                  <div class="match-visualization__screen-wrapper">
+                    <div
+                      id="match-visualization-screen"
+                      class="match-visualization__screen"
+                      aria-live="polite"
+                    ></div>
+                  </div>
+                  <div class="match-visualization__meta">
+                    <span id="match-visualization-minute" class="match-visualization__minute">—</span>
+                    <span id="match-visualization-label" class="match-visualization__label"></span>
+                  </div>
+                  <div
+                    class="match-visualization__controls"
+                    role="group"
+                    aria-label="Controles de la simulación 2D"
+                  >
+                    <button
+                      type="button"
+                      id="match-visualization-prev"
+                      class="match-visualization__button"
+                      aria-label="Fotograma anterior"
+                    >
+                      &lt;&lt;
+                    </button>
+                    <input
+                      type="range"
+                      id="match-visualization-slider"
+                      class="match-visualization__slider"
+                      min="0"
+                      max="0"
+                      value="0"
+                      step="1"
+                      aria-label="Fotograma del partido"
+                    />
+                    <button
+                      type="button"
+                      id="match-visualization-next"
+                      class="match-visualization__button"
+                      aria-label="Fotograma siguiente"
+                    >
+                      &gt;&gt;
+                    </button>
+                  </div>
+                <ul id="match-visualization-legend" class="match-visualization__legend"></ul>
+              </section>
+
+              <section
+                id="match-duels"
+                class="match-duels"
+                aria-label="Cartas duelo por duelo"
+                data-state="empty"
+                hidden
+                aria-hidden="true"
+              >
+                <div class="match-duels__header">
+                  <h3>Cartas duelo por duelo</h3>
+                  <span id="match-duels-score" class="match-duels__score" aria-live="polite"
+                    >Marcador cartas: —</span
+                  >
+                </div>
+                <p id="match-duels-status" class="match-duels__status" aria-live="polite">
+                  Selecciona el modo cartas para comparar jugador a jugador.
+                </p>
+                <div
+                  id="match-duels-list"
+                  class="match-duels__list"
+                  role="list"
+                  aria-live="polite"
+                  aria-busy="false"
+                ></div>
+              </section>
+
+              <div class="finances-breakdown">
+                <div class="finances-panel finances-panel--income">
+                    <header class="finances-panel__header">
+                      <h3>Ingresos</h3>
+                      <p id="finances-income-total" class="finances-total"></p>
+                    </header>
+                    <div class="finances-panel__visual" aria-hidden="true">
+                      <div class="finances-donut finances-donut--income" id="finances-income-donut"></div>
+                    </div>
+                    <ul id="finances-income" class="finances-list finances-list--income"></ul>
+                  </div>
+                  <div class="finances-panel finances-panel--expense">
+                    <header class="finances-panel__header">
+                      <h3>Gastos</h3>
+                      <p id="finances-expense-total" class="finances-total"></p>
+                    </header>
+                    <div class="finances-panel__visual" aria-hidden="true">
+                      <div class="finances-bar finances-bar--summary" id="finances-expense-bar">
+                        <span
+                          class="finances-bar__fill finances-bar__fill--expense"
+                          id="finances-expense-bar-fill"
+                        ></span>
+                      </div>
+                    </div>
+                    <ul id="finances-expenses" class="finances-list finances-list--expense"></ul>
+                  </div>
+                </div>
+
+                <div class="report-body">
+                  <div>
+                    <h3>Narrativa</h3>
+                    <ol id="narrative-list"></ol>
+                  </div>
+                  <div>
+                    <h3>Eventos destacados</h3>
+                    <ol id="match-timeline" class="match-timeline" aria-live="polite"></ol>
+                  </div>
+                </div>
+
+                <div class="club-update">
+                  <h3>Estado del club tras la jornada</h3>
+                  <dl class="club-stats">
+                    <div>
+                      <dt>Presupuesto</dt>
+                      <dd id="post-budget"></dd>
+                    </div>
+                    <div>
+                      <dt>Reputación</dt>
+                      <dd id="post-reputation"></dd>
+                    </div>
+                    <div>
+                      <dt>Moral media</dt>
+                      <dd id="post-morale"></dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <section id="season-summary" class="season-summary" hidden>
+                  <h3>Resumen de temporada</h3>
+                  <p><strong>Campeón:</strong> <span id="season-champion"></span></p>
+                  <p><strong>Posesión media:</strong> <span id="season-average-possession"></span></p>
+                  <p id="season-streak"></p>
+                  <p><strong>Títulos logrados:</strong> <span id="season-titles"></span></p>
+                  <div class="season-summary__lists">
+                    <div>
+                      <h4>Goleadores</h4>
+                      <ol id="season-top-scorers"></ol>
+                    </div>
+                    <div>
+                      <h4>Asistentes</h4>
+                      <ol id="season-top-assists"></ol>
+                    </div>
+                  </div>
+                  <div class="season-summary__records">
+                    <h4>Récords del club</h4>
+                    <ul id="season-records"></ul>
+                  </div>
+                  <button type="button" id="new-season" class="plan-button" hidden>
+                    Comenzar nueva temporada
+                  </button>
+                </section>
+
+                <button type="button" id="plan-next" class="plan-button">Planificar la próxima jornada</button>
+              </div>
+              <div
+                class="report-panel report-panel--history"
+                id="report-panel-history"
+                data-report-panel="history"
+                role="tabpanel"
+                aria-labelledby="report-tab-history"
+                hidden
+              >
+                <section class="report-history">
+                  <div class="report-history__controls">
+                    <label for="report-history-season">Temporada</label>
+                    <select id="report-history-season">
+                      <option value="all">Todas las temporadas</option>
+                    </select>
+                  </div>
+                  <p id="report-history-empty" class="report-history__empty">
+                    Todavía no has disputado ninguna jornada.
+                  </p>
+                  <ol id="report-history-list" class="report-history__list" aria-live="polite"></ol>
                 </section>
               </div>
-                  </div>
-                </section>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
 
-      </div>
-      </div>
-
-      <footer class="footer">
-        <p>Hecho con pasión canalla por la comunidad IA ⚽</p>
-      </footer>
-    </main>
+    <footer class="footer">
+      <p>Hecho con pasión canalla por la comunidad IA ⚽</p>
+    </footer>
     <script type="module" src="game.js"></script>
   </body>
 </html>
